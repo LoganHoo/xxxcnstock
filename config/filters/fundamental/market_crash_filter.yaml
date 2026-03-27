@@ -1,0 +1,31 @@
+filter:
+  name: "market_crash_filter"
+  enabled: true
+  description: "大盘跌幅超阈值时暂停买入"
+  
+  params:
+    max_index_drop: 0.02
+    index_code: "000001"
+  
+  risk_level: "medium"
+  category: "fundamental"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 大盘跌1%暂停"
+      max_index_drop: 0.01
+      index_code: "000001"
+    
+    standard:
+      description: "标准模式 - 大盘跌2%暂停"
+      max_index_drop: 0.02
+      index_code: "000001"
+    
+    aggressive:
+      description: "激进模式 - 大盘跌3%暂停"
+      max_index_drop: 0.03
+      index_code: "000001"
+    
+    disabled:
+      description: "禁用模式 - 不检查大盘"
+      enabled: false

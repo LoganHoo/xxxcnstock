@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  xcnstock-cron-optimized:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron.optimized
+    container_name: xcnstock-cron-optimized
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+    networks:
+      - xcnstock-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/logs/cron.log"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  xcnstock-network:
+    driver: bridge

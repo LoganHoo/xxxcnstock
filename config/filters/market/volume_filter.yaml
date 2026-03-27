@@ -1,0 +1,23 @@
+filter:
+  name: "volume_filter"
+  enabled: true
+  description: "排除成交量过低的股票"
+  
+  params:
+    min_volume: 1000000
+  
+  risk_level: "medium"
+  category: "market_data"
+  
+  presets:
+    high_activity:
+      description: "高活跃度模式 - 成交量1000万以上"
+      min_volume: 10000000
+    
+    standard:
+      description: "标准模式 - 成交量100万以上"
+      min_volume: 1000000
+    
+    low_activity:
+      description: "低活跃度模式 - 成交量10万以上"
+      min_volume: 100000

@@ -1,0 +1,36 @@
+filter:
+  name: "st_filter"
+  enabled: true
+  description: "排除ST/*ST股票"
+  
+  params:
+    st_patterns:
+      - "ST"
+      - "*ST"
+      - "S*ST"
+      - "SST"
+  
+  risk_level: "high"
+  category: "stock_attribute"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 排除所有ST变体"
+      st_patterns:
+        - "ST"
+        - "*ST"
+        - "S*ST"
+        - "SST"
+        - "st"
+        - "*st"
+    
+    standard:
+      description: "标准模式 - 排除常见ST"
+      st_patterns:
+        - "ST"
+        - "*ST"
+    
+    aggressive:
+      description: "激进模式 - 仅排除*ST"
+      st_patterns:
+        - "*ST"

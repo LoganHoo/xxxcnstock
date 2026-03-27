@@ -1,0 +1,55 @@
+factor:
+  name: macd
+  category: technical
+  description: "MACD因子 - 金叉死叉信号"
+  version: "1.0"
+  
+  params:
+    default:
+      fast: 12
+      slow: 26
+      signal: 9
+    
+    presets:
+      conservative:
+        fast: 19
+        slow: 39
+        signal: 9
+        description: "保守型 - 长周期MACD"
+      
+      aggressive:
+        fast: 6
+        slow: 13
+        signal: 5
+        description: "激进型 - 短周期MACD"
+      
+      standard:
+        fast: 12
+        slow: 26
+        signal: 9
+        description: "标准型 - 经典MACD"
+  
+  scoring:
+    weight: 0.06
+    threshold: 30
+    
+    rules:
+      - condition: "金叉 (MACD由负转正)"
+        score: 100
+      - condition: "MACD>0且DIF>0"
+        score: 80
+      - condition: "MACD>0"
+        score: 60
+      - condition: "死叉 (MACD由正转负)"
+        score: 20
+      - condition: "MACD<0"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      fast: [6, 8, 10, 12, 15]
+      slow: [13, 20, 26, 30]
+      signal: [5, 7, 9, 12]
+    
+    constraints:
+      fast: "< slow"

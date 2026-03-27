@@ -1,0 +1,29 @@
+filter:
+  name: "pullback_signal_filter"
+  enabled: true
+  description: "排除无回补信号的股票"
+  
+  params:
+    pullback_days: 3
+    ma_period: 5
+    require_pullback: true
+  
+  risk_level: "medium"
+  category: "pattern"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 要求明确回补信号"
+      pullback_days: 3
+      ma_period: 5
+      require_pullback: true
+    
+    standard:
+      description: "标准模式 - 要求回补信号"
+      pullback_days: 5
+      ma_period: 10
+      require_pullback: true
+    
+    aggressive:
+      description: "激进模式 - 不要求回补信号"
+      require_pullback: false

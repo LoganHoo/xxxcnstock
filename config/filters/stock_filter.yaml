@@ -1,0 +1,13 @@
+filters:
+  st_filter:
+    enabled: true
+    description: "排除ST/*ST股票"
+  
+  new_stock_filter:
+    enabled: true
+    min_listing_days: 60
+    description: "排除上市不足60天的新股"
+  
+  delisting_filter:
+    enabled: true
+    description: "排除有退市风险的股票"

@@ -1,0 +1,54 @@
+factor:
+  name: kdj
+  category: technical
+  description: "KDJ因子 - 随机指标"
+  version: "1.0"
+  
+  params:
+    default:
+      n: 9
+      m1: 3
+      m2: 3
+    
+    presets:
+      conservative:
+        n: 14
+        m1: 3
+        m2: 3
+        description: "保守型 - 长周期KDJ"
+      
+      aggressive:
+        n: 5
+        m1: 3
+        m2: 3
+        description: "激进型 - 短周期KDJ"
+      
+      standard:
+        n: 9
+        m1: 3
+        m2: 3
+        description: "标准型 - 经典KDJ"
+  
+  scoring:
+    weight: 0.05
+    threshold: 30
+    
+    rules:
+      - condition: "J < 0 (超卖)"
+        score: 90
+      - condition: "0 <= J < 20"
+        score: 80
+      - condition: "20 <= J < 50"
+        score: 60
+      - condition: "50 <= J < 80"
+        score: 40
+      - condition: "80 <= J < 100"
+        score: 20
+      - condition: "J >= 100 (超买)"
+        score: 10
+  
+  optimization:
+    param_ranges:
+      n: [5, 9, 14, 21]
+      m1: [3, 5, 7]
+      m2: [3, 5, 7]

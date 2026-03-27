@@ -1,0 +1,20 @@
+filters:
+  float_market_cap_filter:
+    enabled: true
+    min_cap: 3000000000
+    max_cap: 30000000000
+    description: "排除流通市值不在30-300亿范围的股票"
+  
+  price_range_filter:
+    enabled: true
+    min_price: 5.0
+    max_price: 80.0
+    description: "排除价格不在5-80元的股票"
+  
+  valuation_filter:
+    enabled: false
+    max_pe: 100
+    max_pb: 10
+    check_pe: true
+    check_pb: true
+    description: "排除估值异常的股票"

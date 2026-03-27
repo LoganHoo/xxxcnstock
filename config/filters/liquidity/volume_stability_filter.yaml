@@ -1,0 +1,27 @@
+filter:
+  name: "volume_stability_filter"
+  enabled: true
+  description: "排除成交量不稳定的股票"
+  
+  params:
+    stability_threshold: 0.5
+    lookback_period: 10
+  
+  risk_level: "medium"
+  category: "liquidity"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 要求成交量非常稳定"
+      stability_threshold: 0.3
+      lookback_period: 15
+    
+    standard:
+      description: "标准模式 - 成交量稳定性适中"
+      stability_threshold: 0.5
+      lookback_period: 10
+    
+    aggressive:
+      description: "激进模式 - 成交量稳定性要求较低"
+      stability_threshold: 0.8
+      lookback_period: 5

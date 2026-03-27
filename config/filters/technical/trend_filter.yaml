@@ -1,0 +1,27 @@
+filter:
+  name: "trend_filter"
+  enabled: true
+  description: "排除下跌趋势股票"
+  
+  params:
+    ma_short: 5
+    ma_long: 20
+  
+  risk_level: "medium"
+  category: "technical"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 长期均线确认趋势"
+      ma_short: 10
+      ma_long: 60
+    
+    standard:
+      description: "标准模式 - 中期均线判断趋势"
+      ma_short: 5
+      ma_long: 20
+    
+    aggressive:
+      description: "激进模式 - 短期均线判断趋势"
+      ma_short: 3
+      ma_long: 10

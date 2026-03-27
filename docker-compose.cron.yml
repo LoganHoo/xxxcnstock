@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  xcnstock-cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.cron
+    container_name: xcnstock-cron
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+      - ./reports:/app/reports
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+      - MYSQL_HOST=49.233.10.199
+      - MYSQL_PORT=3306
+      - MYSQL_USER=nextai
+      - MYSQL_PASSWORD=100200
+      - MYSQL_DATABASE=xcn_db
+      - EMAIL_USE_API=true
+      - EMAIL_API_URL=http://192.168.1.168:2000/api/email/send
+      - NOTIFICATION_EMAILS=287363@qq.com
+    networks:
+      - xcnstock-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  xcnstock-network:
+    driver: bridge

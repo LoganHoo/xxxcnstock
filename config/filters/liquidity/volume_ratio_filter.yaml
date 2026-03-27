@@ -1,0 +1,32 @@
+filter:
+  name: "volume_ratio_filter"
+  enabled: true
+  description: "排除量比异常的股票"
+  
+  params:
+    min_ratio: 1.0
+    max_ratio: 5.0
+  
+  risk_level: "medium"
+  category: "liquidity"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 量比范围较窄"
+      min_ratio: 0.8
+      max_ratio: 3.0
+    
+    standard:
+      description: "标准模式 - 量比范围适中"
+      min_ratio: 1.0
+      max_ratio: 5.0
+    
+    aggressive:
+      description: "激进模式 - 量比范围较宽"
+      min_ratio: 0.5
+      max_ratio: 10.0
+    
+    high_volume:
+      description: "放量模式 - 寻找放量股票"
+      min_ratio: 2.0
+      max_ratio: 10.0

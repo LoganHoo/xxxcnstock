@@ -1,0 +1,23 @@
+filter:
+  name: "institution_signal_filter"
+  enabled: true
+  description: "排除无机构买入信号的股票"
+  
+  params:
+    require_institution: true
+  
+  risk_level: "medium"
+  category: "pattern"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 必须有机构信号"
+      require_institution: true
+    
+    standard:
+      description: "标准模式 - 优先有机构信号"
+      require_institution: false
+    
+    disabled:
+      description: "禁用模式 - 不检查机构信号"
+      enabled: false

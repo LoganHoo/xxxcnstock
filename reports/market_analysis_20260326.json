@@ -1,0 +1,306 @@
+{
+  "analysis_time": "2026-03-26 01:25:58",
+  "indices": [
+    {
+      "code": "000001",
+      "name": "上证指数",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 3931.84,
+        "high_60": 4197.23,
+        "low_60": 3794.68,
+        "high_20": 4197.23,
+        "low_20": 3794.68,
+        "ma5": 3918.0,
+        "ma10": 4001.22,
+        "ma20": 4064.77,
+        "ma60": 4073.86,
+        "resistance_1": 4197.23,
+        "resistance_2": 4197.23,
+        "support_1": 3794.68,
+        "support_2": 3794.68
+      },
+      "cvd": {
+        "cvd_cumsum": 130887782224.0,
+        "cvd_mean": 4362926074.13,
+        "cvd_5d": -48487340738.6,
+        "cvd_10d": -133062789396.29,
+        "cvd_trend": "up",
+        "signal": "buy_dominant"
+      },
+      "analysis": {
+        "position_score": 1,
+        "cvd_score": 3,
+        "total_score": 4,
+        "position_reasons": [
+          "站上MA5",
+          "低于MA20",
+          "低于MA60",
+          "均线空头排列"
+        ],
+        "cvd_reasons": [
+          "买方力量占优",
+          "CVD趋势向上",
+          "近5日净卖出"
+        ],
+        "conclusion": "看多",
+        "action": "可考虑加仓或持股",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 6.75,
+        "distance_to_support": 3.49
+      }
+    },
+    {
+      "code": "399001",
+      "name": "深证成指",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 13801.0,
+        "high_60": 14536.08,
+        "low_60": 13169.25,
+        "high_20": 14536.08,
+        "low_20": 13169.25,
+        "ma5": 13690.17,
+        "ma10": 13964.16,
+        "ma20": 14109.74,
+        "ma60": 14069.72,
+        "resistance_1": 14536.08,
+        "resistance_2": 14536.08,
+        "support_1": 13169.25,
+        "support_2": 13169.25
+      },
+      "cvd": {
+        "cvd_cumsum": 239590462480.91,
+        "cvd_mean": 7986348749.36,
+        "cvd_5d": -54774597024.8,
+        "cvd_10d": -132876364176.41,
+        "cvd_trend": "up",
+        "signal": "buy_dominant"
+      },
+      "analysis": {
+        "position_score": 1,
+        "cvd_score": 3,
+        "total_score": 4,
+        "position_reasons": [
+          "站上MA5",
+          "低于MA20",
+          "低于MA60",
+          "均线空头排列"
+        ],
+        "cvd_reasons": [
+          "买方力量占优",
+          "CVD趋势向上",
+          "近5日净卖出"
+        ],
+        "conclusion": "看多",
+        "action": "可考虑加仓或持股",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 5.33,
+        "distance_to_support": 4.58
+      }
+    },
+    {
+      "code": "399006",
+      "name": "创业板指",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 3316.97,
+        "high_60": 3426.61,
+        "low_60": 3111.88,
+        "high_20": 3426.61,
+        "low_20": 3111.88,
+        "ma5": 3292.99,
+        "ma10": 3307.62,
+        "ma20": 3285.5,
+        "ma60": 3294.64,
+        "resistance_1": 3426.61,
+        "resistance_2": 3426.61,
+        "support_1": 3111.88,
+        "support_2": 3111.88
+      },
+      "cvd": {
+        "cvd_cumsum": 28114211750.37,
+        "cvd_mean": 937140391.68,
+        "cvd_5d": -6220425629.61,
+        "cvd_10d": -12991714211.93,
+        "cvd_trend": "down",
+        "signal": "buy_dominant"
+      },
+      "analysis": {
+        "position_score": 3,
+        "cvd_score": 1,
+        "total_score": 4,
+        "position_reasons": [
+          "站上MA5",
+          "站上MA20",
+          "站上MA60",
+          "均线空头排列"
+        ],
+        "cvd_reasons": [
+          "买方力量占优",
+          "CVD趋势向下",
+          "近5日净卖出"
+        ],
+        "conclusion": "看多",
+        "action": "可考虑加仓或持股",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 3.31,
+        "distance_to_support": 6.18
+      }
+    },
+    {
+      "code": "000300",
+      "name": "沪深300",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 4537.47,
+        "high_60": 4836.95,
+        "low_60": 4394.29,
+        "high_20": 4744.6,
+        "low_20": 4394.29,
+        "ma5": 4516.09,
+        "ma10": 4590.45,
+        "ma20": 4631.6,
+        "ma60": 4678.83,
+        "resistance_1": 4744.6,
+        "resistance_2": 4836.95,
+        "support_1": 4394.29,
+        "support_2": 4394.29
+      },
+      "cvd": {
+        "cvd_cumsum": 42196891709.98,
+        "cvd_mean": 1406563057.0,
+        "cvd_5d": -22753167324.51,
+        "cvd_10d": -40605457560.24,
+        "cvd_trend": "up",
+        "signal": "buy_dominant"
+      },
+      "analysis": {
+        "position_score": 1,
+        "cvd_score": 3,
+        "total_score": 4,
+        "position_reasons": [
+          "站上MA5",
+          "低于MA20",
+          "低于MA60",
+          "均线空头排列"
+        ],
+        "cvd_reasons": [
+          "买方力量占优",
+          "CVD趋势向上",
+          "近5日净卖出"
+        ],
+        "conclusion": "看多",
+        "action": "可考虑加仓或持股",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 4.56,
+        "distance_to_support": 3.16
+      }
+    },
+    {
+      "code": "000016",
+      "name": "上证50",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 2859.53,
+        "high_60": 3177.74,
+        "low_60": 2779.6,
+        "high_20": 3060.34,
+        "low_20": 2779.6,
+        "ma5": 2856.56,
+        "ma10": 2909.03,
+        "ma20": 2955.55,
+        "ma60": 3031.82,
+        "resistance_1": 3060.34,
+        "resistance_2": 3177.74,
+        "support_1": 2779.6,
+        "support_2": 2779.6
+      },
+      "cvd": {
+        "cvd_cumsum": -8011144715.36,
+        "cvd_mean": -267038157.18,
+        "cvd_5d": -8140230213.72,
+        "cvd_10d": -9964258456.6,
+        "cvd_trend": "up",
+        "signal": "sell_dominant"
+      },
+      "analysis": {
+        "position_score": 1,
+        "cvd_score": -1,
+        "total_score": 0,
+        "position_reasons": [
+          "站上MA5",
+          "低于MA20",
+          "低于MA60",
+          "均线空头排列",
+          "接近支撑位(2.8%)"
+        ],
+        "cvd_reasons": [
+          "卖方力量占优",
+          "CVD趋势向上",
+          "近5日净卖出"
+        ],
+        "conclusion": "中性",
+        "action": "建议观望为主",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 7.02,
+        "distance_to_support": 2.8
+      }
+    },
+    {
+      "code": "000905",
+      "name": "中证500",
+      "date": "2026-03-25",
+      "levels": {
+        "close": 7767.66,
+        "high_60": 8683.98,
+        "low_60": 7205.49,
+        "high_20": 8683.98,
+        "low_20": 7379.86,
+        "ma5": 7688.58,
+        "ma10": 7933.98,
+        "ma20": 8175.35,
+        "ma60": 8114.42,
+        "resistance_1": 8683.98,
+        "resistance_2": 8683.98,
+        "support_1": 7379.86,
+        "support_2": 7205.49
+      },
+      "cvd": {
+        "cvd_cumsum": 23529607169.26,
+        "cvd_mean": 784320238.98,
+        "cvd_5d": -26155907632.64,
+        "cvd_10d": -69362548928.87,
+        "cvd_trend": "up",
+        "signal": "buy_dominant"
+      },
+      "analysis": {
+        "position_score": 1,
+        "cvd_score": 3,
+        "total_score": 4,
+        "position_reasons": [
+          "站上MA5",
+          "低于MA20",
+          "低于MA60",
+          "均线空头排列"
+        ],
+        "cvd_reasons": [
+          "买方力量占优",
+          "CVD趋势向上",
+          "近5日净卖出"
+        ],
+        "conclusion": "看多",
+        "action": "可考虑加仓或持股",
+        "ma_status": "空头排列",
+        "distance_to_resistance": 11.8,
+        "distance_to_support": 4.99
+      }
+    }
+  ],
+  "summary": {
+    "avg_score": 3.33,
+    "bullish_count": 5,
+    "bearish_count": 0,
+    "market_view": "市场整体偏多，可积极参与"
+  }
+}

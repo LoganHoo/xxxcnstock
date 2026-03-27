@@ -1,0 +1,27 @@
+filter:
+  name: "market_cap_filter"
+  enabled: true
+  description: "排除市值低于阈值的股票"
+  
+  params:
+    min_market_cap: 5000000000
+  
+  risk_level: "medium"
+  category: "market_data"
+  
+  presets:
+    large_cap:
+      description: "大盘股模式 - 市值100亿以上"
+      min_market_cap: 10000000000
+    
+    mid_cap:
+      description: "中盘股模式 - 市值50亿以上"
+      min_market_cap: 5000000000
+    
+    small_cap:
+      description: "小盘股模式 - 市值20亿以上"
+      min_market_cap: 2000000000
+    
+    micro_cap:
+      description: "微盘股模式 - 市值5亿以上"
+      min_market_cap: 500000000

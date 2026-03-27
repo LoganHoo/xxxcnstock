@@ -1,0 +1,42 @@
+factor:
+  name: volume_ratio
+  category: volume_price
+  description: "量比因子 - 成交量相对强度"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 5
+    
+    presets:
+      conservative:
+        period: 10
+        description: "保守型 - 长周期量比"
+      
+      aggressive:
+        period: 3
+        description: "激进型 - 短周期量比"
+      
+      standard:
+        period: 5
+        description: "标准型 - 经典量比"
+  
+  scoring:
+    weight: 0.06
+    threshold: 30
+    
+    rules:
+      - condition: "量比 > 3 (巨量)"
+        score: 90
+      - condition: "量比 2-3"
+        score: 80
+      - condition: "量比 1.5-2"
+        score: 70
+      - condition: "量比 0.8-1.5"
+        score: 50
+      - condition: "量比 < 0.8 (缩量)"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [3, 5, 7, 10]

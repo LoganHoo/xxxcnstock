@@ -1,0 +1,23 @@
+filter:
+  name: "monthly_ma_filter"
+  enabled: true
+  description: "排除跌破60月均线的股票"
+  
+  params:
+    ma_period: 60
+  
+  risk_level: "medium"
+  category: "technical"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 检查120月线"
+      ma_period: 120
+    
+    standard:
+      description: "标准模式 - 检查60月线"
+      ma_period: 60
+    
+    aggressive:
+      description: "激进模式 - 检查20月线"
+      ma_period: 20

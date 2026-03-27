@@ -1,0 +1,32 @@
+filter:
+  name: "delisting_filter"
+  enabled: true
+  description: "排除有退市风险的股票"
+  
+  params:
+    delisting_patterns:
+      - "退"
+      - "退市"
+      - "终止上市"
+      - "暂停上市"
+      - "风险警示"
+  
+  risk_level: "high"
+  category: "stock_attribute"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 排除所有退市风险关键词"
+      delisting_patterns:
+        - "退"
+        - "退市"
+        - "终止上市"
+        - "暂停上市"
+        - "风险警示"
+    
+    standard:
+      description: "标准模式 - 排除明确退市风险"
+      delisting_patterns:
+        - "退市"
+        - "终止上市"
+        - "暂停上市"

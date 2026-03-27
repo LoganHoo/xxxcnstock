@@ -1,0 +1,23 @@
+filter:
+  name: "new_stock_filter"
+  enabled: true
+  description: "排除上市不足N天的新股"
+  
+  params:
+    min_listing_days: 60
+  
+  risk_level: "medium"
+  category: "stock_attribute"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 排除上市不足90天"
+      min_listing_days: 90
+    
+    standard:
+      description: "标准模式 - 排除上市不足60天"
+      min_listing_days: 60
+    
+    aggressive:
+      description: "激进模式 - 排除上市不足30天"
+      min_listing_days: 30

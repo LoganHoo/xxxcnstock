@@ -1,0 +1,31 @@
+filter:
+  name: "macd_cross_filter"
+  enabled: true
+  description: "排除月线MACD未金叉/日线死叉股票"
+  
+  params:
+    check_monthly: true
+    check_daily: true
+  
+  risk_level: "medium"
+  category: "technical"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 同时检查月线和日线"
+      check_monthly: true
+      check_daily: true
+    
+    monthly_only:
+      description: "仅月线模式 - 只检查月线MACD"
+      check_monthly: true
+      check_daily: false
+    
+    daily_only:
+      description: "仅日线模式 - 只检查日线MACD"
+      check_monthly: false
+      check_daily: true
+    
+    disabled:
+      description: "禁用模式"
+      enabled: false

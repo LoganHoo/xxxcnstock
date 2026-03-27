@@ -1,0 +1,47 @@
+filter:
+  name: "valuation_filter"
+  enabled: true
+  description: "排除估值异常的股票"
+  
+  params:
+    max_pe: 100
+    max_pb: 10
+    check_pe: true
+    check_pb: true
+  
+  risk_level: "medium"
+  category: "valuation"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 估值要求严格"
+      max_pe: 30
+      max_pb: 3
+      check_pe: true
+      check_pb: true
+    
+    standard:
+      description: "标准模式 - 估值要求适中"
+      max_pe: 100
+      max_pb: 10
+      check_pe: true
+      check_pb: true
+    
+    aggressive:
+      description: "激进模式 - 估值要求宽松"
+      max_pe: 200
+      max_pb: 20
+      check_pe: true
+      check_pb: true
+    
+    pe_only:
+      description: "仅PE模式 - 只检查市盈率"
+      max_pe: 50
+      check_pe: true
+      check_pb: false
+    
+    pb_only:
+      description: "仅PB模式 - 只检查市净率"
+      max_pb: 5
+      check_pe: false
+      check_pb: true

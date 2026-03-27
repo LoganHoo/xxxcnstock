@@ -1,0 +1,42 @@
+factor:
+  name: psy
+  category: technical
+  description: "PSY因子 - 心理线指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 12
+    
+    presets:
+      conservative:
+        period: 20
+        description: "保守型 - 长周期PSY"
+      
+      aggressive:
+        period: 6
+        description: "激进型 - 短周期PSY"
+      
+      standard:
+        period: 12
+        description: "标准型 - 经典PSY"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "PSY < 25 (极度悲观)"
+        score: 90
+      - condition: "25 <= PSY < 40"
+        score: 70
+      - condition: "40 <= PSY < 60"
+        score: 50
+      - condition: "60 <= PSY < 75"
+        score: 40
+      - condition: "PSY >= 75 (极度乐观)"
+        score: 30
+  
+  optimization:
+    param_ranges:
+      period: [6, 10, 12, 20]

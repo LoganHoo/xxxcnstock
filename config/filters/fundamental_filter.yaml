@@ -1,0 +1,25 @@
+filters:
+  illegal_filter:
+    enabled: true
+    exclude_types:
+      - "减持计划"
+      - "减持公告"
+      - "退市"
+      - "终止上市"
+      - "财务造假"
+      - "立案调查"
+      - "行政处罚"
+      - "违规"
+    description: "排除减持计划、快退市、财务造假股票"
+  
+  performance_filter:
+    enabled: true
+    check_quarters: 3
+    min_profit_growth: -0.5
+    description: "排除前三季度业绩亏损/暴雷股票"
+  
+  market_crash_filter:
+    enabled: true
+    max_index_drop: 0.02
+    index_code: "000001"
+    description: "大盘跌幅超2%时暂停买入"

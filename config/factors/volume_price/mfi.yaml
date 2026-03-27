@@ -1,0 +1,42 @@
+factor:
+  name: mfi
+  category: volume_price
+  description: "MFI因子 - 资金流量指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期MFI"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期MFI"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典MFI"
+  
+  scoring:
+    weight: 0.05
+    threshold: 30
+    
+    rules:
+      - condition: "MFI < 20 (资金流出)"
+        score: 90
+      - condition: "MFI 20-40"
+        score: 70
+      - condition: "MFI 40-60"
+        score: 50
+      - condition: "MFI 60-80"
+        score: 40
+      - condition: "MFI > 80 (资金流入)"
+        score: 30
+  
+  optimization:
+    param_ranges:
+      period: [7, 10, 14, 21]

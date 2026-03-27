@@ -1,0 +1,22 @@
+filter:
+  name: "suspension_filter"
+  enabled: true
+  description: "排除停牌股票"
+  
+  params:
+    check_trade_status: true
+    check_volume: true
+  
+  risk_level: "low"
+  category: "market_data"
+  
+  presets:
+    standard:
+      description: "标准模式 - 检查交易状态和成交量"
+      check_trade_status: true
+      check_volume: true
+    
+    volume_only:
+      description: "仅成交量模式 - 仅通过成交量判断"
+      check_trade_status: false
+      check_volume: true

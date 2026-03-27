@@ -1,0 +1,42 @@
+factor:
+  name: roc
+  category: technical
+  description: "ROC因子 - 变动率指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 12
+    
+    presets:
+      conservative:
+        period: 20
+        description: "保守型 - 长周期ROC"
+      
+      aggressive:
+        period: 6
+        description: "激进型 - 短周期ROC"
+      
+      standard:
+        period: 12
+        description: "标准型 - 经典ROC"
+  
+  scoring:
+    weight: 0.04
+    threshold: 30
+    
+    rules:
+      - condition: "ROC < -15% (超卖)"
+        score: 90
+      - condition: "-15% <= ROC < -5%"
+        score: 70
+      - condition: "-5% <= ROC < 5%"
+        score: 50
+      - condition: "5% <= ROC < 15%"
+        score: 40
+      - condition: "ROC >= 15% (超买)"
+        score: 30
+  
+  optimization:
+    param_ranges:
+      period: [6, 10, 12, 20]

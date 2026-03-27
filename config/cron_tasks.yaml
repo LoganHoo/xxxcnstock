@@ -1,0 +1,98 @@
+# XCNStock 定时任务配置
+# 用于管理所有定时任务的执行时间和参数
+
+# 全局配置
+global:
+  timezone: "Asia/Shanghai"
+  shell: "/bin/bash"
+  path: "/usr/local/bin:/usr/bin:/bin"
+  log_file: "/app/logs/cron.log"
+  working_dir: "/app"
+
+# 定时任务定义
+tasks:
+  # 每日数据更新任务
+  - name: "update_index_data"
+    description: "更新大盘指数数据"
+    schedule: "0 1 * * *"  # 每天凌晨 01:00
+    script: "scripts/fetch_index_data.py"
+    enabled: true
+    day_type: "daily"  # daily, weekday, custom
+
+  - name: "market_analysis"
+    description: "大盘关键位与CVD分析"
+    schedule: "0 2 * * *"  # 每天凌晨 02:00
+    script: "scripts/market_analysis.py"
+    enabled: true
+    day_type: "daily"
+
+  # 交易日任务
+  - name: "morning_report"
+    description: "发送早报（昨日推荐回顾+大盘分析）"
+    schedule: "0 8 * * 1-5"  # 交易日 08:00
+    script: "scripts/send_morning_report.py"
+    enabled: true
+    day_type: "weekday"  # 周一到周五
+
+  - name: "data_processing"
+    description: "数据处理任务"
+    schedule: "30 15 * * 1-5"  # 交易日 15:30
+    script: "scripts/scheduled_tasks.py"
+    enabled: true
+    day_type: "weekday"
+
+  - name: "data_fetch_backup"
+    description: "数据采集（备用）"
+    schedule: "0 16 * * 1-5"  # 交易日 16:00
+    script: "scripts/fetch_history_klines_parquet.py"
+    enabled: true
+    day_type: "weekday"
+
+  - name: "stock_recommendation"
+    description: "股票推荐并发送邮件"
+    schedule: "0 20 * * 1-5"  # 交易日 20:00
+    script: "scripts/tomorrow_picks.py"
+    enabled: true
+    day_type: "weekday"
+
+  - name: "update_tracking"
+    description: "更新推荐股票跟踪数据"
+    schedule: "0 21 * * 1-5"  # 交易日 21:00
+    script: "scripts/update_tracking.py"
+    enabled: true
+    day_type: "weekday"
+
+# 任务分组
+groups:
+  daily:
+    description: "每日执行的任务"
+    tasks:
+      - update_index_data
+      - market_analysis
+
+  trading_day:
+    description: "交易日执行的任务"
+    tasks:
+      - morning_report
+      - data_processing
+      - data_fetch_backup
+      - stock_recommendation
+      - update_tracking
+
+  morning:
+    description: "早上任务"
+    tasks:
+      - morning_report
+
+  evening:
+    description: "晚上任务"
+    tasks:
+      - stock_recommendation
+      - update_tracking
+
+# 环境变量配置
+environment:
+  EMAIL_USE_API: "true"
+  EMAIL_API_URL: "http://192.168.1.168:2000/api/email/send"
+  NOTIFICATION_EMAILS: "287363@qq.com"
+  PYTHONUNBUFFERED: "1"

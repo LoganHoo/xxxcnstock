@@ -1,0 +1,31 @@
+filter:
+  name: "over_hyped_filter"
+  enabled: true
+  description: "排除过度炒作股票"
+  
+  params:
+    max_limit_days: 3
+    max_gain_period: 20
+    max_gain_pct: 0.5
+  
+  risk_level: "high"
+  category: "pattern"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 严格限制炒作程度"
+      max_limit_days: 2
+      max_gain_period: 20
+      max_gain_pct: 0.3
+    
+    standard:
+      description: "标准模式 - 限制过度炒作"
+      max_limit_days: 3
+      max_gain_period: 20
+      max_gain_pct: 0.5
+    
+    aggressive:
+      description: "激进模式 - 允许较高炒作"
+      max_limit_days: 5
+      max_gain_period: 30
+      max_gain_pct: 0.8

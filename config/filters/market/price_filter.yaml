@@ -1,0 +1,32 @@
+filter:
+  name: "price_filter"
+  enabled: true
+  description: "排除价格超出范围的股票"
+  
+  params:
+    min_price: 2.0
+    max_price: 300.0
+  
+  risk_level: "low"
+  category: "market_data"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 价格区间较窄"
+      min_price: 5.0
+      max_price: 100.0
+    
+    standard:
+      description: "标准模式 - 价格区间适中"
+      min_price: 2.0
+      max_price: 300.0
+    
+    aggressive:
+      description: "激进模式 - 价格区间较宽"
+      min_price: 1.0
+      max_price: 500.0
+    
+    penny_stock:
+      description: "低价股模式 - 排除仙股"
+      min_price: 1.0
+      max_price: 300.0

@@ -1,0 +1,47 @@
+factor:
+  name: bollinger
+  category: technical
+  description: "布林带因子 - 波动区间"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 20
+      std_dev: 2
+    
+    presets:
+      conservative:
+        period: 30
+        std_dev: 2.5
+        description: "保守型 - 宽带布林"
+      
+      aggressive:
+        period: 10
+        std_dev: 1.5
+        description: "激进型 - 窄带布林"
+      
+      standard:
+        period: 20
+        std_dev: 2
+        description: "标准型 - 经典布林"
+  
+  scoring:
+    weight: 0.04
+    threshold: 30
+    
+    rules:
+      - condition: "价格触及下轨 (超卖)"
+        score: 90
+      - condition: "价格在下轨与中轨之间"
+        score: 70
+      - condition: "价格在中轨附近"
+        score: 50
+      - condition: "价格在中轨与上轨之间"
+        score: 40
+      - condition: "价格触及上轨 (超买)"
+        score: 20
+  
+  optimization:
+    param_ranges:
+      period: [10, 15, 20, 30]
+      std_dev: [1.5, 2.0, 2.5, 3.0]

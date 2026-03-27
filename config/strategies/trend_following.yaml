@@ -1,0 +1,41 @@
+strategy:
+  name: "趋势跟踪策略"
+  description: "捕捉中期趋势，顺势而为"
+  version: "1.0"
+  
+  factors:
+    - name: ma_trend
+      weight: 0.30
+      threshold: 50
+      params:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+    
+    - name: macd
+      weight: 0.25
+      threshold: 40
+      params:
+        fast: 12
+        slow: 26
+        signal: 9
+    
+    - name: rsi
+      weight: 0.20
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: volume_ratio
+      weight: 0.25
+      threshold: 40
+  
+  filters:
+    - type: price
+      min: 3
+      max: 100
+  
+  output:
+    top_n: 20
+    min_score: 50
+    formats: ["json", "txt"]

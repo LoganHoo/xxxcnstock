@@ -1,0 +1,50 @@
+filter:
+  name: "illegal_filter"
+  enabled: true
+  description: "排除减持计划、快退市、财务造假股票"
+  
+  params:
+    exclude_types:
+      - "减持计划"
+      - "减持公告"
+      - "退市"
+      - "终止上市"
+      - "财务造假"
+      - "立案调查"
+      - "行政处罚"
+      - "违规"
+  
+  risk_level: "high"
+  category: "fundamental"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 排除所有风险类型"
+      exclude_types:
+        - "减持计划"
+        - "减持公告"
+        - "退市"
+        - "终止上市"
+        - "财务造假"
+        - "立案调查"
+        - "行政处罚"
+        - "违规"
+        - "质押"
+        - "冻结"
+    
+    standard:
+      description: "标准模式 - 排除主要风险类型"
+      exclude_types:
+        - "减持计划"
+        - "减持公告"
+        - "退市"
+        - "终止上市"
+        - "财务造假"
+        - "立案调查"
+    
+    aggressive:
+      description: "激进模式 - 仅排除严重风险"
+      exclude_types:
+        - "退市"
+        - "财务造假"
+        - "立案调查"

@@ -1,0 +1,14 @@
+[project]
+name = "xcnstock"
+version = "0.1.0"
+description = "A股专业交易系统 - 选股分析与打板策略"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"

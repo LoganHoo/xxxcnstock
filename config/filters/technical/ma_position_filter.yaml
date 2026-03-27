@@ -1,0 +1,35 @@
+filter:
+  name: "ma_position_filter"
+  enabled: true
+  description: "排除未站上均线的股票"
+  
+  params:
+    ma_periods:
+      - 20
+      - 60
+    require_all: false
+  
+  risk_level: "medium"
+  category: "technical"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 必须站上所有均线"
+      ma_periods:
+        - 20
+        - 60
+        - 120
+      require_all: true
+    
+    standard:
+      description: "标准模式 - 站上任意一条均线"
+      ma_periods:
+        - 20
+        - 60
+      require_all: false
+    
+    aggressive:
+      description: "激进模式 - 仅检查20日线"
+      ma_periods:
+        - 20
+      require_all: true

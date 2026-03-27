@@ -1,0 +1,27 @@
+filter:
+  name: "continuous_low_turnover_filter"
+  enabled: true
+  description: "排除连续低换手率的股票"
+  
+  params:
+    min_rate: 0.05
+    consecutive_days: 2
+  
+  risk_level: "medium"
+  category: "liquidity"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 严格排除低换手"
+      min_rate: 0.03
+      consecutive_days: 3
+    
+    standard:
+      description: "标准模式 - 排除连续2天低换手"
+      min_rate: 0.05
+      consecutive_days: 2
+    
+    aggressive:
+      description: "激进模式 - 仅排除连续3天低换手"
+      min_rate: 0.02
+      consecutive_days: 3

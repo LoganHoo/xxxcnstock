@@ -1,0 +1,31 @@
+FROM python:3.11-slim
+
+LABEL maintainer="XCNStock"
+LABEL description="A股历史数据采集定时任务服务 - 优化版"
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    cron \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY scripts/ ./scripts/
+COPY config/ ./config/
+
+RUN mkdir -p /app/data/kline /app/logs
+
+ENV PYTHONUNBUFFERED=1
+ENV TZ=Asia/Shanghai
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN echo "0 16 * * 1-5 cd /app && /usr/local/bin/python scripts/scheduled_fetch_optimized.py >> /app/logs/cron.log 2>&1" | crontab -
+
+COPY scripts/docker-entrypoint-optimized.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

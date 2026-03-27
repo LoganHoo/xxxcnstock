@@ -1,0 +1,25 @@
+filters:
+  trend_filter:
+    enabled: true
+    ma_short: 5
+    ma_long: 20
+    description: "排除下跌趋势股票"
+  
+  ma_position_filter:
+    enabled: true
+    ma_periods:
+      - 20
+      - 60
+    require_all: false
+    description: "排除未站上均线的股票"
+  
+  monthly_ma_filter:
+    enabled: true
+    ma_period: 60
+    description: "排除跌破60月均线的股票"
+  
+  macd_cross_filter:
+    enabled: true
+    check_monthly: true
+    check_daily: true
+    description: "排除月线MACD未金叉/日线死叉股票"

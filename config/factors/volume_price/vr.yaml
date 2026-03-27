@@ -1,0 +1,42 @@
+factor:
+  name: vr
+  category: volume_price
+  description: "VR因子 - 容量比率"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 26
+    
+    presets:
+      conservative:
+        period: 40
+        description: "保守型 - 长周期VR"
+      
+      aggressive:
+        period: 14
+        description: "激进型 - 短周期VR"
+      
+      standard:
+        period: 26
+        description: "标准型 - 经典VR"
+  
+  scoring:
+    weight: 0.04
+    threshold: 30
+    
+    rules:
+      - condition: "VR < 40 (底部)"
+        score: 90
+      - condition: "VR 40-70"
+        score: 70
+      - condition: "VR 70-150"
+        score: 50
+      - condition: "VR 150-250"
+        score: 40
+      - condition: "VR > 250 (顶部)"
+        score: 30
+  
+  optimization:
+    param_ranges:
+      period: [14, 20, 26, 40]

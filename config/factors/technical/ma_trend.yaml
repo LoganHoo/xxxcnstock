@@ -1,0 +1,56 @@
+factor:
+  name: ma_trend
+  category: technical
+  description: "均线趋势因子 - 判断多头/空头排列"
+  version: "1.0"
+  
+  params:
+    default:
+      short_period: 5
+      mid_period: 10
+      long_period: 20
+    
+    presets:
+      conservative:
+        short_period: 10
+        mid_period: 20
+        long_period: 60
+        description: "保守型 - 长周期趋势"
+      
+      aggressive:
+        short_period: 3
+        mid_period: 7
+        long_period: 14
+        description: "激进型 - 短周期趋势"
+      
+      standard:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+        description: "标准型 - 中期趋势"
+  
+  scoring:
+    weight: 0.08
+    threshold: 40
+    
+    rules:
+      - condition: "多头排列 (短>中>长)"
+        score: 90
+      - condition: "短>中且中>长"
+        score: 75
+      - condition: "短>中"
+        score: 60
+      - condition: "空头排列 (短<中<长)"
+        score: 20
+      - condition: "其他"
+        score: 50
+  
+  optimization:
+    param_ranges:
+      short_period: [3, 5, 7, 10]
+      mid_period: [7, 10, 15, 20]
+      long_period: [14, 20, 30, 60]
+    
+    constraints:
+      short_period: "< mid_period"
+      mid_period: "< long_period"

@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>股票推荐报告</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .section { margin: 20px 0; padding: 15px; border-radius: 5px; }
+        .s-grade { background-color: #d4edda; border-left: 4px solid #28a745; }
+        .a-grade { background-color: #fff3cd; border-left: 4px solid #ffc107; }
+        .bullish { background-color: #cce5ff; border-left: 4px solid #007bff; }
+        .macd-volume { background-color: #f8d7da; border-left: 4px solid #dc3545; }
+        .stock { padding: 8px; margin: 5px 0; background: white; border-radius: 3px; }
+        .code { font-weight: bold; color: #007bff; }
+        .name { margin-left: 10px; }
+        .price { margin-left: 10px; color: #28a745; }
+        .change { margin-left: 10px; }
+        .positive { color: #28a745; }
+        .negative { color: #dc3545; }
+        .score { margin-left: 10px; font-weight: bold; }
+        .key-levels { margin-left: 20px; color: #666; font-size: 0.9em; padding: 5px; background: #f8f9fa; border-radius: 3px; }
+        .support { color: #28a745; }
+        .resistance { color: #dc3545; }
+        .ma { color: #6c757d; }
+        .reasons { margin-left: 20px; color: #666; font-size: 0.9em; }
+        .stats { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-top: 20px; }
+        .warning { background-color: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📈 明日股票推荐报告</h1>
+        <p>生成时间: 2026-03-26 20:00:02</p>
+        <div class="section s-grade">
+            <h2>S级 - 强烈推荐</h2>
+            <div class="stock">
+                <span class="code">000722</span>
+                <span class="name">湖南发展</span>
+                <span class="price">17.77元</span>
+                <span class="change positive">+6.92%</span>
+                <span class="score">评分130</span>
+                <div class="key-levels"><span class="support">支撑: 11.85 [持平]</span> | <span class="resistance">压力: 14.21 [持平]</span> | <span class="ma">MA20: 14.12 MA60: 13.03</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">301309</span>
+                <span class="name">万得凯</span>
+                <span class="price">36.91元</span>
+                <span class="change positive">+12.7%</span>
+                <span class="score">评分130</span>
+                <div class="key-levels"><span class="support">支撑: 28.01 [持平]</span> | <span class="resistance">压力: 32.51 [持平]</span> | <span class="ma">MA20: 31.55 MA60: 30.17</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">300992</span>
+                <span class="name">泰福泵业</span>
+                <span class="price">34.90元</span>
+                <span class="change positive">+6.18%</span>
+                <span class="score">评分125</span>
+                <div class="key-levels"><span class="support">支撑: 26.08 [持平]</span> | <span class="resistance">压力: 34.06 [持平]</span> | <span class="ma">MA20: 31.64 MA60: 30.70</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000767</span>
+                <span class="name">晋控电力</span>
+                <span class="price">4.63元</span>
+                <span class="change positive">+9.98%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 2.83 [持平]</span> | <span class="resistance">压力: 3.95 [持平]</span> | <span class="ma">MA20: 3.82 MA60: 3.32</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">600163</span>
+                <span class="name">中闽能源</span>
+                <span class="price">8.29元</span>
+                <span class="change positive">+9.95%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 5.47 [持平]</span> | <span class="resistance">压力: 6.89 [持平]</span> | <span class="ma">MA20: 6.70 MA60: 6.11</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">600666</span>
+                <span class="name">奥瑞德</span>
+                <span class="price">5.81元</span>
+                <span class="change positive">+10.04%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 3.27 [持平]</span> | <span class="resistance">压力: 4.52 [持平]</span> | <span class="ma">MA20: 4.32 MA60: 3.85</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603115</span>
+                <span class="name">海星股份</span>
+                <span class="price">38.25元</span>
+                <span class="change positive">+5.28%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 18.81 [持平]</span> | <span class="resistance">压力: 33.15 [持平]</span> | <span class="ma">MA20: 31.81 MA60: 25.74</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603538</span>
+                <span class="name">美诺华</span>
+                <span class="price">34.95元</span>
+                <span class="change positive">+7.94%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 19.63 [持平]</span> | <span class="resistance">压力: 26.77 [持平]</span> | <span class="ma">MA20: 25.04 MA60: 22.25</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000711</span>
+                <span class="name">ST京蓝</span>
+                <span class="price">4.79元</span>
+                <span class="change positive">+3.46%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 1.67 [持平]</span> | <span class="resistance">压力: 4.23 [持平]</span> | <span class="ma">MA20: 3.69 MA60: 2.43</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000720</span>
+                <span class="name">新能泰山</span>
+                <span class="price">5.01元</span>
+                <span class="change positive">+10.11%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 3.30 [持平]</span> | <span class="resistance">压力: 4.37 [持平]</span> | <span class="ma">MA20: 4.14 MA60: 3.77</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">001367</span>
+                <span class="name">海森药业</span>
+                <span class="price">24.12元</span>
+                <span class="change positive">+9.99%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 21.80 [持平]</span> | <span class="resistance">压力: 24.54 [持平]</span> | <span class="ma">MA20: 22.66 MA60: 23.22</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">001400</span>
+                <span class="name">江顺科技</span>
+                <span class="price">156.51元</span>
+                <span class="change positive">+6.26%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 73.68 [持平]</span> | <span class="resistance">压力: 146.16 [持平]</span> | <span class="ma">MA20: 134.75 MA60: 112.96</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">002192</span>
+                <span class="name">融捷股份</span>
+                <span class="price">70.00元</span>
+                <span class="change positive">+8.59%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 51.11 [持平]</span> | <span class="resistance">压力: 61.10 [持平]</span> | <span class="ma">MA20: 57.16 MA60: 55.73</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">002357</span>
+                <span class="name">富临运业</span>
+                <span class="price">14.46元</span>
+                <span class="change positive">+6.87%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 10.45 [持平]</span> | <span class="resistance">压力: 16.05 [持平]</span> | <span class="ma">MA20: 15.14 MA60: 13.30</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">002479</span>
+                <span class="name">富春环保</span>
+                <span class="price">6.14元</span>
+                <span class="change positive">+3.72%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 4.91 [持平]</span> | <span class="resistance">压力: 5.64 [持平]</span> | <span class="ma">MA20: 5.53 MA60: 5.28</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+        </div>
+        <div class="section a-grade">
+            <h2>A级 - 建议关注</h2>
+            <div class="stock">
+                <span class="code">000002</span>
+                <span class="name">万  科Ａ</span>
+                <span class="price">4.11元</span>
+                <span class="change negative">-0.24%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 4.58 [持平]</span> | <span class="resistance">压力: 5.04 [持平]</span> | <span class="ma">MA20: 4.54 MA60: 4.74</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000007</span>
+                <span class="name">全新好</span>
+                <span class="price">13.60元</span>
+                <span class="change positive">+0.37%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 10.97 [持平]</span> | <span class="resistance">压力: 14.25 [持平]</span> | <span class="ma">MA20: 13.74 MA60: 12.35</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000010</span>
+                <span class="name">美丽生态</span>
+                <span class="price">4.38元</span>
+                <span class="change negative">-2.01%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 3.45 [持平]</span> | <span class="resistance">压力: 4.57 [持平]</span> | <span class="ma">MA20: 4.40 MA60: 3.87</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000035</span>
+                <span class="name">中国天楹</span>
+                <span class="price">7.37元</span>
+                <span class="change negative">-2.51%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 5.56 [持平]</span> | <span class="resistance">压力: 8.04 [持平]</span> | <span class="ma">MA20: 7.54 MA60: 6.47</span></div>
+                <div class="reasons">理由: 偏多趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000050</span>
+                <span class="name">深天马Ａ</span>
+                <span class="price">8.02元</span>
+                <span class="change negative">-0.25%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 8.65 [持平]</span> | <span class="resistance">压力: 10.44 [持平]</span> | <span class="ma">MA20: 9.01 MA60: 9.46</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000062</span>
+                <span class="name">深圳华强</span>
+                <span class="price">27.15元</span>
+                <span class="change negative">-0.88%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 23.73 [持平]</span> | <span class="resistance">压力: 27.09 [持平]</span> | <span class="ma">MA20: 25.49 MA60: 25.19</span></div>
+                <div class="reasons">理由: 偏多趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000088</span>
+                <span class="name">盐 田 港</span>
+                <span class="price">4.62元</span>
+                <span class="change positive">+0.0%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 4.44 [持平]</span> | <span class="resistance">压力: 4.69 [持平]</span> | <span class="ma">MA20: 4.61 MA60: 4.55</span></div>
+                <div class="reasons">理由: 偏多趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000096</span>
+                <span class="name">广聚能源</span>
+                <span class="price">10.17元</span>
+                <span class="change negative">-0.39%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 10.16 [持平]</span> | <span class="resistance">压力: 11.84 [持平]</span> | <span class="ma">MA20: 11.11 MA60: 10.92</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000100</span>
+                <span class="name">TCL科技</span>
+                <span class="price">4.33元</span>
+                <span class="change negative">-0.23%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 4.43 [持平]</span> | <span class="resistance">压力: 5.08 [持平]</span> | <span class="ma">MA20: 4.67 MA60: 4.75</span></div>
+                <div class="reasons">理由: 偏空趋势...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000155</span>
+                <span class="name">川能动力</span>
+                <span class="price">14.40元</span>
+                <span class="change negative">-0.89%</span>
+                <span class="score">评分75</span>
+                <div class="key-levels"><span class="support">支撑: 11.94 [持平]</span> | <span class="resistance">压力: 14.83 [持平]</span> | <span class="ma">MA20: 14.36 MA60: 13.24</span></div>
+                <div class="reasons">理由: 偏多趋势...</div>
+            </div>
+        </div>
+        <div class="section bullish">
+            <h2>多头排列+今日上涨</h2>
+            <div class="stock">
+                <span class="code">000722</span>
+                <span class="name">湖南发展</span>
+                <span class="price">17.77元</span>
+                <span class="change positive">+6.92%</span>
+                <span class="score">评分130</span>
+                <div class="key-levels"><span class="support">支撑: 11.85 [持平]</span> | <span class="resistance">压力: 14.21 [持平]</span> | <span class="ma">MA20: 14.12 MA60: 13.03</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603115</span>
+                <span class="name">海星股份</span>
+                <span class="price">38.25元</span>
+                <span class="change positive">+5.28%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 18.81 [持平]</span> | <span class="resistance">压力: 33.15 [持平]</span> | <span class="ma">MA20: 31.81 MA60: 25.74</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603538</span>
+                <span class="name">美诺华</span>
+                <span class="price">34.95元</span>
+                <span class="change positive">+7.94%</span>
+                <span class="score">评分120</span>
+                <div class="key-levels"><span class="support">支撑: 19.63 [持平]</span> | <span class="resistance">压力: 26.77 [持平]</span> | <span class="ma">MA20: 25.04 MA60: 22.25</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">000711</span>
+                <span class="name">ST京蓝</span>
+                <span class="price">4.79元</span>
+                <span class="change positive">+3.46%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 1.67 [持平]</span> | <span class="resistance">压力: 4.23 [持平]</span> | <span class="ma">MA20: 3.69 MA60: 2.43</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">001400</span>
+                <span class="name">江顺科技</span>
+                <span class="price">156.51元</span>
+                <span class="change positive">+6.26%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 73.68 [持平]</span> | <span class="resistance">压力: 146.16 [持平]</span> | <span class="ma">MA20: 134.75 MA60: 112.96</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">002620</span>
+                <span class="name">ST瑞和</span>
+                <span class="price">7.51元</span>
+                <span class="change positive">+5.03%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 5.08 [持平]</span> | <span class="resistance">压力: 7.07 [持平]</span> | <span class="ma">MA20: 6.83 MA60: 6.16</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">301306</span>
+                <span class="name">西测测试</span>
+                <span class="price">136.00元</span>
+                <span class="change positive">+2.48%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 99.30 [持平]</span> | <span class="resistance">压力: 143.92 [持平]</span> | <span class="ma">MA20: 115.09 MA60: 117.70</span></div>
+                <div class="reasons">理由: 多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603398</span>
+                <span class="name">*ST沐邦</span>
+                <span class="price">11.11元</span>
+                <span class="change positive">+2.21%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 8.03 [持平]</span> | <span class="resistance">压力: 10.22 [持平]</span> | <span class="ma">MA20: 9.93 MA60: 9.34</span></div>
+                <div class="reasons">理由: 多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">603843</span>
+                <span class="name">*ST正平</span>
+                <span class="price">8.92元</span>
+                <span class="change positive">+4.69%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 4.91 [持平]</span> | <span class="resistance">压力: 7.16 [持平]</span> | <span class="ma">MA20: 6.68 MA60: 5.97</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+            <div class="stock">
+                <span class="code">605366</span>
+                <span class="name">宏柏新材</span>
+                <span class="price">11.87元</span>
+                <span class="change positive">+5.89%</span>
+                <span class="score">评分115</span>
+                <div class="key-levels"><span class="support">支撑: 6.26 [持平]</span> | <span class="resistance">压力: 10.97 [持平]</span> | <span class="ma">MA20: 10.33 MA60: 8.12</span></div>
+                <div class="reasons">理由: 强势上涨,多头排列...</div>
+            </div>
+        </div>
+        <div class="stats">
+            <h2>📊 统计摘要</h2>
+            <p>✅ S级: 3837 只 (强烈推荐)</p>
+            <p>✅ A级: 1085 只 (建议关注)</p>
+            <p>📈 多头排列: 282 只</p>
+            <p>⬆️  今日上涨: 2302 只</p>
+        </div>
+        <div class="warning">
+            <h3>⚠️ 风险提示</h3>
+            <p>以上分析基于技术指标，仅供参考，不构成投资建议。</p>
+            <p>股市有风险，投资需谨慎。</p>
+        </div>
+    </div>
+</body>
+</html>

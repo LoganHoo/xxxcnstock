@@ -1,0 +1,40 @@
+factor:
+  name: atr
+  category: technical
+  description: "ATR因子 - 波动率指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期ATR"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期ATR"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典ATR"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "ATR/价格 > 5% (高波动)"
+        score: 70
+      - condition: "ATR/价格 3-5%"
+        score: 60
+      - condition: "ATR/价格 1-3%"
+        score: 50
+      - condition: "ATR/价格 < 1% (低波动)"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [7, 10, 14, 21]

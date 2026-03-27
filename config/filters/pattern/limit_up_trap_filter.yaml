@@ -1,0 +1,27 @@
+filter:
+  name: "limit_up_trap_filter"
+  enabled: true
+  description: "排除涨停陷阱股票"
+  
+  params:
+    max_turnover_on_limit: 0.20
+    exclude_one_word_board: true
+  
+  risk_level: "high"
+  category: "pattern"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 严格排除涨停陷阱"
+      max_turnover_on_limit: 0.15
+      exclude_one_word_board: true
+    
+    standard:
+      description: "标准模式 - 排除常见涨停陷阱"
+      max_turnover_on_limit: 0.20
+      exclude_one_word_board: true
+    
+    aggressive:
+      description: "激进模式 - 仅排除一字板"
+      max_turnover_on_limit: 0.30
+      exclude_one_word_board: true

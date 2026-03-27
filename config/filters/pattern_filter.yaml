@@ -1,0 +1,31 @@
+filters:
+  limit_up_trap_filter:
+    enabled: true
+    max_turnover_on_limit: 0.20
+    exclude_one_word_board: true
+    description: "排除涨停后一字板打开/换手率>20%股票"
+  
+  over_hyped_filter:
+    enabled: true
+    max_limit_days: 3
+    max_gain_period: 20
+    max_gain_pct: 0.5
+    description: "排除三连板以上/前期大涨股票"
+  
+  pullback_signal_filter:
+    enabled: true
+    pullback_days: 3
+    ma_period: 5
+    require_pullback: true
+    description: "排除涨停后3天未回踩5日线的股票"
+  
+  institution_signal_filter:
+    enabled: false
+    require_institution: true
+    description: "排除无机构买入信号的股票"
+  
+  limit_up_after_filter:
+    enabled: true
+    max_days_after_limit: 5
+    require_volume_shrink: true
+    description: "排除涨停后状态不佳的股票"

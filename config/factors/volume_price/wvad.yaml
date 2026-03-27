@@ -1,0 +1,36 @@
+factor:
+  name: wvad
+  category: volume_price
+  description: "WVAD因子 - 威廉变异离散量"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 24
+    
+    presets:
+      conservative:
+        period: 40
+        description: "保守型 - 长周期WVAD"
+      
+      aggressive:
+        period: 12
+        description: "激进型 - 短周期WVAD"
+      
+      standard:
+        period: 24
+        description: "标准型 - 经典WVAD"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "WVAD > 0"
+        score: 70
+      - condition: "WVAD <= 0"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [12, 18, 24, 40]

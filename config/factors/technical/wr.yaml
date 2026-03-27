@@ -1,0 +1,42 @@
+factor:
+  name: wr
+  category: technical
+  description: "WR因子 - 威廉指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期WR"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期WR"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典WR"
+  
+  scoring:
+    weight: 0.04
+    threshold: 30
+    
+    rules:
+      - condition: "WR < -80 (超卖)"
+        score: 90
+      - condition: "-80 <= WR < -50"
+        score: 70
+      - condition: "-50 <= WR < -20"
+        score: 50
+      - condition: "-20 <= WR < 0"
+        score: 30
+      - condition: "WR >= 0 (超买)"
+        score: 20
+  
+  optimization:
+    param_ranges:
+      period: [7, 10, 14, 21]

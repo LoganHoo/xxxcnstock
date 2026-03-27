@@ -1,0 +1,40 @@
+factor:
+  name: asi
+  category: technical
+  description: "ASI因子 - 振动升降指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 5
+    
+    presets:
+      conservative:
+        period: 10
+        description: "保守型 - 长周期ASI"
+      
+      aggressive:
+        period: 3
+        description: "激进型 - 短周期ASI"
+      
+      standard:
+        period: 5
+        description: "标准型 - 经典ASI"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "ASI > 50"
+        score: 75
+      - condition: "ASI > 0"
+        score: 60
+      - condition: "ASI > -50"
+        score: 50
+      - condition: "ASI <= -50"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [3, 5, 7, 10]

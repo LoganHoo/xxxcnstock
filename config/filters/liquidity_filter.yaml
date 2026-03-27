@@ -1,0 +1,26 @@
+filters:
+  volume_ratio_filter:
+    enabled: true
+    min_ratio: 1.0
+    max_ratio: 5.0
+    description: "排除量比<1或>5的股票"
+  
+  turnover_rate_filter:
+    enabled: true
+    min_rate: 0.05
+    max_rate: 0.20
+    check_consecutive: false
+    consecutive_days: 2
+    description: "排除换手率异常股票"
+  
+  volume_stability_filter:
+    enabled: true
+    stability_threshold: 0.5
+    lookback_period: 10
+    description: "排除成交量不稳定的股票"
+  
+  continuous_low_turnover_filter:
+    enabled: true
+    min_rate: 0.05
+    consecutive_days: 2
+    description: "排除连续N天换手率低于阈值的股票"

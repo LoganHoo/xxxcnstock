@@ -1,0 +1,36 @@
+factor:
+  name: emv
+  category: technical
+  description: "EMV因子 - 简易波动指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期EMV"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期EMV"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典EMV"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "EMV > 0"
+        score: 70
+      - condition: "EMV <= 0"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [7, 10, 14, 21]

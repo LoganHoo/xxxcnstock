@@ -1,0 +1,32 @@
+filter:
+  name: "price_range_filter"
+  enabled: true
+  description: "排除价格不在指定区间的股票"
+  
+  params:
+    min_price: 5.0
+    max_price: 80.0
+  
+  risk_level: "low"
+  category: "valuation"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 价格区间较窄"
+      min_price: 10.0
+      max_price: 50.0
+    
+    standard:
+      description: "标准模式 - 价格区间适中"
+      min_price: 5.0
+      max_price: 80.0
+    
+    aggressive:
+      description: "激进模式 - 价格区间较宽"
+      min_price: 2.0
+      max_price: 200.0
+    
+    low_price:
+      description: "低价股模式 - 关注低价股"
+      min_price: 2.0
+      max_price: 20.0

@@ -1,0 +1,165 @@
+factors:
+  technical:
+    - name: ma_trend
+      description: "均线趋势因子 - 判断多头/空头排列"
+      params:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+      weight: 0.08
+      enabled: true
+      
+    - name: macd
+      description: "MACD因子 - 金叉死叉信号"
+      params:
+        fast: 12
+        slow: 26
+        signal: 9
+      weight: 0.06
+      enabled: true
+      
+    - name: rsi
+      description: "RSI因子 - 超买超卖判断"
+      params:
+        period: 14
+      weight: 0.06
+      enabled: true
+      
+    - name: kdj
+      description: "KDJ因子 - 随机指标"
+      params:
+        n: 9
+        m1: 3
+        m2: 3
+      weight: 0.05
+      enabled: true
+      
+    - name: bollinger
+      description: "布林带因子 - 波动区间"
+      params:
+        period: 20
+        std_dev: 2
+      weight: 0.04
+      enabled: true
+      
+    - name: atr
+      description: "ATR因子 - 波动率指标"
+      params:
+        period: 14
+      weight: 0.03
+      enabled: true
+      
+    - name: cci
+      description: "CCI因子 - 顺势指标"
+      params:
+        period: 14
+      weight: 0.04
+      enabled: true
+      
+    - name: wr
+      description: "WR因子 - 威廉指标"
+      params:
+        period: 14
+      weight: 0.04
+      enabled: true
+      
+    - name: dmi
+      description: "DMI因子 - 趋势强度指标"
+      params:
+        period: 14
+      weight: 0.05
+      enabled: true
+      
+    - name: roc
+      description: "ROC因子 - 变动率指标"
+      params:
+        period: 12
+      weight: 0.04
+      enabled: true
+      
+    - name: mtm
+      description: "MTM因子 - 动量指标"
+      params:
+        period: 12
+      weight: 0.04
+      enabled: true
+      
+    - name: asi
+      description: "ASI因子 - 振动升降指标"
+      params:
+        period: 5
+      weight: 0.03
+      enabled: true
+      
+    - name: emv
+      description: "EMV因子 - 简易波动指标"
+      params:
+        period: 14
+      weight: 0.03
+      enabled: true
+      
+    - name: psy
+      description: "PSY因子 - 心理线指标"
+      params:
+        period: 12
+      weight: 0.03
+      enabled: true
+  
+  volume_price:
+    - name: volume_ratio
+      description: "量比因子 - 成交量相对强度"
+      params:
+        period: 5
+      weight: 0.06
+      enabled: true
+      
+    - name: turnover
+      description: "换手率因子 - 活跃度指标"
+      params:
+        period: 5
+      weight: 0.05
+      enabled: true
+      
+    - name: obv
+      description: "OBV因子 - 能量潮指标"
+      params:
+        period: 20
+      weight: 0.04
+      enabled: true
+      
+    - name: vr
+      description: "VR因子 - 容量比率"
+      params:
+        period: 26
+      weight: 0.04
+      enabled: true
+      
+    - name: mfi
+      description: "MFI因子 - 资金流量指标"
+      params:
+        period: 14
+      weight: 0.05
+      enabled: true
+      
+    - name: vma
+      description: "VMA因子 - 量均线"
+      params:
+        short: 5
+        long: 20
+      weight: 0.04
+      enabled: true
+      
+    - name: vosc
+      description: "VOSC因子 - 成交量震荡"
+      params:
+        short: 12
+        long: 26
+      weight: 0.03
+      enabled: true
+      
+    - name: wvad
+      description: "WVAD因子 - 威廉变异离散量"
+      params:
+        period: 24
+      weight: 0.03
+      enabled: true

@@ -1,0 +1,27 @@
+filter:
+  name: "performance_filter"
+  enabled: true
+  description: "排除前三季度业绩亏损/暴雷股票"
+  
+  params:
+    check_quarters: 3
+    min_profit_growth: -0.5
+  
+  risk_level: "high"
+  category: "fundamental"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 业绩增长要求严格"
+      check_quarters: 4
+      min_profit_growth: 0.0
+    
+    standard:
+      description: "标准模式 - 允许小幅下滑"
+      check_quarters: 3
+      min_profit_growth: -0.5
+    
+    aggressive:
+      description: "激进模式 - 允许较大下滑"
+      check_quarters: 2
+      min_profit_growth: -1.0

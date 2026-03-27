@@ -1,0 +1,195 @@
+patterns:
+  doji:
+    enabled: true
+    body_threshold: 0.1
+    description: "十字星 - 开盘价等于收盘价，表示市场犹豫"
+  
+  hammer:
+    enabled: true
+    lower_shadow_ratio: 2.0
+    upper_shadow_ratio: 0.3
+    description: "锤子线 - 下影线长，实体小，出现在下跌趋势中"
+  
+  inverted_hammer:
+    enabled: true
+    upper_shadow_ratio: 2.0
+    lower_shadow_ratio: 0.3
+    description: "倒锤子线 - 上影线长，实体小，出现在下跌趋势中"
+  
+  hanging_man:
+    enabled: true
+    lower_shadow_ratio: 2.0
+    upper_shadow_ratio: 0.3
+    description: "上吊线 - 与锤子线形态相同，但出现在上涨趋势中"
+  
+  shooting_star:
+    enabled: true
+    upper_shadow_ratio: 2.0
+    lower_shadow_ratio: 0.3
+    description: "流星线 - 上影线长，实体小，出现在上涨趋势中"
+  
+  marubozu:
+    enabled: true
+    shadow_threshold: 0.05
+    description: "光头光脚 - 无上下影线或影线极短，表示强势"
+  
+  spinning_top:
+    enabled: true
+    body_threshold: 0.3
+    shadow_threshold: 0.3
+    description: "纺锤线 - 实体小，上下影线较长，表示市场犹豫"
+
+reversal_patterns:
+  bullish_engulfing:
+    enabled: true
+    body_ratio: 1.0
+    description: "看涨吞没 - 阳线完全吞没前一根阴线"
+  
+  bearish_engulfing:
+    enabled: true
+    body_ratio: 1.0
+    description: "看跌吞没 - 阴线完全吞没前一根阳线"
+  
+  bullish_harami:
+    enabled: true
+    body_ratio: 0.3
+    description: "看涨孕线 - 小阳线在前一根大阴线实体内"
+  
+  bearish_harami:
+    enabled: true
+    body_ratio: 0.3
+    description: "看跌孕线 - 小阴线在前一根大阳线实体内"
+  
+  morning_star:
+    enabled: true
+    gap_threshold: 0.01
+    description: "早晨之星 - 三根K线组成的底部反转形态"
+  
+  evening_star:
+    enabled: true
+    gap_threshold: 0.01
+    description: "黄昏之星 - 三根K线组成的顶部反转形态"
+  
+  three_white_soldiers:
+    enabled: true
+    min_body_ratio: 0.5
+    description: "三白兵 - 连续三根上涨阳线"
+  
+  three_black_crows:
+    enabled: true
+    min_body_ratio: 0.5
+    description: "三只乌鸦 - 连续三根下跌阴线"
+  
+  tweezer_top:
+    enabled: true
+    high_threshold: 0.01
+    description: "镊子顶 - 两根K线的高点相同或相近"
+  
+  tweezer_bottom:
+    enabled: true
+    low_threshold: 0.01
+    description: "镊子底 - 两根K线的低点相同或相近"
+
+continuation_patterns:
+  rising_window:
+    enabled: true
+    min_gap_ratio: 0.01
+    description: "上升窗口 - 当前K线最低价高于前一根K线最高价"
+  
+  falling_window:
+    enabled: true
+    min_gap_ratio: 0.01
+    description: "下降窗口 - 当前K线最高价低于前一根K线最低价"
+  
+  rising_three_methods:
+    enabled: true
+    min_body_ratio: 0.5
+    max_small_body_ratio: 0.3
+    description: "上升三法 - 长阳线后跟三根小阴线，再跟一根长阳线"
+  
+  falling_three_methods:
+    enabled: true
+    min_body_ratio: 0.5
+    max_small_body_ratio: 0.3
+    description: "下降三法 - 长阴线后跟三根小阳线，再跟一根长阴线"
+  
+  separating_lines_bullish:
+    enabled: true
+    open_threshold: 0.005
+    description: "看涨分离线 - 阴线后跟开盘价相同的阳线"
+  
+  separating_lines_bearish:
+    enabled: true
+    open_threshold: 0.005
+    description: "看跌分离线 - 阳线后跟开盘价相同的阴线"
+  
+  upside_gap_two_crows:
+    enabled: true
+    min_gap_ratio: 0.01
+    description: "向上跳空两只乌鸦 - 跳空后两根阴线"
+  
+  meeting_lines_bullish:
+    enabled: true
+    close_threshold: 0.005
+    description: "看涨会合线 - 阴线和阳线收盘价相同"
+  
+  meeting_lines_bearish:
+    enabled: true
+    close_threshold: 0.005
+    description: "看跌会合线 - 阳线和阴线收盘价相同"
+
+special_patterns:
+  limit_up:
+    enabled: true
+    limit_threshold: 0.095
+    description: "涨停板 - 收盘价等于涨停价（涨幅约10%/20%/30%）"
+  
+  limit_down:
+    enabled: true
+    limit_threshold: -0.095
+    description: "跌停板 - 收盘价等于跌停价（跌幅约10%/20%/30%）"
+  
+  t_shape:
+    enabled: true
+    price_threshold: 0.01
+    min_lower_shadow_ratio: 0.3
+    description: "T字板 - 开盘价、收盘价、最高价相同，有下影线"
+  
+  inverted_t:
+    enabled: true
+    price_threshold: 0.01
+    min_upper_shadow_ratio: 0.3
+    description: "倒T字板 - 开盘价、收盘价、最低价相同，有上影线"
+  
+  one_word_board:
+    enabled: true
+    price_threshold: 0.005
+    description: "一字板 - 开盘价、收盘价、最高价、最低价全部相同"
+  
+  long_legged_doji:
+    enabled: true
+    body_threshold: 0.1
+    min_shadow_ratio: 0.3
+    description: "长腿十字星 - 实体很小，上下影线都很长"
+  
+  dragonfly_doji:
+    enabled: true
+    price_threshold: 0.01
+    min_lower_shadow_ratio: 0.5
+    description: "蜻蜓十字星 - 开盘价=收盘价=最高价，只有下影线"
+  
+  gravestone_doji:
+    enabled: true
+    price_threshold: 0.01
+    min_upper_shadow_ratio: 0.5
+    description: "墓碑十字星 - 开盘价=收盘价=最低价，只有上影线"
+  
+  near_limit_up:
+    enabled: true
+    min_change_ratio: 0.07
+    max_change_ratio: 0.095
+    description: "接近涨停 - 涨幅接近涨停但未封板"
+
+engine:
+  min_confidence: 0.5
+  max_patterns_per_signal: 5

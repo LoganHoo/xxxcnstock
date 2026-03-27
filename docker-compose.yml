@@ -1,0 +1,25 @@
+services:
+  xcnstock-fetcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: xcnstock-fetcher
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+    networks:
+      - xcnstock-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  xcnstock-network:
+    driver: bridge

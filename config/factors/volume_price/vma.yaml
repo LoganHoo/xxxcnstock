@@ -1,0 +1,50 @@
+factor:
+  name: vma
+  category: volume_price
+  description: "VMA因子 - 量均线"
+  version: "1.0"
+  
+  params:
+    default:
+      short: 5
+      long: 20
+    
+    presets:
+      conservative:
+        short: 10
+        long: 30
+        description: "保守型 - 长周期量均线"
+      
+      aggressive:
+        short: 3
+        long: 10
+        description: "激进型 - 短周期量均线"
+      
+      standard:
+        short: 5
+        long: 20
+        description: "标准型 - 经典量均线"
+  
+  scoring:
+    weight: 0.04
+    threshold: 30
+    
+    rules:
+      - condition: "VMA短/VMA长 > 2"
+        score: 90
+      - condition: "VMA短/VMA长 1.5-2"
+        score: 75
+      - condition: "VMA短/VMA长 1.0-1.5"
+        score: 60
+      - condition: "VMA短/VMA长 0.8-1.0"
+        score: 50
+      - condition: "VMA短/VMA长 < 0.8"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      short: [3, 5, 7, 10]
+      long: [10, 15, 20, 30]
+    
+    constraints:
+      short: "< long"

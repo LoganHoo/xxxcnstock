@@ -1,0 +1,119 @@
+# XCNStock 通用配置文件
+# 包含所有共享的配置项
+
+# 数据路径配置
+data_paths:
+  # K线数据目录
+  kline_dir: "data/kline/"
+  
+  # 分析结果文件
+  enhanced_scores_full: "data/enhanced_full_temp.parquet"
+  
+  # 临时文件目录
+  temp_dir: "data/temp"
+  
+  # 报告目录
+  report_dir: "data/reports"
+
+# 输出配置
+output:
+  # 日志目录
+  log_dir: "logs"
+  
+  # 报告目录
+  report_dir: "data/reports"
+
+# 日志配置
+logging:
+  level: "INFO"
+  format: "%(asctime)s %(levelname)s: %(message)s"
+
+# MySQL配置
+mysql:
+  enabled: true
+  table_prefix: "xcn_"
+
+# 数据采集配置
+data_collection:
+  # K线采集频率（天）
+  kline_update_interval: 1
+  # 股票列表更新频率（天）
+  stock_list_update_interval: 1
+
+# 股票推荐配置
+recommendation:
+  # 数据检查配置
+  data_validation:
+    enabled: true
+    min_records: 1000
+    max_age_days: 1  # 最近1个交易日
+    price_range: [0.1, 2000]  # 调整上限以支持高价股
+    change_pct_range: [-25, 25]  # 调整范围以支持新股/特殊情况
+    check_consistency: false  # 暂时关闭一致性检查
+  
+  # 市值筛选配置
+  market_cap:
+    enabled: true
+    min_cap: 30  # 亿
+    max_cap: 500  # 亿
+    share_data_path: "data/share_structure.parquet"
+  
+  # 龙头股票配置
+  leader_stocks:
+    enabled: true
+    lookback_days: 20
+    top_n: 10
+    min_momentum: 5.0
+  
+  # 量价分析配置
+  volume_price:
+    enabled: true
+    volume_ma_period: 5
+    patterns:
+      - "量价齐升"
+      - "缩量上涨"
+      - "放量下跌"
+      - "量价背离"
+  
+  # 关键位计算配置
+  key_levels:
+    enabled: true
+    kline_dir: "data/kline/"
+  
+  # 筛选条件配置
+  filters:
+    s_grade:
+      min_score: 80
+      top_n: 15
+      description: "S级 - 强烈推荐"
+    
+    a_grade:
+      min_score: 75
+      max_score: 80
+      top_n: 10
+      description: "A级 - 建议关注"
+    
+    bullish:
+      trend: 100
+      change_pct_min: 0
+      change_pct_max: 8
+      top_n: 10
+      description: "多头排列+今日上涨"
+    
+    macd_volume:
+      keywords: ["MACD", "量价齐升"]
+      top_n: 10
+      description: "MACD金叉+量价齐升"
+  
+  # 输出配置
+  output:
+    formats: ["text", "html", "json"]
+    save_to_file: true
+    output_dir: "reports"
+    filename_prefix: "daily_picks"
+  
+  # 邮件配置
+  email:
+    enabled: true
+    recipients: ["287363@qq.com"]
+    subject_prefix: "XCNStock 每日推荐"

@@ -1,0 +1,32 @@
+filter:
+  name: "float_market_cap_filter"
+  enabled: true
+  description: "排除流通市值异常的股票"
+  
+  params:
+    min_cap: 3000000000
+    max_cap: 30000000000
+  
+  risk_level: "medium"
+  category: "valuation"
+  
+  presets:
+    large_cap:
+      description: "大盘股模式 - 流通市值100亿以上"
+      min_cap: 10000000000
+      max_cap: 100000000000
+    
+    mid_cap:
+      description: "中盘股模式 - 流通市值30-300亿"
+      min_cap: 3000000000
+      max_cap: 30000000000
+    
+    small_cap:
+      description: "小盘股模式 - 流通市值10-100亿"
+      min_cap: 1000000000
+      max_cap: 10000000000
+    
+    all_cap:
+      description: "全市值模式 - 流通市值3亿以上"
+      min_cap: 300000000
+      max_cap: 100000000000

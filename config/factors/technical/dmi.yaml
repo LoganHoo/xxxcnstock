@@ -1,0 +1,42 @@
+factor:
+  name: dmi
+  category: technical
+  description: "DMI因子 - 趋势强度指标"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期DMI"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期DMI"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典DMI"
+  
+  scoring:
+    weight: 0.05
+    threshold: 35
+    
+    rules:
+      - condition: "ADX > 60 (强趋势)"
+        score: 90
+      - condition: "ADX 40-60"
+        score: 70
+      - condition: "ADX 25-40"
+        score: 60
+      - condition: "ADX 20-25"
+        score: 50
+      - condition: "ADX < 20 (无趋势)"
+        score: 40
+  
+  optimization:
+    param_ranges:
+      period: [7, 10, 14, 21]

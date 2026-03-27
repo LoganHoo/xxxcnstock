@@ -1,0 +1,34 @@
+filter:
+  name: "turnover_rate_filter"
+  enabled: true
+  description: "排除换手率异常的股票"
+  
+  params:
+    min_rate: 0.05
+    max_rate: 0.20
+    check_consecutive: false
+    consecutive_days: 2
+  
+  risk_level: "medium"
+  category: "liquidity"
+  
+  presets:
+    conservative:
+      description: "保守模式 - 换手率范围较窄"
+      min_rate: 0.03
+      max_rate: 0.15
+    
+    standard:
+      description: "标准模式 - 换手率范围适中"
+      min_rate: 0.05
+      max_rate: 0.20
+    
+    aggressive:
+      description: "激进模式 - 换手率范围较宽"
+      min_rate: 0.02
+      max_rate: 0.30
+    
+    high_turnover:
+      description: "高换手模式 - 寻找活跃股票"
+      min_rate: 0.10
+      max_rate: 0.30

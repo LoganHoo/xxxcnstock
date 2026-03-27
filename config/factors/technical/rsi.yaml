@@ -1,0 +1,46 @@
+factor:
+  name: rsi
+  category: technical
+  description: "RSI因子 - 超买超卖判断"
+  version: "1.0"
+  
+  params:
+    default:
+      period: 14
+    
+    presets:
+      conservative:
+        period: 21
+        description: "保守型 - 长周期RSI"
+      
+      aggressive:
+        period: 7
+        description: "激进型 - 短周期RSI"
+      
+      standard:
+        period: 14
+        description: "标准型 - 经典RSI"
+  
+  scoring:
+    weight: 0.06
+    threshold: 25
+    
+    rules:
+      - condition: "RSI < 30 (超卖)"
+        score: 80
+      - condition: "30 <= RSI < 50"
+        score: 60
+      - condition: "50 <= RSI < 70"
+        score: 50
+      - condition: "70 <= RSI < 80"
+        score: 30
+      - condition: "RSI >= 80 (超买)"
+        score: 20
+  
+  optimization:
+    param_ranges:
+      period: [5, 7, 9, 14, 21]
+    
+    thresholds:
+      oversold: [20, 25, 30]
+      overbought: [70, 75, 80]

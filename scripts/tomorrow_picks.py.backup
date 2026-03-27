@@ -1,0 +1,70 @@
+"""
+明日推荐股票
+从配置文件读取数据路径，提高可维护性
+"""
+import pandas as pd
+import yaml
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).parent.parent
+CONFIG_FILE = PROJECT_ROOT / "config" / "xcn_comm.yaml"
+
+def load_config():
+    """加载配置文件"""
+    with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+        return yaml.safe_load(f)
+
+config = load_config()
+data_path = PROJECT_ROOT / config['data_paths']['enhanced_scores_full']
+
+df = pd.read_parquet(data_path)
+
+print("=" * 60)
+print("明日股票推荐 (基于技术分析)")
+print("=" * 60)
+
+# 1. S级股票
+print("\n【S级 - 强烈推荐】(评分>=80)")
+s = df[df['grade']=='S'].sort_values('enhanced_score', ascending=False).head(15)
+for _, r in s.iterrows():
+    change = f"+{r['change_pct']}" if r['change_pct'] >= 0 else str(r['change_pct'])
+    print(f"  {r['code']} {r['name']:8} {r['price']:7.2f}元 {change:>6}% 评分{r['enhanced_score']:.0f}")
+    if pd.notna(r['reasons']):
+        print(f"    理由: {r['reasons'][:50]}...")
+
+# 2. A级高分股票
+print("\n【A级 - 建议关注】(评分75-80)")
+a_high = df[(df['grade']=='A') & (df['enhanced_score']>=75)].sort_values('enhanced_score', ascending=False).head(10)
+for _, r in a_high.iterrows():
+    change = f"+{r['change_pct']}" if r['change_pct'] >= 0 else str(r['change_pct'])
+    print(f"  {r['code']} {r['name']:8} {r['price']:7.2f}元 {change:>6}% 评分{r['enhanced_score']:.0f}")
+
+# 3. 多头排列+上涨的股票
+print("\n【多头排列+今日上涨】(趋势确认)")
+bullish = df[(df['trend']==100) & (df['change_pct']>0) & (df['change_pct']<8)]
+bullish = bullish.sort_values('enhanced_score', ascending=False).head(10)
+for _, r in bullish.iterrows():
+    print(f"  {r['code']} {r['name']:8} {r['price']:7.2f}元 +{r['change_pct']:.1f}% 评分{r['enhanced_score']:.0f}")
+
+# 4. MACD金叉+量价齐升
+print("\n【MACD金叉+量价齐升】(技术信号)")
+macd_stocks = df[df['reasons'].str.contains('MACD', na=False)]
+vol_stocks = df[df['reasons'].str.contains('量价齐升', na=False)]
+good = macd_stocks[macd_stocks.index.isin(vol_stocks.index)]
+good = good.sort_values('enhanced_score', ascending=False).head(10)
+for _, r in good.iterrows():
+    print(f"  {r['code']} {r['name']:8} {r['price']:7.2f}元 评分{r['enhanced_score']:.0f} {r['grade']}级")
+
+# 5. 统计
+print("\n" + "=" * 60)
+print("统计摘要")
+print("=" * 60)
+print(f"  S级: {len(df[df['grade']=='S'])} 只 (强烈推荐)")
+print(f"  A级: {len(df[df['grade']=='A'])} 只 (建议关注)")
+print(f"  多头排列: {len(df[df['trend']==100])} 只")
+print(f"  今日上涨: {len(df[df['change_pct']>0])} 只")
+
+# 风险提示
+print("\n【风险提示】")
+print("  以上分析基于技术指标，仅供参考，不构成投资建议。")
+print("  股市有风险，投资需谨慎。")

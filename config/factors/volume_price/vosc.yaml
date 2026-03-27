@@ -1,0 +1,52 @@
+factor:
+  name: vosc
+  category: volume_price
+  description: "VOSC因子 - 成交量震荡"
+  version: "1.0"
+  
+  params:
+    default:
+      short: 12
+      long: 26
+    
+    presets:
+      conservative:
+        short: 20
+        long: 40
+        description: "保守型 - 长周期VOSC"
+      
+      aggressive:
+        short: 6
+        long: 13
+        description: "激进型 - 短周期VOSC"
+      
+      standard:
+        short: 12
+        long: 26
+        description: "标准型 - 经典VOSC"
+  
+  scoring:
+    weight: 0.03
+    threshold: 30
+    
+    rules:
+      - condition: "VOSC < -20%"
+        score: 90
+      - condition: "VOSC -20% ~ -10%"
+        score: 70
+      - condition: "VOSC -10% ~ 0%"
+        score: 55
+      - condition: "VOSC 0% ~ 10%"
+        score: 50
+      - condition: "VOSC 10% ~ 20%"
+        score: 40
+      - condition: "VOSC > 20%"
+        score: 30
+  
+  optimization:
+    param_ranges:
+      short: [6, 10, 12, 20]
+      long: [13, 20, 26, 40]
+    
+    constraints:
+      short: "< long"

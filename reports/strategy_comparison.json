@@ -1,0 +1,118 @@
+{
+  "trend_only": {
+    "strategy_name": "\u7eaf\u8d8b\u52bf\u7b56\u7565",
+    "description": "\u53ea\u4f7f\u7528\u8d8b\u52bf\u7c7b\u56e0\u5b50",
+    "factors": [
+      "ma_trend",
+      "macd"
+    ],
+    "total_return": -0.17810340000000038,
+    "annual_return": -0.5612348026155444,
+    "max_drawdown": 0.3087855000000002,
+    "sharpe_ratio": -1.345704473673318,
+    "win_rate": 0.48507462686567165,
+    "final_value": 821896.5999999996,
+    "total_trades": 531
+  },
+  "momentum": {
+    "strategy_name": "\u52a8\u91cf\u7b56\u7565",
+    "description": "\u4f7f\u7528\u52a8\u91cf\u548c\u8d85\u4e70\u8d85\u5356\u56e0\u5b50",
+    "factors": [
+      "rsi",
+      "kdj",
+      "macd"
+    ],
+    "total_return": 0.3771502000000002,
+    "annual_return": 2.8346126442730974,
+    "max_drawdown": 0.19060773480662985,
+    "sharpe_ratio": 2.1284699016547948,
+    "win_rate": 0.47924528301886793,
+    "final_value": 1377150.2000000002,
+    "total_trades": 529
+  },
+  "volume_price": {
+    "strategy_name": "\u91cf\u4ef7\u7b56\u7565",
+    "description": "\u4fa7\u91cd\u6210\u4ea4\u91cf\u5206\u6790",
+    "factors": [
+      "volume_ratio",
+      "turnover",
+      "obv"
+    ],
+    "total_return": -0.3672807000000002,
+    "annual_return": -0.8537531419099365,
+    "max_drawdown": 0.4216271042848474,
+    "sharpe_ratio": -1.8972540591835845,
+    "win_rate": 0.4216417910447761,
+    "final_value": 632719.2999999998,
+    "total_trades": 531
+  },
+  "volatility": {
+    "strategy_name": "\u6ce2\u52a8\u7387\u7b56\u7565",
+    "description": "\u5229\u7528\u6ce2\u52a8\u7387\u6307\u6807",
+    "factors": [
+      "bollinger",
+      "atr",
+      "rsi"
+    ],
+    "total_return": 0.3952996000000001,
+    "annual_return": 3.0513836664387366,
+    "max_drawdown": 0.0899378786056485,
+    "sharpe_ratio": 3.617597885710389,
+    "win_rate": 0.5481481481481482,
+    "final_value": 1395299.6,
+    "total_trades": 535
+  },
+  "balanced": {
+    "strategy_name": "\u5747\u8861\u7b56\u7565",
+    "description": "\u5747\u8861\u914d\u7f6e\u5404\u7c7b\u56e0\u5b50",
+    "factors": [
+      "ma_trend",
+      "macd",
+      "rsi",
+      "volume_ratio",
+      "kdj",
+      "bollinger"
+    ],
+    "total_return": 0.0821673999999999,
+    "annual_return": 0.39327446112373377,
+    "max_drawdown": 0.23279722875407186,
+    "sharpe_ratio": 0.7991150043525708,
+    "win_rate": 0.5092936802973977,
+    "final_value": 1082167.4,
+    "total_trades": 532
+  },
+  "aggressive": {
+    "strategy_name": "\u6fc0\u8fdb\u7b56\u7565",
+    "description": "\u8ffd\u6c42\u9ad8\u6536\u76ca\u9ad8\u98ce\u9669",
+    "factors": [
+      "kdj",
+      "rsi",
+      "volume_ratio",
+      "bollinger"
+    ],
+    "total_return": 0.19841190000000036,
+    "annual_return": 1.1386793391249137,
+    "max_drawdown": 0.2624181207001615,
+    "sharpe_ratio": 1.3799035194040832,
+    "win_rate": 0.50187265917603,
+    "final_value": 1198411.9000000004,
+    "total_trades": 531
+  },
+  "conservative": {
+    "strategy_name": "\u4fdd\u5b88\u7b56\u7565",
+    "description": "\u7a33\u5065\u4f4e\u98ce\u9669",
+    "factors": [
+      "ma_trend",
+      "macd",
+      "obv",
+      "atr"
+    ],
+    "total_return": 0.21559780000000028,
+    "annual_return": 1.270479592626005,
+    "max_drawdown": 0.1527132921475723,
+    "sharpe_ratio": 1.548425202568919,
+    "win_rate": 0.5093632958801498,
+    "final_value": 1215597.8000000003,
+    "total_trades": 529
+  }
+}

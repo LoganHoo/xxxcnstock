@@ -1,0 +1,156 @@
+strategy:
+  name: "多因子综合策略"
+  description: "综合技术指标和量价因子"
+  version: "2.0"
+  
+  factors:
+    - name: ma_trend
+      weight: 0.08
+      threshold: 40
+      params:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+    
+    - name: macd
+      weight: 0.06
+      threshold: 30
+      params:
+        fast: 12
+        slow: 26
+        signal: 9
+    
+    - name: rsi
+      weight: 0.06
+      threshold: 25
+      params:
+        period: 14
+    
+    - name: kdj
+      weight: 0.05
+      threshold: 30
+      params:
+        n: 9
+        m1: 3
+        m2: 3
+    
+    - name: bollinger
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 20
+        std_dev: 2
+    
+    - name: atr
+      weight: 0.03
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: cci
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: wr
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: dmi
+      weight: 0.05
+      threshold: 35
+      params:
+        period: 14
+    
+    - name: roc
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 12
+    
+    - name: mtm
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 12
+    
+    - name: asi
+      weight: 0.03
+      threshold: 30
+      params:
+        period: 5
+    
+    - name: emv
+      weight: 0.03
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: psy
+      weight: 0.03
+      threshold: 30
+      params:
+        period: 12
+    
+    - name: volume_ratio
+      weight: 0.06
+      threshold: 30
+      params:
+        period: 5
+    
+    - name: turnover
+      weight: 0.05
+      threshold: 30
+      params:
+        period: 5
+    
+    - name: obv
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 20
+    
+    - name: vr
+      weight: 0.04
+      threshold: 30
+      params:
+        period: 26
+    
+    - name: mfi
+      weight: 0.05
+      threshold: 30
+      params:
+        period: 14
+    
+    - name: vma
+      weight: 0.04
+      threshold: 30
+      params:
+        short: 5
+        long: 20
+    
+    - name: vosc
+      weight: 0.03
+      threshold: 30
+      params:
+        short: 12
+        long: 26
+    
+    - name: wvad
+      weight: 0.03
+      threshold: 30
+      params:
+        period: 24
+  
+  filters:
+    - type: price
+      min: 3
+      max: 100
+  
+  output:
+    top_n: 30
+    min_score: 45
+    formats: ["json", "txt"]
