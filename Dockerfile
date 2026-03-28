@@ -14,6 +14,7 @@ ARG UID=502
 ARG GID=20
 
 # 先创建用户，使用 GID 20
+RUN groupadd -g $GID appuser || echo "Group already exists"
 RUN useradd -u $UID -g $GID -m appuser || echo "User already exists"
 
 COPY requirements.txt .
@@ -23,8 +24,13 @@ COPY scripts/ ./scripts/
 COPY services/ ./services/
 COPY models/ ./models/
 COPY config/ ./config/
+COPY core/ ./core/
+COPY factors/ ./factors/
+COPY filters/ ./filters/
+COPY optimization/ ./optimization/
+COPY patterns/ ./patterns/
 
-RUN mkdir -p /app/data/kline /app/logs
+RUN mkdir -p /app/data/kline /app/logs && chown -R appuser:$GID /app/data /app/logs
 
 ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Shanghai
