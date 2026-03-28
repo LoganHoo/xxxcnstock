@@ -30,7 +30,7 @@ COPY filters/ ./filters/
 COPY optimization/ ./optimization/
 COPY patterns/ ./patterns/
 
-RUN mkdir -p /app/data/kline /app/logs && chown -R appuser:$GID /app/data /app/logs
+RUN mkdir -p /app/data/kline /app/logs /app/config/backups /app/optimization/results && chown -R appuser:$GID /app/data /app/logs /app/config /app/optimization
 
 ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Shanghai
