@@ -51,6 +51,11 @@ data/kline/*.parquet
 data/index/*.parquet
 data/stock_list.parquet
 data/stock_list.csv
+data/cvd_latest.parquet
+data/enhanced_full_temp.parquet
+data/key_levels_latest.parquet
+data/enhanced_scores_*.parquet
+data/key_levels/key_levels_*.parquet
 
 # Keep directory structure
 !data/kline/.gitkeep
@@ -68,6 +73,12 @@ logs/
 # Optimization results (generated files)
 optimization/results/*.yaml
 optimization/results/*.md
+
+# Reports
+reports/
+
+# Fetch progress
+data/kline/.fetch_progress.json
 
 # Cache
 .cache/
