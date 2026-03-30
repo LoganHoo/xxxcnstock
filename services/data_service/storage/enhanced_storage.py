@@ -388,13 +388,27 @@ class EnhancedStorage:
         limit: int = 50
     ) -> Optional[Any]:
         """按趋势类型筛选股票"""
-        sql = f"""
-        SELECT * FROM '{self.data_dir}/enhanced_scores_full.parquet'
-        WHERE reasons LIKE '%{trend_type}%'
-        ORDER BY enhanced_score DESC
-        LIMIT {limit}
-        """
-        return self.query_sql(sql)
+        # 使用参数化查询避免SQL注入
+        if HAS_DUCKDB and self.duck_conn:
+            try:
+                # 准备参数
+                pattern = f"%{trend_type}%"
+                # 执行参数化查询
+                result = self.duck_conn.execute(
+                    """
+                    SELECT * FROM ?
+                    WHERE reasons LIKE ?
+                    ORDER BY enhanced_score DESC
+                    LIMIT ?
+                    """,
+                    [str(self.data_dir / "enhanced_scores_full.parquet"), pattern, limit]
+                ).pl()
+                logger.info(f"按趋势筛选成功，返回 {len(result)} 行")
+                return result
+            except Exception as e:
+                logger.error(f"按趋势筛选失败: {e}")
+                return None
+        return None
     
     def export_results(
         self,

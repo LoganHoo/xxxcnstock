@@ -48,7 +48,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: Optional[str] = None
     
     # Kafka配置
-    KAFKA_BROKER: str = "49.233.10.199:9092"
+    KAFKA_BROKER: str = "localhost:9092"
     KAFKA_STOCK_PICKS_TOPIC: str = "xcnstock_stock_picks"
     KAFKA_LIMIT_UP_TOPIC: str = "xcnstock_limit_up"
     KAFKA_ENABLED: bool = True

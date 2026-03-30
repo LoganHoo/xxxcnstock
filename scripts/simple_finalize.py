@@ -3,14 +3,16 @@
 """
 
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
-
 from pathlib import Path
 from datetime import datetime
 import polars as pl
 
+# 添加项目根目录到 Python 路径
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 def run():
-    data_dir = Path("D:/workstation/xcnstock/data")
+    data_dir = project_root / "data"
     
     # 读取临时数据
     temp_file = data_dir / "enhanced_full_temp.parquet"
@@ -28,8 +30,12 @@ def run():
     # 等级统计
     print("\n[等级分布]")
     for grade in ['S', 'A', 'B', 'C']:
-        count = len(df.filter(pl.col("grade") == grade))
-        avg_score = df.filter(pl.col("grade") == grade).select(pl.col("enhanced_score").mean()).item()
+        filtered_df = df.filter(pl.col("grade") == grade)
+        count = len(filtered_df)
+        if count > 0:
+            avg_score = filtered_df.select(pl.col("enhanced_score").mean()).item()
+        else:
+            avg_score = 0.0
         print(f"  {grade}级: {count} 只, 平均分: {avg_score:.1f}")
     
     # 保存最终结果

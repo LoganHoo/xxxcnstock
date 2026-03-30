@@ -202,18 +202,44 @@ class BacktestEngine:
         else:
             sharpe_ratio = 0
         
+        # 按股票代码分组配对买卖交易
         buy_trades = [t for t in trades if t["action"] == "buy"]
         sell_trades = [t for t in trades if t["action"] == "sell"]
         
+        # 按股票代码分组
+        buy_by_code = {}
+        for buy in buy_trades:
+            code = buy["code"]
+            if code not in buy_by_code:
+                buy_by_code[code] = []
+            buy_by_code[code].append(buy)
+        
+        sell_by_code = {}
+        for sell in sell_trades:
+            code = sell["code"]
+            if code not in sell_by_code:
+                sell_by_code[code] = []
+            sell_by_code[code].append(sell)
+        
         wins = 0
         total_profit = 0
-        for buy, sell in zip(buy_trades, sell_trades):
-            profit = (sell["price"] - buy["price"]) * buy["shares"]
-            total_profit += profit
-            if profit > 0:
-                wins += 1
+        matched_buys = 0
         
-        win_rate = wins / len(buy_trades) if buy_trades else 0
+        # 对每只股票的买卖交易进行配对
+        for code, buys in buy_by_code.items():
+            sells = sell_by_code.get(code, [])
+            # 按时间顺序配对
+            min_len = min(len(buys), len(sells))
+            for i in range(min_len):
+                buy = buys[i]
+                sell = sells[i]
+                profit = (sell["price"] - buy["price"]) * buy["shares"]
+                total_profit += profit
+                if profit > 0:
+                    wins += 1
+                matched_buys += 1
+        
+        win_rate = wins / matched_buys if matched_buys > 0 else 0
         
         return {
             "total_return": total_return,

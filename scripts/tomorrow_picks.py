@@ -98,10 +98,17 @@ import json
 import logging
 import os
 from datetime import datetime
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional
 from services.data_validator import DataValidator
 from services.email_sender import EmailService
+from core.freshness_check_decorator import check_data_freshness
 
 try:
     from sqlalchemy import create_engine, text
@@ -1477,6 +1484,7 @@ class StockRecommender:
             raise
 
 
+@check_data_freshness
 def main():
     """主函数"""
     PROJECT_ROOT = Path(__file__).parent.parent

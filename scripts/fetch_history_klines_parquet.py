@@ -15,10 +15,19 @@ import re
 import requests
 import pandas as pd
 import threading
+import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from tqdm import tqdm
 from pathlib import Path
+
+# 配置日志
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
 
 
 class TokenBucket:
@@ -84,8 +93,8 @@ class HistoryKlineFetcher:
         
         self.rate_limiter = TokenBucket(rate=rate_limit, capacity=20)
         
-        print(f"数据存储目录: {self.data_dir.absolute()}")
-        print(f"请求速率限制: {rate_limit} 请求/秒")
+        logger.info(f"数据存储目录: {self.data_dir.absolute()}")
+        logger.info(f"请求速率限制: {rate_limit} 请求/秒")
     
     def _identify_stock_status(self, code: str, name: str, volume: float = None) -> tuple:
         """
@@ -132,7 +141,7 @@ class HistoryKlineFetcher:
     
     def update_stock_list(self) -> List[Dict]:
         """更新股票列表（包括新股、退市等）"""
-        print("\n正在更新股票列表...")
+        logger.info("\n正在更新股票列表...")
         
         all_stocks = []
         
@@ -151,14 +160,14 @@ class HistoryKlineFetcher:
                     'status': status,
                     'remark': remark
                 })
-            print(f"使用本地股票列表: {len(all_stocks)} 只")
+            logger.info(f"使用本地股票列表: {len(all_stocks)} 只")
             
             st_count = sum(1 for s in all_stocks if s['status'] == 'st')
             delisted_count = sum(1 for s in all_stocks if s['status'] == 'delisted')
             suspended_count = sum(1 for s in all_stocks if s['status'] == 'suspended')
-            print(f"  - ST股票: {st_count} 只")
-            print(f"  - 退市股票: {delisted_count} 只")
-            print(f"  - 停牌股票: {suspended_count} 只")
+            logger.info(f"  - ST股票: {st_count} 只")
+            logger.info(f"  - 退市股票: {delisted_count} 只")
+            logger.info(f"  - 停牌股票: {suspended_count} 只")
             
             df_save = pd.DataFrame(all_stocks)
             df_save.to_parquet(self.stock_list_file, index=False)
@@ -169,18 +178,18 @@ class HistoryKlineFetcher:
             df = pd.read_parquet(self.stock_list_file)
             all_stocks = df.to_dict('records')
             if len(all_stocks) > 0:
-                print(f"使用本地股票列表: {len(all_stocks)} 只")
+                logger.info(f"使用本地股票列表: {len(all_stocks)} 只")
                 
                 st_count = sum(1 for s in all_stocks if s.get('status') == 'st')
                 delisted_count = sum(1 for s in all_stocks if s.get('status') == 'delisted')
                 suspended_count = sum(1 for s in all_stocks if s.get('status') == 'suspended')
-                print(f"  - ST股票: {st_count} 只")
-                print(f"  - 退市股票: {delisted_count} 只")
-                print(f"  - 停牌股票: {suspended_count} 只")
+                logger.info(f"  - ST股票: {st_count} 只")
+                logger.info(f"  - 退市股票: {delisted_count} 只")
+                logger.info(f"  - 停牌股票: {suspended_count} 只")
                 
                 return all_stocks
         
-        print("从新浪财经获取股票列表...")
+        logger.info("从新浪财经获取股票列表...")
         
         try:
             url = 'http://vip.stock.finance.sina.com.cn/quotes_service/api/json_v2.php/Market_Center.getHQNodeData'
@@ -208,22 +217,22 @@ class HistoryKlineFetcher:
                             'remark': remark
                         })
                 
-                print(f"获取到 {len(all_stocks)} 只股票")
+                logger.info(f"获取到 {len(all_stocks)} 只股票")
                 
                 st_count = sum(1 for s in all_stocks if s['status'] == 'st')
                 delisted_count = sum(1 for s in all_stocks if s['status'] == 'delisted')
                 suspended_count = sum(1 for s in all_stocks if s['status'] == 'suspended')
-                print(f"  - ST股票: {st_count} 只")
-                print(f"  - 退市股票: {delisted_count} 只")
-                print(f"  - 停牌股票: {suspended_count} 只")
+                logger.info(f"  - ST股票: {st_count} 只")
+                logger.info(f"  - 退市股票: {delisted_count} 只")
+                logger.info(f"  - 停牌股票: {suspended_count} 只")
                 
-                df = pd.DataFrame(all_stocks)
-                df.to_parquet(self.stock_list_file, index=False)
-                print(f"股票列表已保存: {self.stock_list_file}")
+                df_save = pd.DataFrame(all_stocks)
+                df_save.to_parquet(self.stock_list_file, index=False)
+                logger.info(f"股票列表已保存: {self.stock_list_file}")
                 
                 return all_stocks
         except Exception as e:
-            print(f"获取股票列表失败: {e}")
+            logger.error(f"获取股票列表失败: {e}")
         
         return []
     
@@ -271,8 +280,10 @@ class HistoryKlineFetcher:
                     
                     if records:
                         return pd.DataFrame(records)
+        except requests.RequestException as e:
+            logger.warning(f"网络请求失败 {code}: {e}")
         except Exception as e:
-            pass
+            logger.warning(f"处理数据失败 {code}: {e}")
         
         return None
     
@@ -306,17 +317,17 @@ class HistoryKlineFetcher:
         """采集所有股票的历史数据"""
         start_time = time.time()
         
-        print(f"\n{'='*70}")
-        print(f"开始采集A股历史K线数据 (最近{days}天 ≈ {days//365}年)")
-        print(f"{'='*70}\n")
+        logger.info(f"\n{'='*70}")
+        logger.info(f"开始采集A股历史K线数据 (最近{days}天 ≈ {days//365}年)")
+        logger.info(f"{'='*70}\n")
         
         stocks = self.update_stock_list()
         
         if not stocks:
-            print("❌ 没有获取到股票列表，退出采集")
+            logger.error("❌ 没有获取到股票列表，退出采集")
             return
         
-        codes = [s['code'] for s in stocks if s['status'] == 'active']
+        codes = [s['code'] for s in stocks if s.get('status', 'active') == 'active']
         
         success_count = 0
         failed_count = 0
@@ -335,9 +346,9 @@ class HistoryKlineFetcher:
                 skip_count = progress.get('skip', 0)
                 total_records = progress.get('total_records', 0)
                 failed_codes = progress.get('failed_codes', [])
-            print(f"续传: 已处理 {len(processed_codes)} 只股票")
+            logger.info(f"续传: 已处理 {len(processed_codes)} 只股票")
         
-        print(f"待采集股票: {len(codes)} 只\n")
+        logger.info(f"待采集股票: {len(codes)} 只\n")
         
         pbar = tqdm(
             total=len(codes),
@@ -400,7 +411,7 @@ class HistoryKlineFetcher:
                 pbar.update(1)
                 
             except Exception as e:
-                print(f"\n处理 {code} 时出错: {e}")
+                logger.error(f"\n处理 {code} 时出错: {e}")
                 failed_count += 1
                 failed_codes.append(code)
                 processed_codes.add(code)
@@ -435,41 +446,39 @@ class HistoryKlineFetcher:
         elapsed_time: float
     ):
         """打印详细的完成报告"""
-        print(f"\n{'='*70}")
-        print(f"采集完成报告")
-        print(f"{'='*70}\n")
+        logger.info(f"\n{'='*70}")
+        logger.info(f"采集完成报告")
+        logger.info(f"{'='*70}\n")
         
-        print(f"📊 采集统计:")
-        print(f"  ├─ 总股票数: {total_stocks:,} 只")
-        print(f"  ├─ 成功采集: {success_count:,} 只")
-        print(f"  ├─ 失败: {failed_count:,} 只")
-        print(f"  ├─ 跳过: {skip_count:,} 只")
-        print(f"  └─ 成功率: {success_count/(success_count+failed_count)*100:.2f}%")
+        logger.info(f"📊 采集统计:")
+        logger.info(f"  ├─ 总股票数: {total_stocks:,} 只")
+        logger.info(f"  ├─ 成功采集: {success_count:,} 只")
+        logger.info(f"  ├─ 失败: {failed_count:,} 只")
+        logger.info(f"  ├─ 跳过: {skip_count:,} 只")
+        logger.info(f"  └─ 成功率: {success_count/(success_count+failed_count)*100:.2f}%")
         
-        print(f"\n📈 数据统计:")
-        print(f"  ├─ 总记录数: {total_records:,} 条")
-        print(f"  └─ 平均每只股票: {total_records/max(success_count, 1):.0f} 条")
+        logger.info(f"\n📈 数据统计:")
+        logger.info(f"  ├─ 总记录数: {total_records:,} 条")
+        logger.info(f"  └─ 平均每只股票: {total_records/max(success_count, 1):.0f} 条")
         
-        hours = int(elapsed_time // 3600)
-        minutes = int((elapsed_time % 3600) // 60)
-        seconds = int(elapsed_time % 60)
+        hours, remainder = divmod(elapsed_time, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        logger.info(f"\n⏱️  时间统计:")
+        logger.info(f"  ├─ 总耗时: {hours}小时 {minutes}分钟 {seconds}秒")
+        logger.info(f"  ├─ 平均每只股票: {elapsed_time/max(success_count, 1):.2f} 秒")
+        logger.info(f"  └─ 采集速率: {success_count/elapsed_time:.2f} 只/秒")
         
-        print(f"\n⏱️  时间统计:")
-        print(f"  ├─ 总耗时: {hours}小时 {minutes}分钟 {seconds}秒")
-        print(f"  ├─ 平均每只股票: {elapsed_time/max(success_count, 1):.2f} 秒")
-        print(f"  └─ 采集速率: {success_count/elapsed_time:.2f} 只/秒")
+        logger.info(f"\n💾 数据存储:")
+        logger.info(f"  └─ 存储位置: {self.data_dir.absolute()}")
         
-        print(f"\n💾 数据存储:")
-        print(f"  └─ 存储位置: {self.data_dir.absolute()}")
-        
-        if failed_codes and len(failed_codes) <= 20:
-            print(f"\n❌ 失败股票列表 (前20只):")
+        if failed_codes:
+            logger.error(f"\n❌ 失败股票列表 (前20只):")
             for i, code in enumerate(failed_codes[:20], 1):
-                print(f"  {i}. {code}")
+                logger.error(f"  {i}. {code}")
         
-        print(f"\n{'='*70}")
-        print(f"采集任务已完成！")
-        print(f"{'='*70}\n")
+        logger.info(f"\n{'='*70}")
+        logger.info(f"采集任务已完成！")
+        logger.info(f"{'='*70}\n")
     
     def get_statistics(self) -> Dict:
         """获取数据统计信息"""
@@ -524,14 +533,14 @@ def main():
         fetcher.fetch_all_history(days=args.days)
     else:
         stats = fetcher.get_statistics()
-        print(f"\n{'='*70}")
-        print(f"数据统计")
-        print(f"{'='*70}")
-        print(f"股票数量: {stats['total_stocks']}")
-        print(f"总记录数: {stats['total_records']}")
-        if stats['date_range']:
-            print(f"日期范围: {stats['date_range'][0]} ~ {stats['date_range'][1]}")
-        print(f"存储位置: {stats['data_dir']}")
+        logger.info(f"\n{'='*70}")
+        logger.info(f"数据统计")
+        logger.info(f"{'='*70}")
+        logger.info(f"股票数量: {stats['total_stocks']}")
+        logger.info(f"总记录数: {stats['total_records']}")
+        if 'date_range' in stats:
+            logger.info(f"日期范围: {stats['date_range'][0]} ~ {stats['date_range'][1]}")
+        logger.info(f"存储位置: {stats['data_dir']}")
 
 
 if __name__ == '__main__':

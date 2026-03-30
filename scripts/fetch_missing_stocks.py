@@ -1,6 +1,7 @@
 """补充采集缺失股票的K线数据"""
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 import requests

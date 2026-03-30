@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 DB_URL = os.getenv(
     'DB_URL',
-    'mysql+pymysql://nextai:100200@49.233.10.199:3306/xcn_db?charset=utf8mb4'
+    'mysql+pymysql://nextai:100200@localhost:3306/xcn_db?charset=utf8mb4'
 )
 
 

@@ -4,7 +4,8 @@
 """
 
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import os
 from pathlib import Path
@@ -37,7 +38,7 @@ def finalize_results():
     print("XCNStock 增强型存储分析")
     print("="*60)
     
-    data_dir = Path("D:/workstation/xcnstock/data")
+    data_dir = Path("data")
     
     # 读取临时结果
     temp_file = data_dir / "enhanced_full_temp.parquet"

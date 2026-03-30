@@ -25,6 +25,12 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# 添加项目根目录到 Python 路径
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from core.freshness_check_decorator import check_data_freshness
+
 
 class KeyLevelsCalculator:
     """
@@ -470,6 +476,7 @@ class CVDCalculator:
         self.logger.info(f"  底背离 (价格下跌+CVD上涨): {bottom_div} 只")
 
 
+@check_data_freshness
 def main():
     """主函数"""
     PROJECT_ROOT = Path(__file__).parent.parent

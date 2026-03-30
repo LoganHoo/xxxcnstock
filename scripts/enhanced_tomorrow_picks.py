@@ -24,6 +24,7 @@ from scripts.tomorrow_picks import (
     ConfigManager, DataLoader, FilterEngine, StockRecommender,
     TextReporter, HTMLReporter, JSONReporter
 )
+from core.freshness_check_decorator import check_data_freshness
 
 logger = logging.getLogger(__name__)
 
@@ -649,6 +650,7 @@ class EnhancedStockRecommender(StockRecommender):
             raise
 
 
+@check_data_freshness
 def main():
     """主函数"""
     PROJECT_ROOT = Path(__file__).parent.parent

@@ -1,6 +1,7 @@
 """缓存分析结果到Redis"""
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import polars as pl
 from datetime import datetime

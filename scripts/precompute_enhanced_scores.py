@@ -4,6 +4,7 @@
 """
 
 import sys
+import traceback
 from pathlib import Path
 from datetime import datetime, timedelta
 import duckdb
@@ -12,6 +13,12 @@ import logging
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# 添加项目根目录到 Python 路径
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
+from core.freshness_check_decorator import check_data_freshness
 
 
 class PrecomputeEngine:
@@ -48,20 +55,46 @@ class PrecomputeEngine:
         self.logger.info("=" * 70)
         
         effective_date = self.get_effective_date()
-        kline_pattern = str(self.kline_dir / "*.parquet")
         
-        self.logger.info(f"K线数据路径: {kline_pattern}")
+        self.logger.info(f"K线数据路径: {self.kline_dir}")
         self.logger.info(f"输出文件: {self.output_path}")
         
-        self.logger.info("步骤1: 查询最新交易日数据...")
-        latest_df = self._get_latest_trading_data(kline_pattern, effective_date)
+        # 使用 Polars 直接读取和处理数据
+        self.logger.info("步骤1: 读取K线数据...")
+        all_stocks = []
         
-        if latest_df is None or len(latest_df) == 0:
+        # 遍历所有Parquet文件
+        for parquet_file in self.kline_dir.glob("*.parquet"):
+            try:
+                # 读取单个股票数据
+                df = pl.read_parquet(str(parquet_file))
+                
+                # 过滤有效日期
+                df = df.filter(pl.col("trade_date") <= effective_date)
+                
+                if len(df) > 0:
+                    # 按日期降序排序
+                    df = df.sort("trade_date", descending=True)
+                    
+                    # 取最新一条数据
+                    latest_row = df.head(1)
+                    
+                    # 添加到结果列表
+                    all_stocks.append(latest_row)
+            except Exception as e:
+                self.logger.warning(f"处理文件 {parquet_file} 失败: {e}")
+                self.logger.debug(f"异常详情: {traceback.format_exc()}")
+                continue
+        
+        if not all_stocks:
             self.logger.error("未找到有效数据")
             return
         
+        # 合并所有股票数据
+        latest_df = pl.concat(all_stocks)
         self.logger.info(f"找到 {len(latest_df)} 只股票的最新数据")
         
+        # 计算技术指标
         self.logger.info("步骤2: 计算技术指标...")
         indicators_df = self._calculate_indicators(kline_pattern, effective_date)
         
@@ -84,29 +117,63 @@ class PrecomputeEngine:
     
     def _get_latest_trading_data(self, kline_pattern: str, effective_date: str) -> pl.DataFrame:
         """获取最新交易日数据"""
-        query = f"""
-        WITH latest AS (
-            SELECT code, MAX(trade_date) as latest_date
-            FROM '{kline_pattern}'
-            WHERE trade_date <= '{effective_date}'
-            GROUP BY code
-        )
-        SELECT 
-            k.code,
-            k.trade_date,
-            k.open,
-            k.close,
-            k.high,
-            k.low,
-            k.volume
-        FROM '{kline_pattern}' k
-        INNER JOIN latest l ON k.code = l.code AND k.trade_date = l.latest_date
-        WHERE k.trade_date <= '{effective_date}'
-        ORDER BY k.code
-        """
-        
-        result = self.conn.execute(query).pl()
-        return result
+        try:
+            query = f"""
+            WITH latest AS (
+                SELECT code, MAX(trade_date) as latest_date
+                FROM '{kline_pattern}'
+                WHERE trade_date <= '{effective_date}'
+                GROUP BY code
+            )
+            SELECT 
+                k.code,
+                k.trade_date,
+                k.open,
+                k.close,
+                k.high,
+                k.low,
+                k.volume
+            FROM '{kline_pattern}' k
+            INNER JOIN latest l ON k.code = l.code AND k.trade_date = l.latest_date
+            WHERE k.trade_date <= '{effective_date}'
+            ORDER BY k.code
+            """
+            
+            result = self.conn.execute(query).pl()
+            return result
+        except Exception as e:
+            self.logger.error(f"获取最新交易日数据失败: {e}")
+            # 尝试使用更简单的查询
+            try:
+                simple_query = f"""
+                SELECT 
+                    code,
+                    MAX(trade_date) as trade_date,
+                    MAX(open) as open,
+                    MAX(close) as close,
+                    MAX(high) as high,
+                    MAX(low) as low,
+                    MAX(volume) as volume
+                FROM '{kline_pattern}'
+                WHERE trade_date <= '{effective_date}'
+                GROUP BY code
+                ORDER BY code
+                """
+                self.logger.info("尝试使用简单查询")
+                result = self.conn.execute(simple_query).pl()
+                return result
+            except Exception as e2:
+                self.logger.error(f"简单查询也失败: {e2}")
+                # 返回空DataFrame
+                return pl.DataFrame({
+                    'code': [],
+                    'trade_date': [],
+                    'open': [],
+                    'close': [],
+                    'high': [],
+                    'low': [],
+                    'volume': []
+                })
     
     def _calculate_indicators(self, kline_pattern: str, effective_date: str) -> pl.DataFrame:
         """计算技术指标"""
@@ -410,6 +477,7 @@ class PrecomputeEngine:
             self.logger.info(f"  {row['code']} 价格:{row['price']:.2f} 涨幅:{row['change_pct']:+.2f}% 评分:{row['enhanced_score']:.0f} {row['reasons']}")
 
 
+@check_data_freshness
 def main():
     """主函数"""
     project_root = Path(__file__).parent.parent

@@ -55,7 +55,7 @@ class TestDailyWorkflow:
         from unittest.mock import patch, MagicMock
         with patch('services.notify_service.channels.kafka_producer.get_settings') as mock_settings:
             mock_settings.return_value = MagicMock(
-                KAFKA_BROKER="49.233.10.199:9092",
+                KAFKA_BROKER="localhost:9092",
                 KAFKA_STOCK_PICKS_TOPIC="xcnstock_stock_picks",
                 KAFKA_LIMIT_UP_TOPIC="xcnstock_limit_up",
                 KAFKA_ENABLED=False

@@ -1,6 +1,7 @@
 """大盘指数分析"""
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import requests
 import json
@@ -298,9 +299,12 @@ def main():
     
     # 保存结果
     df = pd.DataFrame(results)
-    df.to_parquet('data/index_analysis_20260316.parquet', index=False)
-    df.to_csv('data/results/index_analysis_20260316.csv', index=False, encoding='utf-8-sig')
-    print(f'结果已保存到 data/index_analysis_20260316.parquet')
+    today = datetime.now().strftime('%Y%m%d')
+    parquet_path = f'data/index_analysis_{today}.parquet'
+    csv_path = f'data/results/index_analysis_{today}.csv'
+    df.to_parquet(parquet_path, index=False)
+    df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+    print(f'结果已保存到 {parquet_path}')
     
     return results
 

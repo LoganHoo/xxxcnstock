@@ -1,6 +1,6 @@
 """历史行情数据审计和验证"""
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+sys.path.insert(0, '/Volumes/Xdata/workstation/xxxcnstock')
 
 import pandas as pd
 import numpy as np
@@ -10,6 +10,95 @@ import re
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
+
+class DataAuditor:
+    """数据审计器"""
+    
+    def __init__(self, data_dir='data/kline'):
+        """
+        初始化数据审计器
+        
+        Args:
+            data_dir: 数据存储目录
+        """
+        self.data_dir = Path(data_dir)
+    
+    def audit(self):
+        """
+        执行数据质量审计
+        
+        Returns:
+            审计报告
+        """
+        report = {
+            'total_stocks': 0,
+            'total_records': 0,
+            'date_range': None,
+            'quality_issues': []
+        }
+        
+        # 获取所有Parquet文件
+        parquet_files = list(self.data_dir.glob('*.parquet'))
+        report['total_stocks'] = len(parquet_files)
+        
+        min_date = None
+        max_date = None
+        
+        for file in parquet_files:
+            try:
+                df = pd.read_parquet(file)
+                report['total_records'] += len(df)
+                
+                # 检查日期范围
+                if len(df) > 0:
+                    file_min_date = df['trade_date'].min()
+                    file_max_date = df['trade_date'].max()
+                    
+                    if min_date is None or file_min_date < min_date:
+                        min_date = file_min_date
+                    if max_date is None or file_max_date > max_date:
+                        max_date = file_max_date
+                
+                # 检查数据质量
+                self._check_data_quality(df, file.stem, report['quality_issues'])
+                
+            except Exception as e:
+                report['quality_issues'].append(f"{file.stem}: 读取文件失败 - {str(e)}")
+        
+        if min_date and max_date:
+            report['date_range'] = (min_date, max_date)
+        
+        return report
+    
+    def _check_data_quality(self, df, code, issues):
+        """
+        检查单只股票的数据质量
+        
+        Args:
+            df: 股票数据
+            code: 股票代码
+            issues: 问题列表
+        """
+        # 检查必要列是否存在
+        required_columns = ['trade_date', 'open', 'close', 'high', 'low', 'volume']
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        if missing_columns:
+            issues.append(f"{code}: 缺少列 - {missing_columns}")
+        
+        # 检查数据完整性
+        if len(df) == 0:
+            issues.append(f"{code}: 数据为空")
+        
+        # 检查价格数据是否合理
+        if 'close' in df.columns:
+            if (df['close'] <= 0).any():
+                issues.append(f"{code}: 收盘价包含负值或零")
+        
+        # 检查成交量数据是否合理
+        if 'volume' in df.columns:
+            if (df['volume'] < 0).any():
+                issues.append(f"{code}: 成交量包含负值")
+
 
 def fetch_kline_sample(code, days=90):
     """获取K线样本数据进行验证"""

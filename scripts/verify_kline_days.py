@@ -1,6 +1,7 @@
 """验证历史K线数据天数"""
 import sys
-sys.path.insert(0, 'D:/workstation/xcnstock')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import pandas as pd
 import requests
