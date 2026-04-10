@@ -1,0 +1,29 @@
+{
+  "date": "2026-04-04",
+  "update_time": "2026-04-04 11:05:13",
+  "metals": {
+    "gold": {
+      "price": 2330.0,
+      "change": 5.0,
+      "change_pct": 0.22
+    },
+    "silver": {
+      "price": 27.5,
+      "change": 0.1,
+      "change_pct": 0.36
+    },
+    "copper": {
+      "price": 8500.0,
+      "change": -50.0,
+      "change_pct": -0.58
+    }
+  },
+  "energy": {},
+  "agriculture": {
+    "lithium": {
+      "price": 115000,
+      "change": -2000,
+      "change_pct": -1.71
+    }
+  }
+}

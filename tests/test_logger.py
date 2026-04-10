@@ -1,4 +1,3 @@
-import pytest
 import logging
 from core.logger import setup_logger, get_signal_logger
 

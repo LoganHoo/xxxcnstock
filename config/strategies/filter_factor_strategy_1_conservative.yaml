@@ -1,0 +1,210 @@
+# 策略1: 保守稳健策略
+# 特点：严格过滤 + 均衡因子配置
+# 适用：市场不明朗、方向不清晰时
+# 目标：控制回撤，追求稳定收益
+
+strategy:
+  name: "保守稳健策略"
+  description: "严格过滤问题股，均衡配置多因子，追求稳定收益"
+  version: "1.0"
+  preset: "conservative"
+
+# ==================== 过滤阶段 ====================
+filters:
+  # 第一层：排除高风险股票
+  - name: "st_filter"
+    preset: "conservative"
+    enabled: true
+
+  - name: "delisting_filter"
+    enabled: true
+
+  - name: "suspension_filter"
+    enabled: true
+
+  - name: "new_stock_filter"
+    enabled: true
+    params:
+      min_list_days: 90  # 排除上市不足90天
+
+  # 第二层：排除低流动性
+  - name: "volume_filter"
+    enabled: false  # 用suspension_filter排除停牌即可
+
+  - name: "suspension_filter"
+    enabled: true
+
+  - name: "volume_ratio_filter"
+    preset: "conservative"
+    enabled: true
+    params:
+      min_ratio: 0.8
+      max_ratio: 3.0
+
+  - name: "turnover_rate_filter"
+    preset: "conservative"
+    enabled: true
+    params:
+      min_turnover: 1.0  # 日均换手率 > 1%
+
+  # 第三层：价格区间过滤
+  - name: "price_filter"
+    preset: "conservative"
+    enabled: true
+    params:
+      min_price: 5.0
+      max_price: 100.0
+
+  # 第四层：排除估值异常
+  - name: "valuation_filter"
+    preset: "conservative"
+    enabled: true
+    params:
+      max_pe: 30
+      max_pb: 3
+
+  # 第五层：技术形态过滤
+  - name: "limit_up_trap_filter"
+    enabled: true
+
+  - name: "over_hyped_filter"
+    enabled: true
+
+# ==================== 因子阶段 ====================
+factors:
+  # 技术指标因子 (权重40%)
+  technical:
+    - name: "ma_trend"
+      weight: 0.10
+      threshold: 60
+      params:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+
+    - name: "macd"
+      weight: 0.08
+      threshold: 50
+      params:
+        fast: 12
+        slow: 26
+        signal: 9
+
+    - name: "kdj"
+      weight: 0.06
+      threshold: 40
+      params:
+        n: 9
+        m1: 3
+        m2: 3
+
+    - name: "rsi"
+      weight: 0.06
+      threshold: 40
+      params:
+        period: 14
+
+    - name: "bollinger"
+      weight: 0.05
+      threshold: 40
+      params:
+        period: 20
+        std_dev: 2
+
+    - name: "dmi"
+      weight: 0.05
+      threshold: 35
+      params:
+        period: 14
+
+  # 量价因子 (权重35%)
+  volume_price:
+    - name: "volume_ratio"
+      weight: 0.10
+      threshold: 50
+      params:
+        period: 5
+
+    - name: "turnover"
+      weight: 0.08
+      threshold: 40
+      params:
+        period: 5
+
+    - name: "mfi"
+      weight: 0.08
+      threshold: 40
+      params:
+        period: 14
+
+    - name: "obv"
+      weight: 0.05
+      threshold: 50
+      params:
+        period: 20
+
+    - name: "vr"
+      weight: 0.04
+      threshold: 40
+      params:
+        period: 26
+
+  # 市场情绪因子 (权重25%)
+  market:
+    - name: "market_trend"
+      weight: 0.10
+      threshold: 50
+      params:
+        period: 20
+
+    - name: "market_sentiment"
+      weight: 0.08
+      threshold: 50
+      params:
+        period: 14
+
+    - name: "market_temperature"
+      weight: 0.07
+      threshold: 50
+      params:
+        period: 20
+
+# ==================== 主力量化信号 ====================
+mainforce:
+  enabled: true
+  weight: 0.40  # 主力信号占综合评分40%
+  signals:
+    - name: "S1_limit_up"
+      enabled: true
+      params:
+        lookback_days: 20
+        min_volume_ratio: 1.5
+        max_consolidation_pct: 5
+    - name: "S2_gap"
+      enabled: true
+      params:
+        lookback_days: 3
+        max_fill_pct: 20
+    - name: "S3_consecutive"
+      enabled: true
+      params:
+        lookback_days: 3
+    - name: "S4_breakout"
+      enabled: true
+      params:
+        volume_multiplier: 2.0
+        lookback_days: 20
+
+# ==================== 选股规则 ====================
+selection:
+  top_n: 30
+  min_score: 65
+  max_stocks_per_industry: 3  # 单行业最多3只
+  position_size: 0.03  # 单只仓位3%
+
+# ==================== 风控规则 ====================
+risk_control:
+  max_positions: 20
+  max_single_loss: -0.08  # 单只最大亏损-8%
+  max_total_loss: -0.15   # 总回撤-15%止损
+  min_market_sentiment: 40  # 市场情绪低于40不建仓

@@ -705,8 +705,16 @@ class BaseReporter(ABC):
     
     @abstractmethod
     def generate(self, filter_results: Dict[str, pl.DataFrame], 
-                 stats: dict, config_manager: ConfigManager) -> str:
-        """生成报告"""
+                 stats: dict, config_manager: ConfigManager,
+                 validation_results: Dict = None) -> str:
+        """生成报告
+        
+        Args:
+            filter_results: 筛选结果
+            stats: 统计信息
+            config_manager: 配置管理器
+            validation_results: 数据验证结果（新鲜度、完整性等）
+        """
         pass
 
 
@@ -717,11 +725,15 @@ class TextReporter(BaseReporter):
         self.data_loader = data_loader
     
     def generate(self, filter_results: Dict[str, pl.DataFrame], 
-                 stats: dict, config_manager: ConfigManager) -> str:
+                 stats: dict, config_manager: ConfigManager,
+                 validation_results: Dict = None) -> str:
         lines = []
         lines.append("=" * 70)
         lines.append("明日股票推荐 (基于技术分析)")
         lines.append("=" * 70)
+        
+        if validation_results:
+            lines.extend(self._generate_validation_section(validation_results))
         
         for filter_name, df in filter_results.items():
             if len(df) == 0:
@@ -830,15 +842,71 @@ class TextReporter(BaseReporter):
         
         if cvd_change_5d:
             conclusions.append(f"5日{cvd_change_5d:+.0f}")
-        
+
         return " | ".join(conclusions) if conclusions else ""
+    
+    def _generate_validation_section(self, validation_results: Dict) -> list:
+        """生成数据验证结果章节"""
+        lines = []
+        lines.append("")
+        lines.append("=" * 70)
+        lines.append("【数据质量报告】")
+        lines.append("=" * 70)
+        
+        completeness = validation_results.get('completeness', {})
+        if isinstance(completeness, dict):
+            lines.append(f"  ● 完整性检查:")
+            lines.append(f"    - 记录数量: {completeness.get('record_count', 'N/A')} (最低要求: {completeness.get('min_records', 'N/A')})")
+            missing = completeness.get('missing_fields', [])
+            if missing:
+                lines.append(f"    - 缺失字段: {', '.join(missing)}")
+            else:
+                lines.append(f"    - 缺失字段: 无 ✓")
+            status = "✓ 通过" if completeness.get('passed') else "✗ 未通过"
+            lines.append(f"    - 状态: {status}")
+        
+        validity = validation_results.get('validity', {})
+        if isinstance(validity, dict):
+            lines.append(f"  ● 有效性检查:")
+            lines.append(f"    - 无效价格数量: {validity.get('invalid_price_count', 0)}")
+            lines.append(f"    - 无效涨跌幅数量: {validity.get('invalid_change_count', 0)}")
+            status = "✓ 通过" if validity.get('passed') else "✗ 未通过"
+            lines.append(f"    - 状态: {status}")
+        
+        freshness = validation_results.get('freshness', {})
+        if isinstance(freshness, dict):
+            lines.append(f"  ● 新鲜度检查:")
+            age_days = freshness.get('age_days', 'N/A')
+            max_age = freshness.get('max_age_days', 'N/A')
+            lines.append(f"    - 数据年龄: {age_days} 天 (最大允许: {max_age} 天)")
+            status = "✓ 通过" if freshness.get('passed') else "⚠️ 过期"
+            lines.append(f"    - 状态: {status}")
+            
+            message = freshness.get('message', '')
+            if message:
+                lines.append(f"    - 备注: {message}")
+        
+        consistency = validation_results.get('consistency', {})
+        if isinstance(consistency, dict):
+            lines.append(f"  ● 一致性检查:")
+            inconsistent = consistency.get('inconsistent_count', 0)
+            lines.append(f"    - 不一致记录: {inconsistent}")
+            status = "✓ 通过" if consistency.get('passed') else "✗ 未通过"
+            lines.append(f"    - 状态: {status}")
+        
+        overall = "✓ 全部通过" if validation_results.get('passed') else "✗ 存在问题"
+        lines.append(f"\n  总体评估: {overall}")
+        lines.append("")
+        
+        return lines
 
 
 class HTMLReporter(BaseReporter):
     """HTML报告生成器"""
     
     def generate(self, filter_results: Dict[str, pl.DataFrame], 
-                 stats: dict, config_manager: ConfigManager) -> str:
+                 stats: dict, config_manager: ConfigManager,
+                 validation_results: Dict = None) -> str:
         html_parts = [
             '<!DOCTYPE html>',
             '<html lang="zh-CN">',
@@ -878,17 +946,23 @@ class HTMLReporter(BaseReporter):
             '        <p>生成时间: ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S') + '</p>',
         ]
         
+        displayed_codes = set()
         for filter_name, df in filter_results.items():
             if len(df) == 0:
                 continue
-            
+
             config = config_manager.get_filter_config(filter_name)
             css_class = filter_name.replace('_', '-')
-            
+
             html_parts.append(f'        <div class="section {css_class}">')
             html_parts.append(f'            <h2>{config["description"]}</h2>')
-            
+
             for row in df.iter_rows(named=True):
+                code = row.get('code', '')
+                if code in displayed_codes:
+                    continue
+                displayed_codes.add(code)
+
                 change = f"+{row['change_pct']}" if row['change_pct'] >= 0 else str(row['change_pct'])
                 change_class = 'positive' if row['change_pct'] >= 0 else 'negative'
                 
@@ -949,20 +1023,33 @@ class HTMLReporter(BaseReporter):
 class JSONReporter(BaseReporter):
     """JSON报告生成器"""
     
-    def generate(self, filter_results: Dict[str, pl.DataFrame], 
-                 stats: dict, config_manager: ConfigManager) -> str:
+    def generate(self, filter_results: Dict[str, pl.DataFrame],
+                 stats: dict, config_manager: ConfigManager,
+                 validation_results: Dict = None) -> str:
         report = {
             'timestamp': datetime.now().isoformat(),
             'filters': {},
-            'stats': stats
+            'stats': stats,
+            'unique_stocks_count': 0
         }
-        
+
+        all_unique_stocks = []
+        seen_codes = set()
         for filter_name, df in filter_results.items():
             config = config_manager.get_filter_config(filter_name)
+            unique_stocks = []
+            for stock in df.to_dicts():
+                code = stock.get('code', '')
+                if code and code not in seen_codes:
+                    seen_codes.add(code)
+                    unique_stocks.append(stock)
+                    all_unique_stocks.append(stock)
             report['filters'][filter_name] = {
                 'description': config.get('description', ''),
-                'stocks': df.to_dicts()
+                'stocks': unique_stocks
             }
+
+        report['unique_stocks_count'] = len(all_unique_stocks)
         
         return json.dumps(report, ensure_ascii=False, indent=2)
 
@@ -1348,7 +1435,37 @@ class StockRecommender:
             self.logger.info(f"🚫 过滤停牌股票: {suspended_count} 只")
         
         return df
-    
+
+    def _filter_risky_stocks(self, df: pl.DataFrame) -> pl.DataFrame:
+        """过滤退市股、ST股、ST股等高风险股票"""
+        original_count = len(df)
+
+        conditions = []
+
+        if 'name' in df.columns:
+            name_pattern = r'(退市|ST|st|PT|S\s|退$|S$|^S)'
+            conditions.append(~pl.col('name').str.contains(name_pattern))
+
+        if 'price' in df.columns:
+            conditions.append(pl.col('price') >= 1.0)
+            conditions.append(pl.col('price') < 300)
+
+        if 'change_pct' in df.columns:
+            conditions.append(pl.col('change_pct').abs() < 30)
+
+        if conditions:
+            filter_expr = conditions[0]
+            for cond in conditions[1:]:
+                filter_expr = filter_expr & cond
+
+            df = df.filter(filter_expr)
+
+        filtered_count = original_count - len(df)
+        if filtered_count > 0:
+            self.logger.info(f"🚫 过滤退市/ST/高价股: {filtered_count} 只")
+
+        return df
+
     def calculate_stats(self, df: pl.DataFrame) -> dict:
         """计算统计信息"""
         return {
@@ -1417,7 +1534,8 @@ class StockRecommender:
             else:
                 self.logger.info(f"📊 数据记录数: {len(df)}")
             
-            # 2. 数据检查（新增）
+            # 2. 数据检查
+            validation_results = None
             if self.data_validator:
                 self.logger.info("执行数据检查...")
                 validation_results = self.data_validator.validate_all(df)
@@ -1433,7 +1551,10 @@ class StockRecommender:
             
             # 2.5 过滤停牌股票
             df = self._filter_suspended_stocks(df)
-            
+
+            # 2.6 过滤退市/ST/高价股
+            df = self._filter_risky_stocks(df)
+
             # 3. 应用筛选器
             filter_results = self.filter_engine.apply_all_filters(df)
             
@@ -1446,7 +1567,8 @@ class StockRecommender:
                 if format_name in self.reporters:
                     reporter = self.reporters[format_name]
                     reports[format_name] = reporter.generate(
-                        filter_results, stats, self.config_manager
+                        filter_results, stats, self.config_manager,
+                        validation_results=validation_results
                     )
             
             # 5. 保存报告

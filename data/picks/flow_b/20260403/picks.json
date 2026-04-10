@@ -1,0 +1,251 @@
+{
+  "flow_name": "balanced_factor",
+  "pick_date": "20260403",
+  "stock_count": 30,
+  "stocks": [
+    {
+      "code": "600813",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000594",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600393",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "300312",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "601299",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000996",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600001",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "300336",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002013",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "300309",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002450",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "300799",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000542",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600086",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600553",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600735",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600652",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002087",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002499",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000730",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600709",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000916",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600627",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002604",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600225",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "603056",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000939",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "688555",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "300330",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600891",
+      "grade": "N",
+      "score": 30,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    }
+  ],
+  "execution_time": 12.094137907028198,
+  "metadata": {
+    "total_stocks": 327
+  }
+}

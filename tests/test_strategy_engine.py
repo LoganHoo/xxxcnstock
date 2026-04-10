@@ -3,9 +3,7 @@
 """
 import pytest
 import polars as pl
-from pathlib import Path
 from core.strategy_engine import StrategyEngine
-from core.factor_engine import FactorEngine
 
 
 @pytest.fixture

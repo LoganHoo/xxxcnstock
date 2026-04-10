@@ -1,27 +1,36 @@
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Stage 2: Runtime
 FROM python:3.11-slim
 
 LABEL maintainer="XCNStock"
 LABEL description="A股数据分析定时任务服务"
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    cron \
+    libmariadb3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash appuser
+
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    cron \
-    default-libmysqlclient-dev \
-    pkg-config \
-    && rm -rf /var/lib/apt/lists/*
+COPY --from=builder /root/.local /root/.local
+ENV PATH=/root/.local/bin:$PATH
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY --chown=appuser:appuser scripts/ ./scripts/
+COPY --chown=appuser:appuser services/ ./services/
+COPY --chown=appuser:appuser models/ ./models/
+COPY --chown=appuser:appuser config/ ./config/
+COPY --chown=appuser:appuser core/ ./core/
+COPY --chown=appuser:appuser factors/ ./factors/
 
-COPY scripts/ ./scripts/
-COPY services/ ./services/
-COPY models/ ./models/
-COPY config/ ./config/
-COPY core/ ./core/
-
-RUN mkdir -p /app/data/kline /app/logs /app/reports
+RUN mkdir -p /app/data/kline /app/logs /app/reports && chown -R appuser:appuser /app
 
 ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Shanghai
@@ -35,5 +44,7 @@ RUN python scripts/cron_task_manager.py generate \
 
 COPY scripts/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
+
+USER appuser
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

@@ -1,5 +1,3 @@
-import pytest
-from datetime import datetime
 from core.models import StockQuote, LimitUpSignal, SignalLevel
 
 

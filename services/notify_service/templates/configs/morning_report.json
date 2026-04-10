@@ -1,0 +1,73 @@
+{
+  "name": "morning_report",
+  "display_name": "晨间决策参考",
+  "subject_template": "【晨间参考】A股量化决策 - {date}",
+  "sections": [
+    {
+      "key": "header",
+      "title": "报告头部",
+      "enabled": true,
+      "template": "section_header"
+    },
+    {
+      "key": "foreign_data",
+      "title": "外盘动态",
+      "enabled": true,
+      "data_path": "data/foreign_index.json",
+      "format": "foreign_index"
+    },
+    {
+      "key": "market_levels",
+      "title": "大盘关键位",
+      "enabled": true,
+      "data_path": "reports/market_analysis_{date}.json",
+      "format": "market_levels"
+    },
+    {
+      "key": "market_prediction",
+      "title": "走势预测",
+      "enabled": true,
+      "data_path": "reports/market_analysis_{date}.json",
+      "format": "market_prediction"
+    },
+    {
+      "key": "s_grade",
+      "title": "S级打板",
+      "enabled": true,
+      "data_path": "reports/daily_picks_{date}.json",
+      "format": "s_grade_stocks"
+    },
+    {
+      "key": "a_grade",
+      "title": "A级波段",
+      "enabled": true,
+      "data_path": "reports/daily_picks_{date}.json",
+      "format": "a_grade_stocks"
+    },
+    {
+      "key": "limit_analysis",
+      "title": "涨停分析",
+      "enabled": true,
+      "data_path": "reports/daily_picks_{date}.json",
+      "format": "limit_analysis"
+    },
+    {
+      "key": "hot_sectors",
+      "title": "热点板块",
+      "enabled": true,
+      "data_path": "reports/market_analysis_{date}.json",
+      "format": "hot_sectors"
+    },
+    {
+      "key": "strategy_summary",
+      "title": "策略综合",
+      "enabled": true,
+      "data_path": "reports/strategy_result.json",
+      "format": "strategy_summary"
+    }
+  ],
+  "footer": {
+    "text": "祝投资顺利！",
+    "disclaimer": "本报告仅供参考，不构成投资建议。股市有风险，投资需谨慎。"
+  }
+}

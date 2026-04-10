@@ -29,7 +29,10 @@ class TurnoverFactor(BaseFactor):
         else:
             if "volume" in df.columns and "amount" in df.columns:
                 df = df.with_columns([
-                    (pl.col("volume") / pl.col("amount") * 100).alias("turnover_rate")
+                    pl.when(pl.col("amount") <= 0)
+                    .then(0.0)
+                    .otherwise(pl.col("volume") / pl.col("amount") * 100)
+                    .alias("turnover_rate")
                 ])
                 latest = df.tail(1)
                 turnover = latest["turnover_rate"].item()

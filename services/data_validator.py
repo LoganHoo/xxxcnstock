@@ -1,9 +1,9 @@
 """数据检查器"""
-import logging
 import polars as pl
 from typing import Dict, Any
 from datetime import datetime
 from pathlib import Path
+from core.logger import get_logger
 
 
 class DataValidator:
@@ -19,7 +19,7 @@ class DataValidator:
             config: 配置字典
         """
         self.config = config
-        self.logger = logging.getLogger(__name__)
+        self.logger = get_logger(__name__)
     
     def validate_all(self, df: pl.DataFrame) -> Dict[str, Any]:
         """执行所有检查

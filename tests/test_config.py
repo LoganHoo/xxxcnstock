@@ -1,4 +1,3 @@
-import pytest
 from core.config import Settings, get_settings
 
 
@@ -21,3 +20,12 @@ def test_get_settings_singleton():
     s1 = get_settings()
     s2 = get_settings()
     assert s1 is s2
+
+
+def test_settings_ignore_unmodeled_env_vars(monkeypatch):
+    """测试未建模环境变量不会导致配置加载失败"""
+    monkeypatch.setenv("DB_URL", "mysql+pymysql://user:pass@localhost:3306/test")
+
+    settings = Settings()
+
+    assert settings.DB_HOST == "49.233.10.199"

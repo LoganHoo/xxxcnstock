@@ -1,0 +1,45 @@
+{
+  "name": "morning_shao_report",
+  "display_name": "A股量化战略内参",
+  "subject_template": "【A股量化战略内参】{date} 盘前",
+  "sections": [
+    {
+      "key": "header",
+      "title": "报告头部",
+      "enabled": true,
+      "template": "section_header"
+    },
+    {
+      "key": "global_alpha",
+      "title": "环球大局观",
+      "enabled": true,
+      "data_path": "data/foreign_index.json",
+      "format": "global_alpha"
+    },
+    {
+      "key": "domestic_core",
+      "title": "国内市场基调",
+      "enabled": true,
+      "data_path": "reports/market_analysis_{date}.json",
+      "format": "domestic_core"
+    },
+    {
+      "key": "sentiment_engine",
+      "title": "情绪引擎",
+      "enabled": true,
+      "data_path": "data/sentiment_data.json",
+      "format": "sentiment_engine"
+    },
+    {
+      "key": "ai_strategy",
+      "title": "AI综合建议",
+      "enabled": true,
+      "data_path": "data/ai_strategy.json",
+      "format": "ai_strategy"
+    }
+  ],
+  "footer": {
+    "text": "祝投资顺利！",
+    "disclaimer": "本报告仅供参考，不构成投资建议。股市有风险，投资需谨慎。"
+  }
+}

@@ -1,0 +1,175 @@
+# 策略2: 激进进攻策略
+# 特点：宽松过滤 + 主力信号优先
+# 适用：强势上涨市场、热点板块轮动时
+# 目标：追求高收益，顺势而为
+
+strategy:
+  name: "激进进攻策略"
+  description: "宽松过滤问题股，主力信号驱动，追求高收益"
+  version: "1.0"
+  preset: "aggressive"
+
+# ==================== 过滤阶段 ====================
+filters:
+  # 第一层：排除致命风险
+  - name: "st_filter"
+    preset: "aggressive"
+    enabled: true
+    params:
+      st_patterns:
+        - "*ST"  # 排除*ST
+
+  - name: "delisting_filter"
+    enabled: true  # 必须启用，防止退市风险
+
+  - name: "suspension_filter"
+    enabled: true  # 必须启用，排除停牌股票
+
+  - name: "new_stock_filter"
+    enabled: false  # 激进模式允许次新股
+
+  # 第二层：流动性过滤
+  - name: "volume_filter"
+    enabled: false  # 激进模式暂不启用，用suspension_filter排除停牌即可
+
+  - name: "suspension_filter"
+    enabled: true  # 排除停牌（成交量=0）
+
+  - name: "volume_ratio_filter"
+    preset: "aggressive"
+    enabled: true
+    params:
+      min_ratio: 0.5
+      max_ratio: 10.0
+
+  - name: "turnover_rate_filter"
+    preset: "aggressive"
+    enabled: false  # 激进模式暂不启用
+
+  # 第三层：宽松价格区间
+  - name: "price_filter"
+    preset: "aggressive"
+    enabled: true
+    params:
+      min_price: 1.0
+      max_price: 500.0
+
+  # 第四层：放宽估值要求
+  - name: "valuation_filter"
+    preset: "aggressive"
+    enabled: false  # 激进模式暂不检查估值
+
+  # 第五层：不禁用涨停相关
+  - name: "limit_up_trap_filter"
+    enabled: false  # 激进模式不禁用涨停
+
+  - name: "over_hyped_filter"
+    enabled: false  # 激进模式允许炒作
+
+# ==================== 因子阶段 ====================
+factors:
+  # 技术指标因子 (权重25%) - 简化
+  technical:
+    - name: "ma_trend"
+      weight: 0.08
+      threshold: 50
+      params:
+        short_period: 5
+        mid_period: 10
+        long_period: 20
+
+    - name: "macd"
+      weight: 0.07
+      threshold: 40
+      params:
+        fast: 12
+        slow: 26
+        signal: 9
+
+    - name: "kdj"
+      weight: 0.05
+      threshold: 30
+      params:
+        n: 9
+        m1: 3
+        m2: 3
+
+    - name: "bollinger"
+      weight: 0.05
+      threshold: 30
+      params:
+        period: 20
+        std_dev: 2
+
+  # 量价因子 (权重25%) - 强调放量
+  volume_price:
+    - name: "volume_ratio"
+      weight: 0.12
+      threshold: 40
+      params:
+        period: 5
+
+    - name: "v_ratio10"
+      weight: 0.08
+      threshold: 40
+
+    - name: "turnover"
+      weight: 0.05
+      threshold: 30
+      params:
+        period: 5
+
+  # 市场情绪因子 (权重10%) - 强调市场温度
+  market:
+    - name: "market_temperature"
+      weight: 0.05
+      threshold: 60
+      params:
+        period: 20
+
+    - name: "limit_up_score"
+      weight: 0.05
+      threshold: 50
+
+# ==================== 主力量化信号 ====================
+mainforce:
+  enabled: true
+  weight: 0.60  # 主力信号占综合评分60%
+  signals:
+    - name: "S1_limit_up"
+      enabled: true
+      params:
+        lookback_days: 20
+        min_volume_ratio: 1.5
+        max_consolidation_pct: 8  # 放宽到8%
+
+    - name: "S2_gap"
+      enabled: true
+      params:
+        lookback_days: 5  # 放宽到5日
+        max_fill_pct: 30
+
+    - name: "S3_consecutive"
+      enabled: true
+      params:
+        lookback_days: 3
+
+    - name: "S4_breakout"
+      enabled: true
+      params:
+        volume_multiplier: 2.0
+        lookback_days: 20
+
+# ==================== 选股规则 ====================
+selection:
+  top_n: 50  # 激进模式选出更多
+  min_score: 50  # 降低最低分
+  max_stocks_per_industry: 5  # 单行业最多5只
+  position_size: 0.02  # 单只仓位2%（更分散）
+
+# ==================== 风控规则 ====================
+risk_control:
+  max_positions: 30
+  max_single_loss: -0.12  # 单只最大亏损-12%
+  max_total_loss: -0.25   # 总回撤-25%止损
+  min_market_sentiment: 30  # 市场情绪低于30不建仓

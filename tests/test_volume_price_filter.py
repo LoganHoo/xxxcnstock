@@ -1,4 +1,3 @@
-import pytest
 import pandas as pd
 import numpy as np
 from services.stock_service.filters.volume_price import VolumePriceFilter

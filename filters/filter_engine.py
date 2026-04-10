@@ -5,12 +5,12 @@
 import polars as pl
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-import logging
 
 from filters.base_filter import BaseFilter, FilterRegistry
-from core.filter_config_loader import filter_config_loader
+from core.filter_config_loader import FilterConfigLoader
+from core.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class FilterEngine:
@@ -19,6 +19,7 @@ class FilterEngine:
     def __init__(self, config_dir: str = "config/filters", preset: str = "default"):
         self.config_dir = Path(config_dir)
         self.preset = preset
+        self.config_loader = FilterConfigLoader(str(self.config_dir))
         self.filter_configs: Dict[str, dict] = {}
         self.filters: Dict[str, BaseFilter] = {}
         self._load_filter_configs()
@@ -26,7 +27,7 @@ class FilterEngine:
     
     def _load_filter_configs(self):
         """加载所有过滤器配置"""
-        all_configs = filter_config_loader.load_all_filters()
+        all_configs = self.config_loader.load_all_filters()
         
         for cache_key, config in all_configs.items():
             filter_config = config.get("filter", {})
@@ -42,8 +43,8 @@ class FilterEngine:
             
             if filter_class:
                 try:
-                    params = filter_config_loader.get_params(name, self.preset)
-                    enabled = filter_config_loader.is_enabled(name)
+                    params = self.config_loader.get_params(name, self.preset)
+                    enabled = self.config_loader.is_enabled(name)
                     
                     if not enabled:
                         params["enabled"] = False
@@ -123,7 +124,7 @@ class FilterEngine:
             if enabled_only and not filter_instance.is_enabled():
                 continue
             
-            info = filter_config_loader.get_filter_info(name)
+            info = self.config_loader.get_filter_info(name)
             filters.append({
                 "name": name,
                 "enabled": filter_instance.is_enabled(),

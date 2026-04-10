@@ -7,68 +7,171 @@ import polars as pl
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import importlib
-import logging
 
 from core.factor_library import BaseFactor, FactorRegistry
+from core.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class FactorEngine:
     """因子计算引擎"""
-    
-    def __init__(self, config_dir: str = "config/factors"):
+
+    def __init__(self, config_dir: str = None):
+        if config_dir is None:
+            project_root = Path(__file__).parent.parent
+            config_dir = project_root / "config" / "factors"
         self.config_dir = Path(config_dir)
         self.factor_configs: Dict[str, dict] = {}
+        self._import_factor_modules()
         self._load_factor_configs()
+
+    def _import_factor_modules(self):
+        """导入所有因子模块以触发注册"""
+        try:
+            importlib.import_module("factors.market")
+            importlib.import_module("factors.technical")
+            importlib.import_module("factors.volume_price")
+            logger.debug("因子模块已导入")
+        except ImportError as e:
+            logger.warning(f"导入因子模块失败: {e}")
     
     def _load_factor_configs(self):
         """加载所有因子配置"""
         if not self.config_dir.exists():
             logger.warning(f"因子配置目录不存在: {self.config_dir}")
             return
-        
-        for config_file in self.config_dir.glob("*.yaml"):
+
+        config_files = sorted(
+            self.config_dir.rglob("*.yaml"),
+            key=lambda path: (len(path.relative_to(self.config_dir).parts), str(path)),
+            reverse=True,
+        )
+
+        for config_file in config_files:
             try:
                 with open(config_file, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f)
                     
                     if config is None:
                         continue
-                    
+
+                    if "factor" in config and isinstance(config["factor"], dict):
+                        normalized_config = self._normalize_single_factor_config(
+                            config["factor"], config_file
+                        )
+                        if normalized_config:
+                            name = normalized_config["name"]
+                            self.factor_configs[name] = normalized_config
+                            logger.debug(f"加载单因子配置: {name}")
+                        continue
+
                     factors_data = config.get("factors", {})
-                    
+
                     if isinstance(factors_data, list):
                         for factor_config in factors_data:
-                            name = factor_config["name"]
-                            self.factor_configs[name] = factor_config
+                            normalized_config = self._normalize_multi_factor_config(
+                                factor_config
+                            )
+                            name = normalized_config["name"]
+                            self.factor_configs[name] = normalized_config
                             logger.debug(f"加载因子配置: {name}")
                     elif isinstance(factors_data, dict):
                         for category, factors in factors_data.items():
                             if isinstance(factors, list):
                                 for factor_config in factors:
-                                    name = factor_config["name"]
-                                    factor_config["category"] = category
-                                    self.factor_configs[name] = factor_config
+                                    normalized_config = self._normalize_multi_factor_config(
+                                        factor_config, category
+                                    )
+                                    name = normalized_config["name"]
+                                    self.factor_configs[name] = normalized_config
                                     logger.debug(f"加载因子配置: {name} ({category})")
             except Exception as e:
                 logger.error(f"加载配置文件失败 {config_file}: {e}")
         
         logger.info(f"加载了 {len(self.factor_configs)} 个因子配置")
+
+    def _normalize_multi_factor_config(
+        self, factor_config: Dict[str, Any], category: str = None
+    ) -> Dict[str, Any]:
+        """标准化多因子配置结构"""
+        normalized_config = dict(factor_config)
+        if category and "category" not in normalized_config:
+            normalized_config["category"] = category
+        return normalized_config
+
+    def _normalize_single_factor_config(
+        self, factor_config: Dict[str, Any], config_file: Path
+    ) -> Optional[Dict[str, Any]]:
+        """标准化单因子配置结构"""
+        name = factor_config.get("name")
+        if not name:
+            return None
+
+        params = factor_config.get("params", {})
+        if isinstance(params, dict) and "default" in params:
+            params = params.get("default", {})
+
+        scoring = factor_config.get("scoring", {})
+
+        return {
+            "name": name,
+            "category": factor_config.get(
+                "category",
+                config_file.parent.name if config_file.parent != self.config_dir else "unknown",
+            ),
+            "description": factor_config.get("description", ""),
+            "params": params if isinstance(params, dict) else {},
+            "weight": scoring.get("weight", factor_config.get("weight", 0)),
+            "enabled": factor_config.get("enabled", True),
+        }
     
+    def _find_factor_module(self, name: str, category: str) -> tuple:
+        """查找因子所在的模块和类名
+
+        Returns:
+            (module_path, class_name) 或 (None, None)
+        """
+        from pathlib import Path
+
+        module_dir = Path("factors") / category
+        if not module_dir.exists():
+            return None, None
+
+        target_base = self._to_class_name(name)
+
+        for py_file in module_dir.glob("*.py"):
+            if py_file.name.startswith("_"):
+                continue
+            try:
+                module_name = f"factors.{category}.{py_file.stem}"
+                module = importlib.import_module(module_name)
+
+                for attr_name in dir(module):
+                    if attr_name.endswith("Factor"):
+                        cls = getattr(module, attr_name)
+                        if isinstance(cls, type) and issubclass(cls, BaseFactor):
+                            base_name = attr_name[:-6]
+                            if base_name.lower() == target_base.lower() or base_name == target_base:
+                                return module_name, attr_name
+            except ImportError:
+                continue
+
+        return None, None
+
     def get_factor(self, name: str, params: Dict[str, Any] = None) -> Optional[BaseFactor]:
         """
         获取因子实例
-        
+
         Args:
             name: 因子名称
             params: 自定义参数 (覆盖默认参数)
-        
+
         Returns:
             因子实例
         """
         factor_class = FactorRegistry.get(name)
-        
+
         if factor_class:
             config = self.factor_configs.get(name, {})
             merged_params = {**config.get("params", {}), **(params or {})}
@@ -78,32 +181,44 @@ class FactorEngine:
                 params=merged_params,
                 description=config.get("description", "")
             )
-        
+
         config = self.factor_configs.get(name)
         if config:
             category = config.get("category", "technical")
             try:
-                module_path = f"factors.{category}.{name}"
-                module = importlib.import_module(module_path)
-                factor_class = getattr(module, f"{self._to_class_name(name)}Factor")
-                
-                merged_params = {**config.get("params", {}), **(params or {})}
-                return factor_class(
-                    name=name,
-                    category=category,
-                    params=merged_params,
-                    description=config.get("description", "")
-                )
+                module_path, class_name = self._find_factor_module(name, category)
+                if module_path and class_name:
+                    module = importlib.import_module(module_path)
+                    factor_class = getattr(module, class_name)
+
+                    merged_params = {**config.get("params", {}), **(params or {})}
+                    return factor_class(
+                        name=name,
+                        category=category,
+                        params=merged_params,
+                        description=config.get("description", "")
+                    )
+                else:
+                    logger.warning(f"动态导入因子失败 {name}: 未找到模块")
             except (ImportError, AttributeError) as e:
                 logger.warning(f"动态导入因子失败 {name}: {e}")
-        
+
         logger.warning(f"因子 {name} 未找到")
         return None
     
     def _to_class_name(self, name: str) -> str:
         """将因子名转换为类名"""
-        parts = name.split("_")
-        return "".join(p.capitalize() for p in parts)
+        import re
+        parts = name.split('_')
+        result = []
+        for p in parts:
+            match = re.match(r'^([a-zA-Z]+)(\d*)$', p)
+            if match:
+                letters, digits = match.groups()
+                result.append(letters.capitalize() + digits)
+            else:
+                result.append(p.capitalize())
+        return ''.join(result)
     
     def calculate_factor(
         self, 

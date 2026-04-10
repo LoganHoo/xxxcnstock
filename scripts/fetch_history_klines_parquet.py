@@ -162,9 +162,9 @@ class HistoryKlineFetcher:
                 })
             logger.info(f"使用本地股票列表: {len(all_stocks)} 只")
             
-            st_count = sum(1 for s in all_stocks if s['status'] == 'st')
-            delisted_count = sum(1 for s in all_stocks if s['status'] == 'delisted')
-            suspended_count = sum(1 for s in all_stocks if s['status'] == 'suspended')
+            st_count = sum(1 for s in all_stocks if s.get('status') == 'st')
+            delisted_count = sum(1 for s in all_stocks if s.get('status') == 'delisted')
+            suspended_count = sum(1 for s in all_stocks if s.get('status') == 'suspended')
             logger.info(f"  - ST股票: {st_count} 只")
             logger.info(f"  - 退市股票: {delisted_count} 只")
             logger.info(f"  - 停牌股票: {suspended_count} 只")
@@ -218,10 +218,10 @@ class HistoryKlineFetcher:
                         })
                 
                 logger.info(f"获取到 {len(all_stocks)} 只股票")
-                
-                st_count = sum(1 for s in all_stocks if s['status'] == 'st')
-                delisted_count = sum(1 for s in all_stocks if s['status'] == 'delisted')
-                suspended_count = sum(1 for s in all_stocks if s['status'] == 'suspended')
+
+                st_count = sum(1 for s in all_stocks if s.get('status') == 'st')
+                delisted_count = sum(1 for s in all_stocks if s.get('status') == 'delisted')
+                suspended_count = sum(1 for s in all_stocks if s.get('status') == 'suspended')
                 logger.info(f"  - ST股票: {st_count} 只")
                 logger.info(f"  - 退市股票: {delisted_count} 只")
                 logger.info(f"  - 停牌股票: {suspended_count} 只")
@@ -267,6 +267,7 @@ class HistoryKlineFetcher:
                     klines = data['data'][symbol].get('qfqday', [])
                     
                     records = []
+                    fetch_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                     for k in klines:
                         records.append({
                             'code': code,
@@ -276,6 +277,7 @@ class HistoryKlineFetcher:
                             'high': float(k[3]),
                             'low': float(k[4]),
                             'volume': int(float(k[5])),
+                            'fetch_time': fetch_time,
                         })
                     
                     if records:
@@ -306,11 +308,14 @@ class HistoryKlineFetcher:
         """合并新旧K线数据"""
         if existing_df is None:
             return new_df
-        
+
+        if 'fetch_time' not in existing_df.columns:
+            existing_df['fetch_time'] = None
+
         combined = pd.concat([existing_df, new_df], ignore_index=True)
         combined = combined.drop_duplicates(subset=['code', 'trade_date'], keep='last')
         combined = combined.sort_values('trade_date').reset_index(drop=True)
-        
+
         return combined
     
     def fetch_all_history(self, days: int = 730):

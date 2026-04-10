@@ -76,18 +76,18 @@ def main():
     
     for code in codes:
         code_data = stock_data.filter(pl.col("code") == code).sort("trade_date")
-        
+
         if len(code_data) < 30:
             continue
-        
+
         try:
             code_result = strategy_engine.select_stocks(code_data)
             if len(code_result) > 0:
                 latest = code_result.sort("trade_date", descending=True).head(1)
                 results.append(latest)
         except Exception as e:
-            pass
-        
+            print(f"处理股票 {code} 时出错: {e}")
+
         processed += 1
         if processed % 500 == 0:
             print(f"已处理 {processed}/{len(codes)} 只股票...")
@@ -103,21 +103,22 @@ def main():
     if len(result) > 0:
         display_cols = ["code", "close", "strategy_score"]
         available_cols = [c for c in display_cols if c in result.columns]
-        
-        print(result.select(available_cols))
-        
+
+        top_result = result.head(args.top_n)
+        print(top_result.select(available_cols))
+
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         result_json = {
             "timestamp": datetime.now().isoformat(),
             "strategy": info,
-            "stocks": result.to_dicts()
+            "stocks": top_result.to_dicts()
         }
-        
+
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(result_json, f, ensure_ascii=False, indent=2, default=str)
-        
+
         print(f"\n结果已保存到: {output_path}")
     else:
         print("未选出符合条件的股票")

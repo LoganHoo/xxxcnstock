@@ -1,0 +1,83 @@
+# 资金行为学策略过滤器配置
+# 本配置用于 run_fund_behavior_strategy.py 的选股过滤
+# 使用已注册的过滤器名称
+
+filters:
+  # ===== 基础过滤（建议启用）=====
+
+  # ST股过滤 - 排除退市风险股
+  st_filter:
+    enabled: true
+    description: "排除ST股和退市风险股"
+
+  # 停牌过滤 - 排除无法交易的股票
+  suspension_filter:
+    enabled: true
+    description: "排除停牌状态的股票"
+
+  # 数据新鲜度过滤 - 排除数据过旧的股票（已退市/长期停牌）
+  data_freshness_filter:
+    enabled: true
+    max_data_age_days: 30  # 数据超过30天未更新视为退市或长期停牌
+    description: "排除数据过旧的股票（已退市/长期停牌）"
+
+  # ===== 流动性过滤（建议启用）=====
+
+  # 成交量过滤 - 排除流动性不足的股票
+  volume_filter:
+    enabled: true
+    min_volume: 5000000  # 最小日成交量（元）
+    description: "排除流动性不足的股票"
+
+  # ===== 技术过滤（建议启用）=====
+
+  # 趋势过滤 - 排除下跌趋势股票（需要ma5/ma20字段，需先计算）
+  trend_filter:
+    enabled: false  # 默认禁用，因为数据缺少ma字段
+    ma_short: 5
+    ma_long: 20
+    description: "排除下跌趋势股票（MA5 < MA20）"
+
+  # 均线位置过滤 - 排除未站上均线的股票（需要ma字段）
+  ma_position_filter:
+    enabled: false  # 默认禁用，因为数据缺少ma字段
+    ma_periods:
+      - 20
+      - 60
+    require_all: false
+    description: "排除未站上均线的股票"
+
+  # ===== 价格过滤 =====
+
+  # 价格范围过滤 - 排除价格过高或过低的股票
+  price_range_filter:
+    enabled: true
+    min_price: 2.0
+    max_price: 300.0
+    description: "排除价格不在合理范围内的股票"
+
+  # ===== 涨停过滤 =====
+
+  # 涨停陷阱过滤 - 排除近期涨停后开板的股票
+  limit_up_trap_filter:
+    enabled: false  # 默认禁用，短线专用
+    description: "排除涨停陷阱股票（开板）"
+
+  # ===== 波段专用 =====
+
+  # 回踩信号过滤 - 波段专用
+  pullback_signal_filter:
+    enabled: false  # 默认禁用
+    description: "波段回踩买入信号"
+
+# 过滤器执行顺序（按此顺序应用）
+filter_order:
+  - st_filter              # 1. 先排除ST股
+  - suspension_filter      # 2. 排除停牌股
+  - data_freshness_filter  # 3. 排除数据过旧股票（退市检测）
+  - volume_filter          # 4. 排除流动性不足
+  - trend_filter           # 5. 排除下跌趋势
+  - ma_position_filter     # 6. 排除未站上均线
+  - price_range_filter     # 7. 排除价格异常
+  # - limit_up_trap_filter  # 7. 短线专用（禁用）
+  # - pullback_signal_filter  # 7. 波段专用（禁用）

@@ -83,13 +83,13 @@ recommendation:
   # 筛选条件配置
   filters:
     s_grade:
-      min_score: 80
+      min_score: 100
       top_n: 15
       description: "S级 - 强烈推荐"
-    
+
     a_grade:
-      min_score: 75
-      max_score: 80
+      min_score: 85
+      max_score: 100
       top_n: 10
       description: "A级 - 建议关注"
     
@@ -117,3 +117,8 @@ recommendation:
     enabled: true
     recipients: ["287363@qq.com"]
     subject_prefix: "XCNStock 每日推荐"
+    smtp:
+      host: smtp.qq.com
+      port: 465
+      user: ""
+      password: ""

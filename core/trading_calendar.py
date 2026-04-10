@@ -2,7 +2,6 @@
 交易日判断工具
 用于判断当前是否为交易日，以及获取交易日历
 """
-import requests
 from datetime import datetime, timedelta
 from typing import List, Optional
 import logging

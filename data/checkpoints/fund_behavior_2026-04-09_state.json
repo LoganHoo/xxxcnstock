@@ -1,0 +1,69 @@
+{
+  "state": "validated",
+  "report_date": "2026-04-09",
+  "updated_at": "2026-04-10T10:06:11.562849",
+  "step_results": {
+    "load": {
+      "state": "loaded",
+      "timestamp": "2026-04-10T10:06:11.398379",
+      "message": "",
+      "data": {
+        "total_rows": 3267820,
+        "total_stocks": 5394,
+        "date_range": "1994-07-14 ~ 2026-04-10",
+        "batch_count": 1,
+        "columns": [
+          "code",
+          "trade_date",
+          "open",
+          "close",
+          "high",
+          "low",
+          "volume"
+        ]
+      }
+    },
+    "validate": {
+      "state": "validated",
+      "timestamp": "2026-04-10T10:06:11.562842",
+      "message": "",
+      "data": {
+        "passed": true,
+        "issues": [],
+        "warnings": [],
+        "stats": {
+          "missing_rate": 0.0
+        },
+        "continuity": {
+          "passed": true,
+          "stocks_checked": 5394,
+          "stocks_with_gaps": 0,
+          "recent_gaps": {},
+          "warning_stocks": [],
+          "total_records": 3267820,
+          "latest_date": "2026-04-10",
+          "data_age_days": 0,
+          "recent_stocks_count": 5070,
+          "latest_coverage_rate": 93.99332591768632
+        },
+        "missing": {
+          "passed": true,
+          "field_missing_rates": {},
+          "overall_missing_rate": 0.0,
+          "total_records": 3267820
+        },
+        "price": {
+          "passed": true,
+          "invalid_count": 0,
+          "issues": []
+        },
+        "volume": {
+          "passed": true,
+          "zero_count": 0,
+          "negative_count": 0,
+          "warnings": []
+        }
+      }
+    }
+  }
+}

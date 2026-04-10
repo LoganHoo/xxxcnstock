@@ -1,6 +1,4 @@
-import pytest
 import pandas as pd
-from pathlib import Path
 from services.data_service.storage.parquet_manager import ParquetManager
 
 

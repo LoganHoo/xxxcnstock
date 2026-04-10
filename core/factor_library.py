@@ -5,9 +5,9 @@
 from abc import ABC, abstractmethod
 import polars as pl
 from typing import Dict, Any, Optional
-import logging
+from core.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BaseFactor(ABC):
@@ -24,7 +24,7 @@ class BaseFactor(ABC):
         self.category = category
         self.params = params or {}
         self.description = description
-        self.logger = logging.getLogger(f"{__name__}.{name}")
+        self.logger = get_logger(f"{__name__}.{name}")
     
     @abstractmethod
     def calculate(self, data: pl.DataFrame) -> pl.DataFrame:
@@ -90,8 +90,11 @@ class FactorRegistry:
     @classmethod
     def register(cls, name: str, factor_class: type):
         """注册因子"""
-        cls._factors[name] = factor_class
-        logger.info(f"注册因子: {name}")
+        if name not in cls._factors:
+            cls._factors[name] = factor_class
+            logger.info(f"注册因子: {name}")
+        else:
+            logger.debug(f"因子已注册，跳过: {name}")
     
     @classmethod
     def get(cls, name: str) -> Optional[type]:

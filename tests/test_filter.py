@@ -46,3 +46,31 @@ def test_get_filter():
     engine = FilterEngine()
     filter_instance = engine.get_filter('price_filter')
     assert filter_instance is not None, "过滤器不存在"
+
+
+def test_list_filters_enabled_only_respects_runtime_disable():
+    """测试仅返回启用过滤器时会反映运行时禁用状态"""
+    engine = FilterEngine()
+    engine.disable_filter("price_filter")
+
+    filters = engine.list_filters(enabled_only=True)
+    filter_names = {item["name"] for item in filters}
+
+    assert "price_filter" not in filter_names
+
+
+def test_disable_filter_prevents_filter_execution(test_data):
+    """测试禁用过滤器后不会继续执行该过滤器"""
+    engine = FilterEngine()
+    engine.disable_filter("price_filter")
+
+    result = engine.apply_filters(test_data, filter_names=["price_filter"])
+
+    assert result.equals(test_data)
+
+
+def test_filter_engine_respects_custom_config_dir(tmp_path):
+    """测试自定义配置目录不可用时不应偷偷回退到默认配置"""
+    engine = FilterEngine(config_dir=str(tmp_path / "missing_filters"))
+
+    assert engine.list_filters() == []

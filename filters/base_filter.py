@@ -5,9 +5,9 @@
 from abc import ABC, abstractmethod
 import polars as pl
 from typing import Dict, Any, Optional
-import logging
+from core.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class BaseFilter(ABC):
@@ -23,7 +23,7 @@ class BaseFilter(ABC):
         self.params = params or {}
         self.description = description
         self.enabled = self.params.get("enabled", True)
-        self.logger = logging.getLogger(f"{__name__}.{name}")
+        self.logger = get_logger(f"{__name__}.{name}")
     
     @abstractmethod
     def filter(self, stock_list: pl.DataFrame) -> pl.DataFrame:

@@ -1,13 +1,17 @@
-import akshare as ak
+import importlib
 import pandas as pd
 from typing import List, Optional
 from datetime import datetime
-import logging
 
 from core.models import StockQuote
 from core.logger import setup_logger
 
 logger = setup_logger("quote_fetcher", log_file="system/quote.log")
+
+
+def _get_akshare_client():
+    """延迟加载 akshare，避免模块导入阶段触发第三方告警"""
+    return importlib.import_module("akshare")
 
 
 class QuoteFetcher:
@@ -23,7 +27,7 @@ class QuoteFetcher:
         """
         try:
             logger.info("开始获取实时行情数据")
-            df = ak.stock_zh_a_spot_em()
+            df = _get_akshare_client().stock_zh_a_spot_em()
             
             if df is None or df.empty:
                 logger.warning("实时行情数据为空")
@@ -81,7 +85,7 @@ class QuoteFetcher:
             if not end_date:
                 end_date = datetime.now().strftime("%Y%m%d")
             
-            df = ak.stock_zh_a_hist(
+            df = _get_akshare_client().stock_zh_a_hist(
                 symbol=code,
                 period=period,
                 start_date=start_date,

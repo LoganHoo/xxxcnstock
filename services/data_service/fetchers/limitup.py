@@ -1,13 +1,16 @@
-import akshare as ak
-import pandas as pd
-from typing import List, Optional, Dict
+import importlib
+from typing import List
 from datetime import datetime
 from dataclasses import dataclass
-import logging
 
 from core.logger import setup_logger
 
 logger = setup_logger("limitup_fetcher", log_file="system/limitup.log")
+
+
+def _get_akshare_client():
+    """延迟加载 akshare，避免模块导入阶段触发第三方告警"""
+    return importlib.import_module("akshare")
 
 
 @dataclass
@@ -38,7 +41,7 @@ class LimitUpFetcher:
                 date = datetime.now().strftime("%Y%m%d")
             
             logger.info(f"获取涨停池数据: {date}")
-            df = ak.stock_zt_pool_em(date=date)
+            df = _get_akshare_client().stock_zt_pool_em(date=date)
             
             if df is None or df.empty:
                 logger.warning(f"涨停池数据为空: {date}")

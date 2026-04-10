@@ -53,12 +53,14 @@ class PrecomputeEngine:
         self.logger.info("=" * 70)
         self.logger.info("开始预计算股票技术指标")
         self.logger.info("=" * 70)
-        
+
         effective_date = self.get_effective_date()
-        
+
         self.logger.info(f"K线数据路径: {self.kline_dir}")
         self.logger.info(f"输出文件: {self.output_path}")
-        
+
+        kline_pattern = str(self.kline_dir / "*.parquet")
+
         # 使用 Polars 直接读取和处理数据
         self.logger.info("步骤1: 读取K线数据...")
         all_stocks = []
@@ -71,14 +73,24 @@ class PrecomputeEngine:
                 
                 # 过滤有效日期
                 df = df.filter(pl.col("trade_date") <= effective_date)
-                
+
+                # 过滤掉数据过老的股票（最近30个交易日内无数据的股票）
+                min_date = (datetime.strptime(effective_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
+                df = df.filter(pl.col("trade_date") >= min_date)
+
                 if len(df) > 0:
                     # 按日期降序排序
                     df = df.sort("trade_date", descending=True)
-                    
-                    # 取最新一条数据
-                    latest_row = df.head(1)
-                    
+
+                    # 取最新一条数据并确保类型一致
+                    latest_row = df.head(1).with_columns([
+                        pl.col("volume").cast(pl.Int64).fill_null(0),
+                        pl.col("open").cast(pl.Float64).fill_null(0),
+                        pl.col("close").cast(pl.Float64).fill_null(0),
+                        pl.col("high").cast(pl.Float64).fill_null(0),
+                        pl.col("low").cast(pl.Float64).fill_null(0)
+                    ])
+
                     # 添加到结果列表
                     all_stocks.append(latest_row)
             except Exception as e:
@@ -96,7 +108,8 @@ class PrecomputeEngine:
         
         # 计算技术指标
         self.logger.info("步骤2: 计算技术指标...")
-        indicators_df = self._calculate_indicators(kline_pattern, effective_date)
+        min_date = (datetime.strptime(effective_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
+        indicators_df = self._calculate_indicators(kline_pattern, effective_date, min_date)
         
         self.logger.info("步骤3: 计算评分和等级...")
         scored_df = self._calculate_scores(indicators_df)
@@ -175,11 +188,14 @@ class PrecomputeEngine:
                     'volume': []
                 })
     
-    def _calculate_indicators(self, kline_pattern: str, effective_date: str) -> pl.DataFrame:
+    def _calculate_indicators(self, kline_pattern: str, effective_date: str, min_date: str = None) -> pl.DataFrame:
         """计算技术指标"""
+        if min_date is None:
+            min_date = (datetime.strptime(effective_date, '%Y-%m-%d') - timedelta(days=30)).strftime('%Y-%m-%d')
+
         query = f"""
         WITH base_data AS (
-            SELECT 
+            SELECT
                 code,
                 trade_date,
                 open,
@@ -190,6 +206,7 @@ class PrecomputeEngine:
                 ROW_NUMBER() OVER (PARTITION BY code ORDER BY trade_date DESC) as rn
             FROM '{kline_pattern}'
             WHERE trade_date <= '{effective_date}'
+              AND trade_date >= '{min_date}'
         ),
         
         latest AS (
@@ -386,9 +403,9 @@ class PrecomputeEngine:
         ])
         
         df = df.with_columns([
-            pl.when(pl.col("enhanced_score") >= 80).then(pl.lit("S"))
-            .when(pl.col("enhanced_score") >= 70).then(pl.lit("A"))
-            .when(pl.col("enhanced_score") >= 55).then(pl.lit("B"))
+            pl.when(pl.col("enhanced_score") >= 100).then(pl.lit("S"))
+            .when(pl.col("enhanced_score") >= 85).then(pl.lit("A"))
+            .when(pl.col("enhanced_score") >= 65).then(pl.lit("B"))
             .otherwise(pl.lit("C")).alias("grade")
         ])
         

@@ -1,4 +1,3 @@
-import pytest
 from services.limit_service.analyzers.pre_limit import PreLimitPredictor
 
 

@@ -108,12 +108,12 @@ class CVDCalculator:
                 SUM(cvd_body) OVER (
                     PARTITION BY code 
                     ORDER BY trade_date 
-                    ROWS BETWEEN {lookback_days} PRECEDING AND CURRENT ROW
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                 ) as cvd_body_cum,
                 SUM(cvd_position) OVER (
                     PARTITION BY code 
                     ORDER BY trade_date 
-                    ROWS BETWEEN {lookback_days} PRECEDING AND CURRENT ROW
+                    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
                 ) as cvd_position_cum
             FROM cvd_daily
         ),
@@ -160,7 +160,7 @@ class CVDCalculator:
     def calculate_cvd_trend(self, effective_date: str = None, lookback_days: int = 60) -> pl.DataFrame:
         """
         计算 CVD 趋势变化
-        
+
         包括：
         - CVD 的 N 日变化
         - CVD 斜率
@@ -168,110 +168,65 @@ class CVDCalculator:
         """
         if effective_date is None:
             effective_date = self.get_effective_date()
-        
+
         kline_pattern = str(self.kline_dir / "*.parquet")
-        
+
         query = f"""
-        WITH base_data AS (
-            SELECT 
-                code,
-                trade_date,
-                open,
-                close,
-                high,
-                low,
-                volume,
-                CASE 
-                    WHEN high = low THEN 0
-                    ELSE (close - open) * 1.0 / (high - low)
-                END as body_ratio
-            FROM '{kline_pattern}'
-            WHERE trade_date <= '{effective_date}'
-        ),
-        
-        cvd_daily AS (
-            SELECT 
-                code,
-                trade_date,
-                close,
-                volume,
-                volume * body_ratio as cvd_body
-            FROM base_data
-        ),
-        
-        cvd_cumulative AS (
-            SELECT 
-                code,
-                trade_date,
-                close,
-                volume,
-                cvd_body,
-                SUM(cvd_body) OVER (
-                    PARTITION BY code 
-                    ORDER BY trade_date 
-                    ROWS BETWEEN {lookback_days} PRECEDING AND CURRENT ROW
-                ) as cvd_cum
-            FROM cvd_daily
-        ),
-        
-        cvd_with_lags AS (
-            SELECT 
-                code,
-                trade_date,
-                close,
-                volume,
-                cvd_body,
-                cvd_cum,
-                LAG(cvd_cum, 1) OVER (PARTITION BY code ORDER BY trade_date DESC) as cvd_cum_prev1,
-                LAG(cvd_cum, 5) OVER (PARTITION BY code ORDER BY trade_date DESC) as cvd_cum_prev5,
-                LAG(cvd_cum, 10) OVER (PARTITION BY code ORDER BY trade_date DESC) as cvd_cum_prev10,
-                ROW_NUMBER() OVER (PARTITION BY code ORDER BY trade_date DESC) as rn
-            FROM cvd_cumulative
-        ),
-        
-        latest AS (
-            SELECT 
-                code,
-                trade_date,
-                close,
-                volume,
-                cvd_body,
-                cvd_cum,
-                cvd_cum_prev1,
-                cvd_cum_prev5,
-                cvd_cum_prev10
-            FROM cvd_with_lags
-            WHERE rn = 1
-        )
-        
-        SELECT 
+        SELECT
             code,
             trade_date,
-            close as price,
+            close,
             volume,
-            cvd_body,
-            cvd_cum as cvd_60d,
-            cvd_cum_prev1 as cvd_60d_prev1,
-            cvd_cum_prev5 as cvd_60d_prev5,
-            cvd_cum_prev10 as cvd_60d_prev10,
-            cvd_cum - COALESCE(cvd_cum_prev1, cvd_cum) as cvd_change_1d,
-            cvd_cum - COALESCE(cvd_cum_prev5, cvd_cum) as cvd_change_5d,
-            cvd_cum - COALESCE(cvd_cum_prev10, cvd_cum) as cvd_change_10d,
-            CASE 
-                WHEN cvd_cum > 0 AND (cvd_cum - COALESCE(cvd_cum_prev5, cvd_cum)) > 0 THEN 'strong_buy'
-                WHEN cvd_cum > 0 THEN 'weak_buy'
-                WHEN cvd_cum < 0 AND (cvd_cum - COALESCE(cvd_cum_prev5, cvd_cum)) < 0 THEN 'strong_sell'
-                WHEN cvd_cum < 0 THEN 'weak_sell'
-                ELSE 'neutral'
-            END as cvd_trend
-        FROM latest
-        ORDER BY cvd_cum DESC
+            (close - open) * volume / NULLIF(high - low, 0) as cvd_body
+        FROM '{kline_pattern}'
+        WHERE trade_date <= '{effective_date}'
+        ORDER BY code, trade_date
         """
-        
-        result = self.conn.execute(query).pl()
-        self.logger.info(f"CVD 趋势计算完成: {len(result)} 只股票")
-        
-        return result
+
+        df = self.conn.execute(query).pl()
+
+        df_sorted = df.sort(['code', 'trade_date'])
+
+        df_cvd = df_sorted.with_columns([
+            pl.col('cvd_body').cum_sum().over('code').alias('cvd_cum')
+        ])
+
+        df_lagged = df_cvd.with_columns([
+            pl.col('cvd_cum').shift(1).over('code').alias('cvd_60d_prev1'),
+            pl.col('cvd_cum').shift(5).over('code').alias('cvd_60d_prev5'),
+            pl.col('cvd_cum').shift(10).over('code').alias('cvd_60d_prev10'),
+        ])
+
+        df_latest = df_lagged.group_by('code').agg([
+            pl.col('trade_date').max().alias('trade_date'),
+            pl.col('cvd_cum').last().alias('cvd_60d'),
+            pl.col('cvd_60d_prev1').last().alias('cvd_60d_prev1'),
+            pl.col('cvd_60d_prev5').last().alias('cvd_60d_prev5'),
+            pl.col('cvd_60d_prev10').last().alias('cvd_60d_prev10'),
+            pl.col('close').last().alias('price'),
+            pl.col('volume').last().alias('volume'),
+            pl.col('cvd_body').last().alias('cvd_body'),
+        ])
+
+        df_result = df_latest.with_columns([
+            (pl.col('cvd_60d') - pl.col('cvd_60d_prev1').fill_null(pl.col('cvd_60d'))).alias('cvd_change_1d'),
+            (pl.col('cvd_60d') - pl.col('cvd_60d_prev5').fill_null(pl.col('cvd_60d'))).alias('cvd_change_5d'),
+            (pl.col('cvd_60d') - pl.col('cvd_60d_prev10').fill_null(pl.col('cvd_60d'))).alias('cvd_change_10d'),
+        ]).with_columns([
+            pl.when((pl.col('cvd_60d') > 0) & (pl.col('cvd_change_5d') > 0))
+              .then(pl.lit('strong_buy'))
+            .when(pl.col('cvd_60d') > 0)
+              .then(pl.lit('weak_buy'))
+            .when((pl.col('cvd_60d') < 0) & (pl.col('cvd_change_5d') < 0))
+              .then(pl.lit('strong_sell'))
+            .when(pl.col('cvd_60d') < 0)
+              .then(pl.lit('weak_sell'))
+            .otherwise(pl.lit('neutral'))
+            .alias('cvd_trend')
+        ])
+
+        self.logger.info(f"CVD 趋势计算完成: {len(df_result)} 只股票")
+        return df_result
     
     def save_results(self, df: pl.DataFrame, filename: str = "cvd_latest.parquet"):
         """保存结果"""

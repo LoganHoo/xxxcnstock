@@ -1,4 +1,3 @@
-import pytest
 from services.stock_service.filters.fundamental import FundamentalFilter
 
 

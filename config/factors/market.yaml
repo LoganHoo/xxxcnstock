@@ -1,0 +1,57 @@
+# 市场因子配置
+
+factors:
+  market:
+    - name: market_trend
+      category: market
+      description: 大盘指数趋势强度
+      weight: 0.25
+      enabled: true
+      params:
+        period: 20
+    - name: market_breadth
+      category: market
+      description: 市场涨跌家数对比
+      weight: 0.25
+      enabled: true
+      params:
+        period: 10
+    - name: market_sentiment
+      category: market
+      description: 市场情绪指标
+      weight: 0.25
+      enabled: true
+      params:
+        period: 14
+    - name: market_temperature
+      category: market
+      description: 市场温度指标
+      weight: 0.25
+      enabled: true
+      params:
+        period: 20
+    - name: cost_peak
+      category: market
+      description: 筹码分布最大密集峰位
+      weight: 0.2
+      enabled: true
+      params:
+        window: 20
+        bins: 50
+    - name: limit_up_score
+      category: market
+      description: 涨停家数 - 跌停家数 + 连板高度
+      weight: 0.2
+      enabled: true
+    - name: pioneer_status
+      category: market
+      description: 核心领涨个股实时涨跌幅
+      weight: 0.2
+      enabled: true
+      params:
+        pioneer_codes: ["300255"]
+    - name: v_total
+      category: market
+      description: 全市场实时总成交金额
+      weight: 0.2
+      enabled: true

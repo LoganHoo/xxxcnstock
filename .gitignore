@@ -84,6 +84,9 @@ data/kline/.fetch_progress.json
 .cache/
 *.cache
 
+# Git worktrees
+.worktrees/
+
 # OS
 .DS_Store
 Thumbs.db

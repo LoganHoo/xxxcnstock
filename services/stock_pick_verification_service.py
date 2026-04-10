@@ -2,20 +2,23 @@
 股票推荐验证服务
 """
 import json
-import logging
 import os
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.exc import IntegrityError
 
 import polars as pl
+from core.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DB_URL = os.getenv(
     'DB_URL',

@@ -1,0 +1,251 @@
+{
+  "flow_name": "conservative",
+  "pick_date": "20260403",
+  "stock_count": 30,
+  "stocks": [
+    {
+      "code": "600705",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000024",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000606",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600832",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002680",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600291",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000748",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002686",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600001",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600068",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000659",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "601028",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000627",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "601299",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000666",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "603056",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000562",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600721",
+      "grade": "S+",
+      "score": 76.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002087",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600393",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "601989",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600069",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600811",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600260",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002417",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000673",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "002618",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000916",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "600614",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    },
+    {
+      "code": "000005",
+      "grade": "A",
+      "score": 60.0,
+      "signals": {},
+      "factors": {},
+      "reason": ""
+    }
+  ],
+  "execution_time": 20.771760940551758,
+  "metadata": {
+    "filtered_count": 6761
+  }
+}

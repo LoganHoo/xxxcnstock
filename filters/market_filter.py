@@ -129,5 +129,37 @@ class VolumeFilter(BaseFilter):
         removed_count = len(stock_list) - len(filtered)
         if removed_count > 0:
             self.logger.info(f"成交量过滤器: 移除 {removed_count} 只成交量低于{self.min_volume}的股票")
-        
+
+        return filtered
+
+
+@register_filter("data_freshness_filter")
+class DataFreshnessFilter(BaseFilter):
+    """数据新鲜度过滤器 - 排除数据过旧的股票（已退市/长期停牌）"""
+
+    def __init__(self, name: str = "data_freshness_filter", params: Dict[str, Any] = None):
+        super().__init__(name, params, "排除数据过旧的股票")
+        self.max_data_age_days = self.params.get("max_data_age_days", 30)
+
+    def filter(self, stock_list: pl.DataFrame) -> pl.DataFrame:
+        """过滤数据过旧的股票"""
+        if not self.enabled:
+            return stock_list
+
+        if "trade_date" not in stock_list.columns:
+            self.logger.warning("缺少trade_date字段，跳过数据新鲜度过滤")
+            return stock_list
+
+        from datetime import date, timedelta
+        cutoff_date = (date.today() - timedelta(days=self.max_data_age_days)).isoformat()
+
+        original_count = len(stock_list)
+        filtered = stock_list.filter(pl.col("trade_date") >= cutoff_date)
+
+        removed_count = original_count - len(filtered)
+        if removed_count > 0:
+            self.logger.info(
+                f"数据新鲜度过滤器: 移除 {removed_count} 只数据超过{self.max_data_age_days}天未更新的股票"
+            )
+
         return filtered

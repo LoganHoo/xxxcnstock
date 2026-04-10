@@ -6,8 +6,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [tool.pytest.ini_options]
-asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:Due to '_pack_'.*_RawValue.*:DeprecationWarning:py_mini_racer._dll",
+    "ignore:Due to '_pack_'.*_ArrayBufferByte.*:DeprecationWarning:py_mini_racer._objects",
+]
 
 [tool.ruff]
 line-length = 100

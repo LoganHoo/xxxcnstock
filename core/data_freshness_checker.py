@@ -42,12 +42,21 @@ class DataFreshnessChecker:
         
         if not market_status['is_trading_day']:
             return False, f"非交易日: {market_status['reason']}"
-        
+
         if not market_status['is_after_market_close']:
             current_time = datetime.now().time()
             if current_time < time(15, 30):
+                last_trading_day = market_status['last_trading_day']
+                kline_dir = self.data_dir / "kline"
+                if kline_dir.exists():
+                    sample_file = kline_dir / "000001.parquet"
+                    if sample_file.exists():
+                        sample_data = pl.read_parquet(sample_file)
+                        latest_date = sample_data['trade_date'].max()
+                        if latest_date == last_trading_day:
+                            return True, f"使用上一交易日({last_trading_day})数据"
                 return False, f"市场未收盘，当前时间: {current_time}"
-        
+
         return True, "市场已就绪"
     
     def check_data_freshness(self) -> Tuple[bool, str, Dict[str, Any]]:

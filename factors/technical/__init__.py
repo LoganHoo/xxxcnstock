@@ -12,10 +12,11 @@ from factors.technical.mtm import MtmFactor
 from factors.technical.asi import AsiFactor
 from factors.technical.emv import EmvFactor
 from factors.technical.psy import PsyFactor
+from factors.technical.ma5_bias import MA5BiasFactor
 
 __all__ = [
     "MaTrendFactor",
-    "MacdFactor", 
+    "MacdFactor",
     "RsiFactor",
     "KdjFactor",
     "BollingerFactor",
@@ -27,5 +28,6 @@ __all__ = [
     "MtmFactor",
     "AsiFactor",
     "EmvFactor",
-    "PsyFactor"
+    "PsyFactor",
+    "MA5BiasFactor"
 ]

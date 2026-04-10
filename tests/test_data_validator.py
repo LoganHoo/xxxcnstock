@@ -1,4 +1,3 @@
-import pytest
 import polars as pl
 from services.data_validator import DataValidator
 

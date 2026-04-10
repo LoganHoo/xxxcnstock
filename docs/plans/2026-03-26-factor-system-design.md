@@ -10,14 +10,25 @@
 - **可配置**: 通过 YAML 配置文件管理因子和策略
 - **可扩展**: 支持新增因子类别和策略类型
 - **高性能**: 使用 Polars + DuckDB 保证计算效率
+- **多流程**: 支持三种并行选股流程，通过对比分析选择最优方案
 
 ### 1.3 因子类别
 | 类别 | 说明 | 示例因子 |
 |------|------|----------|
-| 技术指标因子 | 基于价格和成交量的技术分析 | MA、MACD、RSI、KDJ、布林带 |
-| 量价因子 | 分析成交量与价格关系 | 量比、换手率、CVD、量价背离 |
-| 基本面因子 | 基于财务数据分析 | PE、PB、ROE、营收增长、净利润增长 |
-| 资金流向因子 | 分析市场资金动向 | 北向资金、主力资金、融资融券 |
+| 技术指标因子 | 基于价格和成交量的技术分析 | MA、MACD、RSI、KDJ、布林带、CCI、WR、ATR、DMI、EMV、ASI、ROC、PSY、MTM |
+| 量价因子 | 分析成交量与价格关系 | 量比、换手率、MFI、OBV、VR、VOSC、WVAD、VMA、**主力共振** |
+| 市场情绪因子 | 分析市场整体情绪状态 | 市场温度、市场情绪、市场趋势、市场广度、涨跌停情绪、领涨股状态、筹码峰值 |
+
+### 1.4 过滤器类别
+| 类别 | 说明 | 示例过滤器 |
+|------|------|----------|
+| 流动性过滤 | 排除低流动性股票 | 量比、换手率、连续低换手、成交量稳定性 |
+| 估值过滤 | 排除估值异常股票 | PE/PB、价格区间、流通市值 |
+| 市场过滤 | 市值和价格过滤 | 总市值、股价、停牌 |
+| 技术过滤 | 技术形态过滤 | MA位置、MACD金叉死叉、趋势 |
+| 模式过滤 | 特殊形态过滤 | 涨停陷阱、涨停后回调、反弹信号 |
+| 基本面过滤 | 排除问题股 | 业绩、违规、市场崩盘 |
+| 风控过滤 | 风险股票过滤 | ST股票、次新股、退市风险 |
 
 ---
 
@@ -375,9 +386,86 @@ class PEPBFactor(BaseFactor):
         ])
 ```
 
-### 3.5 资金流向因子
+### 3.4 市场情绪因子
 
-#### 3.5.1 北向资金因子
+#### 3.4.1 涨跌停情绪因子
+
+```python
+# factors/market/emotion_factors.py
+class LimitUpScoreFactor(BaseFactor):
+    """涨停家数 - 跌停家数 + 连板高度"""
+```
+
+#### 3.4.2 领涨股状态因子
+
+```python
+# factors/market/emotion_factors.py
+class PioneerStatusFactor(BaseFactor):
+    """核心领涨个股实时涨跌幅"""
+```
+
+#### 3.4.3 市场温度计
+
+```python
+# factors/market/market_temperature.py
+class MarketTemperatureFactor(BaseFactor):
+    """市场温度指标"""
+```
+
+#### 3.4.4 市场情绪综合
+
+```python
+# factors/market/market_sentiment.py
+class MarketSentimentFactor(BaseFactor):
+    """市场情绪指标"""
+```
+
+#### 3.4.5 市场趋势
+
+```python
+# factors/market/market_trend.py
+class MarketTrendFactor(BaseFactor):
+    """大盘指数趋势强度"""
+```
+
+#### 3.4.6 市场广度
+
+```python
+# factors/market/market_breadth.py
+class MarketBreadthFactor(BaseFactor):
+    """市场涨跌家数对比"""
+```
+
+#### 3.4.7 筹码峰值
+
+```python
+# factors/market/cost_peak.py
+class CostPeakFactor(BaseFactor):
+    """筹码分布最大密集峰位"""
+```
+
+### 3.5 主力痕迹共振因子
+
+#### 3.5.1 主力共振因子
+
+```python
+# factors/volume_price/mainforce_resonance.py
+class MainForceResonanceFactor(BaseFactor):
+    """主力痕迹共振强度评分(0-100)
+
+    综合评分 = (S1涨停质量 + S2缺口强度 + S3连阳强度 + S4放量强度)
+
+    各子因子最大分值:
+    - mf_s1_limit_up (涨停质量): 25分
+    - mf_s2_gap (缺口强度): 25分
+    - mf_s3_consecutive (连阳强度): 25分
+    - mf_s4_volume (放量强度): 25分
+    """
+```
+
+### 3.6 资金流向因子
+
+#### 3.6.1 北向资金因子
 
 ```python
 # factors/capital_flow/north_money.py
@@ -728,14 +816,13 @@ print(f"夏普比率: {result['sharpe_ratio']:.2f}")
 | 实现策略引擎 | `core/strategy_engine.py` |
 | 创建配置目录结构 | `config/factors/`, `config/strategies/` |
 
-### 7.2 第二阶段：因子实现 (2-3天)
+### 7.2 第二阶段：因子实现 (已完成)
 
-| 任务 | 说明 |
-|------|------|
-| 技术指标因子 | MA、MACD、RSI、KDJ、布林带 |
-| 量价因子 | 量比、换手率、CVD |
-| 基本面因子 | PE/PB、ROE、成长因子 |
-| 资金流向因子 | 北向资金、主力资金 |
+| 类别 | 已实现因子 |
+|------|-----------|
+| 技术指标因子 | MA、MACD、RSI、KDJ、布林带、CCI、WR、ATR、DMI、EMV、ASI、ROC、PSY、MTR、MA5Bias、MATrend |
+| 量价因子 | 量比、换手率、MFI、OBV、VR、VOSC、WVAD、VMA、**主力共振** |
+| 市场情绪因子 | 市场温度、市场情绪、市场趋势、市场广度、涨跌停情绪、领涨股状态、筹码峰值 |
 
 ### 7.3 第三阶段：策略配置 (1天)
 
@@ -772,3 +859,323 @@ print(f"夏普比率: {result['sharpe_ratio']:.2f}")
 - Web 界面配置
 - 实时策略监控
 - 自动调参优化
+
+---
+
+## 附录：因子完整列表
+
+### A.1 技术指标因子 (16个)
+
+| 因子名称 | 类名 | 描述 |
+|----------|------|------|
+| ma_trend | MATrendFactor | 均线趋势因子，多头排列评分 |
+| macd | MacdFactor | MACD金叉死叉因子 |
+| rsi | RsiFactor | RSI超买超卖因子 |
+| kdj | KdjFactor | KDJ随机指标因子 |
+| bollinger | BollingerFactor | 布林带突破因子 |
+| cci | CciFactor | CCI顺势指标因子 |
+| wr | WrFactor |威廉指标超买超卖因子 |
+| atr | AtrFactor | 真实波动幅度均值 |
+| dmi | DmiFactor | 趋向指标动向因子 |
+| emv | EmvFactor | 简易波动指标 |
+| asi | AsiFactor | 振动升降指标 |
+| roc | RocFactor | 变动率指标 |
+| psy | PsyFactor | 心理线指标 |
+| mtm | MtmFactor | 动量指标 |
+| ma5_bias | MA5BiasFactor | 5日均线偏离度 |
+| atr | AtrFactor | 真实波幅均值 |
+
+### A.2 量价因子 (10个)
+
+| 因子名称 | 类名 | 描述 |
+|----------|------|------|
+| volume_ratio | VolumeRatioFactor | 量比因子 |
+| turnover | TurnoverFactor | 换手率因子 |
+| mfi | MfiFactor | 资金流量指标 |
+| obv | ObvFactor | 能量潮指标 |
+| vr | VrFactor | 成交量变异率 |
+| vosc | VoscFactor | 成交量振荡器 |
+| wvad | WvadFactor | 威廉变异离散量 |
+| vma | VmaFactor | 成交量移动平均 |
+| v_ratio | VRatio10Factor | 早盘量能比 |
+| **mainforce_resonance** | MainForceResonanceFactor | **主力痕迹共振因子(0-100)** |
+
+### A.3 市场情绪因子 (7个)
+
+| 因子名称 | 类名 | 描述 |
+|----------|------|------|
+| market_temperature | MarketTemperatureFactor | 市场温度指标 |
+| market_sentiment | MarketSentimentFactor | 市场情绪综合指标 |
+| market_trend | MarketTrendFactor | 大盘指数趋势强度 |
+| market_breadth | MarketBreadthFactor | 市场涨跌家数对比 |
+| limit_up_score | LimitUpScoreFactor | 涨停-跌停+连板高度 |
+| pioneer_status | PioneerStatusFactor | 核心领涨股涨跌幅 |
+| cost_peak | CostPeakFactor | 筹码分布峰值位置 |
+
+### 因子使用示例
+
+```python
+from core.factor_engine import FactorEngine
+from factors.volume_price.mainforce_resonance import MainForceResonanceFactor
+
+# 初始化引擎
+engine = FactorEngine()
+
+# 添加主力共振因子
+engine.add_factor(MainForceResonanceFactor())
+
+# 计算因子
+result = engine.calculate(stock_data)
+
+# 筛选高共振股票 (得分>80)
+high_resonance = result.filter(pl.col("mainforce_resonance") > 80)
+```
+
+---
+
+## 附录B：过滤器完整列表
+
+### B.1 流动性过滤器 (4个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| volume_ratio_filter | VolumeRatioFilter | 量比过滤，排除极度缩量 |
+| turnover_rate_filter | TurnoverRateFilter | 换手率过滤 |
+| continuous_low_turnover_filter | ContinuousLowTurnoverFilter | 连续低换手过滤 |
+| volume_stability_filter | VolumeStabilityFilter | 成交量稳定性过滤 |
+
+### B.2 估值过滤器 (3个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| valuation_filter | ValuationFilter | PE/PB估值过滤 |
+| price_range_filter | PriceRangeFilter | 价格区间过滤 |
+| float_market_cap_filter | FloatMarketCapFilter | 流通市值过滤 |
+
+### B.3 市场过滤器 (4个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| market_cap_filter | MarketCapFilter | 总市值过滤 |
+| price_filter | PriceFilter | 股价过滤 |
+| suspension_filter | SuspensionFilter | 停牌过滤 |
+
+### B.4 技术过滤器 (4个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| ma_position_filter | MAPositionFilter | MA位置过滤 |
+| macd_cross_filter | MACDCrossFilter | MACD金叉死叉 |
+| monthly_ma_filter | MonthlyMAFilter | 月线MA过滤 |
+| trend_filter | TrendFilter | 趋势过滤 |
+
+### B.5 模式过滤器 (6个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| limit_up_trap_filter | LimitUpTrapFilter | 涨停陷阱过滤 |
+| limit_up_after_filter | LimitUpAfterFilter | 涨停后回调过滤 |
+| pullback_signal_filter | PullbackSignalFilter | 反弹信号过滤 |
+| over_hyped_filter | OverHypedFilter | 过度炒作过滤 |
+| institution_signal_filter | InstitutionSignalFilter | 机构信号过滤 |
+
+### B.6 基本面过滤器 (3个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| performance_filter | PerformanceFilter | 业绩过滤 |
+| illegal_filter | IllegalFilter | 违规过滤 |
+| market_crash_filter | MarketCrashFilter | 市场崩盘过滤 |
+
+### B.7 风控过滤器 (3个)
+
+| 过滤器名称 | 类名 | 描述 |
+|------------|------|------|
+| st_filter | STFilter | ST股票过滤 |
+| new_stock_filter | NewStockFilter | 次新股过滤 |
+| delisting_filter | DelistingFilter | 退市风险过滤 |
+
+---
+
+## 附录C：多流程选股系统
+
+### C.1 三种选股流程
+
+系统支持三种并行选股流程，通过对比分析选择最优方案：
+
+| 流程 | 名称 | 特点 | 适用场景 |
+|------|------|------|----------|
+| A | 过滤优先 (conservative) | 先过滤后评分，严谨稳健 | 市场不明朗时 |
+| B | 因子优先 (balanced_factor) | 全量因子计算，均衡配置 | 正常市场环境 |
+| C | 信号优先 (aggressive_signal) | 纯主力共振信号驱动 | 强势市场追涨 |
+
+### C.2 流程架构
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    多流程选股系统                         │
+├─────────────────────────────────────────────────────────┤
+│  流程A: 过滤优先                                          │
+│    1. 读取K线数据                                         │
+│    2. 过滤: 涨跌停/停牌/低流动性/科创创业                    │
+│    3. 计算主力共振信号                                      │
+│    4. 综合评分: 因子40% + 共振信号60%                       │
+│    5. 选股: 取评分前30只                                   │
+├─────────────────────────────────────────────────────────┤
+│  流程B: 因子优先                                          │
+│    1. 读取K线数据（不预过滤）                               │
+│    2. 计算全量因子（技术指标+量价+市场情绪）                 │
+│    3. 综合评分: 多因子加权平均                              │
+│    4. 选股: 取评分前30只                                   │
+├─────────────────────────────────────────────────────────┤
+│  流程C: 信号优先                                          │
+│    1. 读取K线数据                                         │
+│    2. 计算主力共振信号（S+/A/B级）                          │
+│    3. 过滤: 剔除不满足买入条件的                            │
+│    4. 选股: S+全取 + A取前50% + B取前20%                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+### C.3 对比分析器
+
+`flow_comparator.py` 追踪持仓表现，计算：
+
+| 指标 | 说明 |
+|------|------|
+| total_picks | 总选股数 |
+| closed_picks | 已平仓数 |
+| win_count | 盈利次数 |
+| loss_count | 亏损次数 |
+| win_rate | 胜率 |
+| avg_return | 平均收益 |
+| max_return | 最大收益 |
+| min_return | 最小收益 |
+
+### C.4 使用方法
+
+```bash
+# 运行多流程选股
+python scripts/pipeline/stock_pick_multi.py
+
+# 运行对比分析
+python scripts/pipeline/stock_pick_multi.py --compare
+
+# 查看报告
+cat data/reports/compare_YYYYMMDD_HHMMSS.md
+```
+
+---
+
+## 附录D：过滤与因子组合指南
+
+### D.1 组合原则
+
+```
+Filters (过滤) ──► Factors (评分) ──► 选股
+   排除问题股         计算排名       取Top N
+```
+
+**Filters** 负责**过滤** - 排除不符合条件的股票（降低候选池）
+**Factors** 负责**评分** - 对通过过滤的股票进行综合评分（排名）
+
+### D.2 推荐组合顺序
+
+```python
+# 推荐顺序：先过滤后评分
+engine.apply_filters(df, filter_names=[
+    "suspension_filter",    # 1. 停牌先排除
+    "st_filter",            # 2. ST股排除
+    "liquidity_filter",     # 3. 流动性过滤
+    "valuation_filter",     # 4. 估值过滤
+    "limit_up_trap_filter", # 5. 涨停陷阱过滤
+])
+```
+
+### D.3 预设模式
+
+过滤器支持多种预设模式：
+
+```yaml
+# valuation_filter.yaml
+presets:
+  conservative:  # 保守 - 估值要求严格
+    max_pe: 30
+    max_pb: 3
+  standard:      # 标准
+    max_pe: 100
+    max_pb: 10
+  aggressive:    # 激进 - 估值宽松
+    max_pe: 200
+    max_pb: 20
+```
+
+```python
+# 使用预设
+engine = FilterEngine(preset="conservative")  # 保守
+engine = FilterEngine(preset="aggressive")    # 激进
+```
+
+### D.4 因子权重调整
+
+```python
+# 在 factors/volume_price/mainforce_resonance.py 中调整
+S1_weight = 0.25  # 涨停信号权重
+S2_weight = 0.25  # 缺口信号权重
+S3_weight = 0.25  # 连阳信号权重
+S4_weight = 0.25  # 放量信号权重
+```
+
+### D.5 组合示例
+
+```python
+from filters.filter_engine import FilterEngine
+from core.factor_engine import FactorEngine
+
+# 步骤1: 过滤
+filter_engine = FilterEngine(preset="standard")
+filtered_stocks = filter_engine.apply_filters(all_stocks)
+
+# 步骤2: 因子计算
+factor_engine = FactorEngine()
+scored_stocks = factor_engine.calculate_all_factors(filtered_stocks)
+
+# 步骤3: 选股
+top_stocks = scored_stocks.sort("综合评分", descending=True).head(30)
+```
+
+---
+
+## 附录E：参数调优指南
+
+### E.1 过滤器参数调优
+
+| 参数 | 保守值 | 标准值 | 激进值 | 调整建议 |
+|------|--------|--------|--------|----------|
+| max_pe | 30 | 100 | 200 | 牛市调高，熊市调低 |
+| max_pb | 3 | 10 | 20 | 成长股调高，价值股调低 |
+| min_volume | 5000万 | 1000万 | 500万 | 流动性要求 |
+| min_turnover | 3% | 1% | 0.5% | 交易活跃度要求 |
+
+### E.2 因子权重调优
+
+| 因子 | 趋势市场 | 震荡市场 | 调整原则 |
+|------|----------|----------|----------|
+| ma_trend | 0.30 | 0.15 | 趋势明确时加重 |
+| macd | 0.20 | 0.25 | 震荡时靠摆动指标 |
+| volume_ratio | 0.15 | 0.20 | 放量时加重 |
+|主力共振 | 0.35 | 0.40 | 信号明确时加重 |
+
+### E.3 流程选择建议
+
+| 市场环境 | 推荐流程 | 原因 |
+|----------|----------|------|
+| 强势上涨 | C (信号优先) | 抓住主升浪 |
+| 震荡整理 | B (因子优先) | 均衡配置 |
+| 方向不明 | A (过滤优先) | 控制风险 |
+| 弱势下跌 | A (过滤优先) | 严格风控 |
+
+### E.4 调优周期
+
+- **短期调整 (1-2周)**: 根据市场温度调整过滤参数
+- **中期调整 (1个月)**: 根据因子表现调整权重
+- **长期跟踪 (季度)**: 评估流程表现，淘汰低效流程

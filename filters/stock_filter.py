@@ -51,7 +51,15 @@ class NewStockFilter(BaseFilter):
             self.logger.warning("缺少list_date字段，跳过新股过滤")
             return stock_list
         
-        cutoff_date = (datetime.now() - timedelta(days=self.min_listing_days)).strftime("%Y-%m-%d")
+        cutoff_datetime = datetime.now() - timedelta(days=self.min_listing_days)
+        list_date_dtype = stock_list.schema.get("list_date")
+
+        if list_date_dtype == pl.Date:
+            cutoff_date = cutoff_datetime.date()
+        elif list_date_dtype == pl.Datetime:
+            cutoff_date = cutoff_datetime
+        else:
+            cutoff_date = cutoff_datetime.strftime("%Y-%m-%d")
         
         filtered = stock_list.filter(
             pl.col("list_date") <= cutoff_date

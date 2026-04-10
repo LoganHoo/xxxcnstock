@@ -1,0 +1,34 @@
+{
+  "date": "2026-04-04",
+  "update_time": "2026-04-04 11:03:39",
+  "dxy": {
+    "value": 104.5,
+    "change_pct": 0.1
+  },
+  "us10y": {
+    "value": 4.25
+  },
+  "cny": {
+    "value": 7.25
+  },
+  "china": {
+    "pmi": {
+      "value": 50.8,
+      "change_pct": 0
+    },
+    "cpi": {
+      "value": 0.2,
+      "change_pct": 0
+    }
+  },
+  "us": {
+    "nfp": {
+      "value": 20.3,
+      "change_pct": 0
+    },
+    "cpi": {
+      "value": 3.4,
+      "change_pct": 0
+    }
+  }
+}

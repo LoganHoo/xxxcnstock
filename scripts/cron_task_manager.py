@@ -1,14 +1,260 @@
 """
 定时任务配置管理器
 从 YAML 配置文件生成 cron 任务
+支持 Redis 锁和重试机制
 """
 import yaml
+import os
+import redis
+import time
+import subprocess
+import sys
+import logging
 from pathlib import Path
 from typing import List, Dict, Optional
-import logging
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+class TaskLock:
+    """Redis 任务锁"""
+    
+    def __init__(self, task_name: str, timeout: int = 3600):
+        self.task_name = task_name
+        self.timeout = timeout
+        self.lock_key = f"cron:lock:{task_name}"
+        self._redis = None
+        self._connected = False
+    
+    def _get_redis(self):
+        """获取 Redis 连接"""
+        if self._redis is None:
+            try:
+                redis_host = os.getenv('REDIS_HOST', '49.233.10.199')
+                redis_port = int(os.getenv('REDIS_PORT', '6379'))
+                redis_password = os.getenv('REDIS_PASSWORD', '100200')
+                self._redis = redis.Redis(
+                    host=redis_host,
+                    port=redis_port,
+                    password=redis_password,
+                    db=0,
+                    socket_timeout=5,
+                    decode_responses=True
+                )
+                self._redis.ping()
+                self._connected = True
+            except Exception as e:
+                logger.warning(f"Redis 连接失败: {e}，将跳过锁检查")
+                self._connected = False
+        return self._redis
+    
+    def acquire(self) -> bool:
+        """获取锁"""
+        if not self._get_redis() or not self._connected:
+            logger.info(f"Redis 未连接，跳过锁检查，执行任务: {self.task_name}")
+            return True
+        
+        try:
+            result = self._redis.set(
+                self.lock_key,
+                "1",
+                nx=True,
+                ex=self.timeout
+            )
+            if result:
+                logger.info(f"获取锁成功: {self.task_name}")
+                return True
+            else:
+                logger.warning(f"任务正在执行中，跳过: {self.task_name}")
+                return False
+        except Exception as e:
+            logger.warning(f"获取锁失败: {e}，继续执行任务")
+            return True
+    
+    def release(self):
+        """释放锁"""
+        if self._redis and self._connected:
+            try:
+                self._redis.delete(self.lock_key)
+                logger.info(f"释放锁: {self.task_name}")
+            except Exception as e:
+                logger.warning(f"释放锁失败: {e}")
+
+
+class TaskExecutor:
+    """任务执行器 - 支持重试和日志"""
+    
+    def __init__(self, config_path: str):
+        self.config_path = Path(config_path)
+        self.config = self._load_config()
+        self.global_config = self.config.get('global', {})
+        self.retry_enabled = self.global_config.get('retry_enabled', True)
+        self.max_retries = self.global_config.get('max_retries', 3)
+        self.retry_delay = self.global_config.get('retry_delay', 60)
+        self.log_file = self.global_config.get('log_file', '/app/logs/cron.log')
+        self._redis = None
+    
+    def _get_redis(self):
+        """获取 Redis 连接"""
+        if self._redis is None:
+            try:
+                import redis
+                redis_host = os.getenv('REDIS_HOST', '49.233.10.199')
+                redis_port = int(os.getenv('REDIS_PORT', '6379'))
+                redis_password = os.getenv('REDIS_PASSWORD', '100200')
+                self._redis = redis.Redis(
+                    host=redis_host,
+                    port=redis_port,
+                    password=redis_password,
+                    db=0,
+                    socket_timeout=5,
+                    decode_responses=True
+                )
+                self._redis.ping()
+            except Exception as e:
+                print(f"Redis 连接失败: {e}")
+                self._redis = None
+        return self._redis
+    
+    def _check_task_passed(self, task_name: str) -> bool:
+        """检查指定任务是否已通过（质检通过）"""
+        r = self._get_redis()
+        if not r:
+            return False
+        
+        try:
+            status = r.get(f"task:status:{task_name}")
+            return status == "passed"
+        except:
+            return False
+    
+    def _set_task_status(self, task_name: str, status: str):
+        """设置任务状态"""
+        r = self._get_redis()
+        if not r:
+            return
+        
+        try:
+            r.set(f"task:status:{task_name}", status, ex=86400)
+        except:
+            pass
+    
+    def _load_config(self) -> dict:
+        """加载配置文件"""
+        with open(self.config_path, 'r', encoding='utf-8') as f:
+            return yaml.safe_load(f)
+    
+    def _log(self, message: str):
+        """写入日志"""
+        timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+        log_message = f"{timestamp} - {message}\n"
+        
+        log_dir = Path(self.log_file).parent
+        log_dir.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            with open(self.log_file, 'a', encoding='utf-8') as f:
+                f.write(log_message)
+        except Exception as e:
+            print(f"日志写入失败: {e}")
+        print(log_message.strip())
+    
+    def _run_script(self, script: str, env: dict = None, timeout: int = None) -> int:
+        """执行脚本"""
+        cmd = [sys.executable, script]
+
+        process_env = os.environ.copy()
+        if env:
+            process_env.update(env)
+
+        process_env['PYTHONUNBUFFERED'] = '1'
+        process_env['TZ'] = 'Asia/Shanghai'
+
+        result = subprocess.run(
+            cmd,
+            env=process_env,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        
+        if result.stdout:
+            self._log(result.stdout)
+        if result.stderr:
+            self._log(f"STDERR: {result.stderr}")
+        
+        return result.returncode
+    
+    def execute_task(self, task: dict) -> bool:
+        """执行单个任务"""
+        task_name = task.get('name', 'unknown')
+        script = task.get('script', '')
+        timeout = task.get('timeout', 600)
+        task_env = task.get('env', {})
+        skip_if_passed = task.get('skip_if_passed')
+        
+        if skip_if_passed:
+            if self._check_task_passed(skip_if_passed):
+                self._log(f"任务跳过（{skip_if_passed} 已通过）: {task_name}")
+                return True
+        
+        use_lock = self.global_config.get('use_redis_lock', True)
+        lock_timeout = self.global_config.get('redis_lock_timeout', 3600)
+        
+        lock = TaskLock(task_name, lock_timeout) if use_lock else None
+        
+        if lock and not lock.acquire():
+            self._log(f"任务跳过（锁未获取）: {task_name}")
+            return False
+        
+        try:
+            self._log(f"开始执行任务: {task_name}")
+            
+            retries = 0
+            while retries <= self.max_retries:
+                returncode = self._run_script(script, task_env, timeout)
+                
+                if returncode == 0:
+                    self._log(f"任务执行成功: {task_name}")
+                    self._set_task_status(task_name, "passed")
+                    
+                    if task_name == "data_quality_check":
+                        self._set_task_status("data_quality_check", "passed")
+                    
+                    return True
+                
+                retries += 1
+                if retries <= self.max_retries:
+                    self._log(f"任务执行失败 (尝试 {retries}/{self.max_retries})，{self.retry_delay}秒后重试: {task_name}")
+                    time.sleep(self.retry_delay)
+                else:
+                    self._log(f"任务执行失败（已重试 {self.max_retries} 次）: {task_name}")
+                    self._set_task_status(task_name, "failed")
+                    return False
+            
+            return False
+        finally:
+            if lock:
+                lock.release()
+    
+    def execute_with_dependencies(self, task: dict, completed_tasks: set) -> bool:
+        """执行任务并检查依赖"""
+        task_name = task.get('name', 'unknown')
+        depends_on = task.get('depends_on', [])
+        
+        if isinstance(depends_on, str):
+            depends_on = [depends_on]
+        
+        for dep in depends_on:
+            if dep not in completed_tasks:
+                logger.warning(f"依赖任务未完成: {task_name} -> {dep}")
+                return False
+        
+        return self.execute_task(task)
 
 
 class CronTaskManager:
@@ -26,19 +272,26 @@ class CronTaskManager:
     def generate_cron_entry(self, task: dict) -> str:
         """生成单个 cron 条目"""
         global_config = self.config.get('global', {})
-        
+        env_config = self.config.get('environment', {})
+
         schedule = task.get('schedule', '')
         script = task.get('script', '')
         description = task.get('description', '')
         enabled = task.get('enabled', True)
-        
+
         if not enabled:
-            return f"# DISABLED: {description}\n# {schedule} root cd /app && /usr/local/bin/python {script} >> /app/logs/cron.log 2>&1\n"
-        
+            return f"# DISABLED: {description}\n# {schedule} cd /app && /usr/local/bin/python {script} >> /app/logs/cron.log 2>&1\n"
+
+        env_exports = []
+        for key, value in env_config.items():
+            env_exports.append(f"export {key}=\"{value}\"")
+
+        env_block = '\n'.join(env_exports) + '\n' if env_exports else ''
+
         lines = []
         lines.append(f"# {description}")
-        lines.append(f"{schedule} root cd /app && /usr/local/bin/python {script} >> /app/logs/cron.log 2>&1")
-        
+        lines.append(f"{schedule} cd /app && {env_block}/usr/local/bin/python {script} >> /app/logs/cron.log 2>&1")
+
         return '\n'.join(lines) + '\n'
     
     def generate_cron_file(self) -> str:
@@ -159,8 +412,9 @@ class CronTaskManager:
             if not task.get('description'):
                 task_warnings.append("缺少 description 字段")
             
-            # 检查脚本是否存在
-            script_path = Path(task.get('script', ''))
+            # 检查脚本是否存在（支持带参数如 --retry）
+            script_path_str = task.get('script', '').split()[0] if task.get('script') else ''
+            script_path = Path(script_path_str)
             if not script_path.exists():
                 task_warnings.append(f"脚本文件不存在: {script_path}")
             

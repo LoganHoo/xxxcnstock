@@ -1,0 +1,71 @@
+{
+  "date": "2026-04-03",
+  "update_time": "2026-04-03 03:13:45",
+  "us_index": {
+    "name": "美股指数",
+    "data": {
+      "nasdaq": {
+        "price": 21832.83,
+        "change": 360.31,
+        "change_pct": 1.68,
+        "previous_close": 21472.52,
+        "source": "sina",
+        "sources": [
+          "yahoo",
+          "sina"
+        ]
+      },
+      "sp500": {
+        "price": 6572.92,
+        "change": -2.4,
+        "change_pct": -0.04,
+        "previous_close": 6575.32,
+        "source": "yahoo",
+        "sources": [
+          "yahoo"
+        ]
+      },
+      "dow": {
+        "price": 46468.51,
+        "change": -97.23,
+        "change_pct": -0.21,
+        "previous_close": 46565.74,
+        "source": "yahoo",
+        "sources": [
+          "yahoo",
+          "sina"
+        ]
+      }
+    },
+    "status": "success"
+  },
+  "asia_index": {
+    "name": "亚洲股指",
+    "data": {
+      "hang_seng": {
+        "price": 25254.49,
+        "change": -39.54,
+        "change_pct": -0.16,
+        "source": "sina"
+      },
+      "hscei": {
+        "price": 8477.35,
+        "change": -27.46,
+        "change_pct": -0.32,
+        "source": "sina"
+      },
+      "hstech": {
+        "price": 4732.95,
+        "change": -23.5,
+        "change_pct": -0.49,
+        "source": "sina"
+      }
+    },
+    "status": "success"
+  },
+  "proxies": {
+    "http": "***",
+    "https": "***",
+    "all": "***"
+  }
+}

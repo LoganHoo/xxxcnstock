@@ -15,14 +15,63 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - PYTHONUNBUFFERED=1
-      - MYSQL_HOST=localhost
-      - MYSQL_PORT=3306
-      - MYSQL_USER=nextai
-      - MYSQL_PASSWORD=100200
-      - MYSQL_DATABASE=xcn_db
-      - EMAIL_USE_API=true
-      - EMAIL_API_URL=http://localhost:2000/api/email/send
+      - DB_HOST=49.233.10.199
+      - DB_PORT=3306
+      - DB_USER=nextai
+      - DB_PASSWORD=100200
+      - DB_NAME=xcn_db
+      - DB_URL=mysql+pymysql://nextai:100200@49.233.10.199:3306/xcn_db?charset=utf8mb4
+      - EMAIL_USE_API=false
+      - EMAIL_API_URL=http://192.168.1.168:2000/send_email
+      - EMAIL_SMTP_SERVER=smtp.qq.com
+      - EMAIL_SMTP_PORT=465
+      - EMAIL_USERNAME=287363@qq.com
+      - EMAIL_PASSWORD=acearvjndkaxcaad
       - NOTIFICATION_EMAILS=287363@qq.com
+      - REDIS_HOST=49.233.10.199
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=100200
+    networks:
+      - xcnstock-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  xcnstock-scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: xcnstock-scheduler
+    restart: unless-stopped
+    labels:
+      - "com.docker.compose.project=xxxcnstock"
+      - "com.docker.compose.service=xcnstock-scheduler"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./config:/app/config:ro
+      - ./reports:/app/reports
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+      - DB_HOST=49.233.10.199
+      - DB_PORT=3306
+      - DB_USER=nextai
+      - DB_PASSWORD=100200
+      - DB_NAME=xcn_db
+      - DB_URL=mysql+pymysql://nextai:100200@49.233.10.199:3306/xcn_db?charset=utf8mb4
+      - EMAIL_USE_API=false
+      - EMAIL_API_URL=http://192.168.1.168:2000/send_email
+      - EMAIL_SMTP_SERVER=smtp.qq.com
+      - EMAIL_SMTP_PORT=465
+      - EMAIL_USERNAME=287363@qq.com
+      - EMAIL_PASSWORD=acearvjndkaxcaad
+      - NOTIFICATION_EMAILS=287363@qq.com
+      - REDIS_HOST=49.233.10.199
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=100200
     networks:
       - xcnstock-network
     logging:

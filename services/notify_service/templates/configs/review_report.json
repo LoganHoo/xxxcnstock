@@ -1,0 +1,73 @@
+{
+  "name": "review_report",
+  "display_name": "完整复盘报告",
+  "subject_template": "【完整复盘】A股日终总结 - {date}",
+  "sections": [
+    {
+      "key": "header",
+      "title": "报告头部",
+      "enabled": true,
+      "template": "section_header"
+    },
+    {
+      "key": "dq_report",
+      "title": "数据质量",
+      "enabled": true,
+      "data_path": "data/dq_close.json",
+      "format": "dq_summary"
+    },
+    {
+      "key": "market_overview",
+      "title": "大盘概况",
+      "enabled": true,
+      "data_path": "data/market_review.json",
+      "format": "market_overview"
+    },
+    {
+      "key": "limit_analysis",
+      "title": "涨跌停",
+      "enabled": true,
+      "data_path": "data/market_review.json",
+      "format": "limit_analysis"
+    },
+    {
+      "key": "cvd_analysis",
+      "title": "资金流向",
+      "enabled": true,
+      "data_path": "data/market_review.json",
+      "format": "cvd_analysis"
+    },
+    {
+      "key": "picks_tracking",
+      "title": "昨日推荐追踪",
+      "enabled": true,
+      "data_path": "data/picks_review.json",
+      "format": "picks_tracking"
+    },
+    {
+      "key": "okr",
+      "title": "OKR目标",
+      "enabled": true,
+      "data_path": "data/okr.json",
+      "format": "okr_summary"
+    },
+    {
+      "key": "ai_review",
+      "title": "AI复盘",
+      "enabled": true,
+      "data_path": "data/ai_review.json",
+      "format": "ai_review"
+    },
+    {
+      "key": "hot_sectors",
+      "title": "热点板块",
+      "enabled": true,
+      "data_path": "data/market_review.json",
+      "format": "hot_sectors"
+    }
+  ],
+  "footer": {
+    "text": "数据仅供参考",
+    "disclaimer": "本报告仅供参考，不构成投资建议。股市有风险，投资需谨慎。"
+  }
+}

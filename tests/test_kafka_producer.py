@@ -1,5 +1,4 @@
 """Kafka生产者测试"""
-import pytest
 from unittest.mock import patch, MagicMock
 
 
@@ -66,7 +65,7 @@ class TestKafkaProducer:
                 KAFKA_LIMIT_UP_TOPIC="xcnstock_limit_up",
                 KAFKA_ENABLED=False
             )
-            from services.notify_service.channels.kafka_producer import get_kafka_producer, _producer_instance
+            from services.notify_service.channels.kafka_producer import get_kafka_producer
             # 重置单例
             import services.notify_service.channels.kafka_producer as module
             module._producer_instance = None

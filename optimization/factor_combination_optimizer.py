@@ -99,8 +99,9 @@ class FactorCombinationOptimizer:
         logger.info(f"共 {len(self._all_trade_dates)} 个交易日")
 
     def get_available_factors(self) -> List[str]:
-        all_configs = factor_config_loader.load_all_factors()
-        return [cache_key.split("/")[-1] for cache_key in all_configs.keys()]
+        # 使用 FactorEngine 的因子列表
+        factors = self.factor_engine.list_factors(enabled_only=True)
+        return [f["name"] for f in factors]
 
     def get_available_filters(self) -> List[str]:
         all_configs = filter_config_loader.load_all_filters()
@@ -133,7 +134,11 @@ class FactorCombinationOptimizer:
             "wvad": {"period": [10, 20, 30]},
             "ma_trend": {"short_period": [5, 10], "long_period": [20, 30, 60]},
             "emv": {"period": [10, 14, 20]},
-            "asi": {"limit": [0.5, 1.0, 1.5]}
+            "asi": {"limit": [0.5, 1.0, 1.5]},
+            "market_trend": {"period": [15, 20, 25, 30]},
+            "market_breadth": {"period": [5, 10, 15, 20]},
+            "market_sentiment": {"vol_period": [15, 20, 25], "price_period": [5, 10, 15]},
+            "market_temperature": {"period": [15, 20, 25], "high_low_period": [40, 52, 60]}
         }
 
     def _get_factor_cache_key(self, code: str, factor_name: str, params: Dict) -> str:

@@ -6,7 +6,6 @@
 """
 import os
 import smtplib
-import logging
 import requests
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -14,6 +13,7 @@ from email.mime.base import MIMEBase
 from email import encoders
 from typing import List, Optional
 from pathlib import Path
+from core.logger import get_logger
 
 try:
     from dotenv import load_dotenv
@@ -22,7 +22,7 @@ except ImportError:
     pass
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class EmailSender:
@@ -184,12 +184,18 @@ class EmailAPISender:
 
 class EmailService:
     """邮件服务 - HTTP API 优先，SMTP 备用"""
-    
+
     def __init__(self, api_url: str = None, use_api: bool = None):
         self.api_url = api_url or os.getenv('EMAIL_API_URL', 'http://192.168.1.168:2000/api/email/send')
         self.use_api = use_api if use_api is not None else os.getenv('EMAIL_USE_API', 'true').lower() == 'true'
         self.api_sender = EmailAPISender(self.api_url)
-        self.smtp_sender = EmailSender()
+        self.smtp_sender = EmailSender(
+            smtp_host=os.getenv('EMAIL_SMTP_SERVER', 'smtp.qq.com'),
+            smtp_port=int(os.getenv('EMAIL_SMTP_PORT', 465)),
+            smtp_user=os.getenv('EMAIL_USERNAME', ''),
+            smtp_password=os.getenv('EMAIL_PASSWORD', ''),
+            use_ssl=True
+        )
     
     def send(
         self,

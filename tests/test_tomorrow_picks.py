@@ -5,13 +5,12 @@ import pytest
 import polars as pl
 from pathlib import Path
 import sys
-import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'scripts'))
 
 from tomorrow_picks import (
     ConfigManager, DataLoader, SGradeFilter, AGradeFilter,
-    BullishFilter, MACDVolumeFilter, FilterEngine, TextReporter,
+    BullishFilter, MACDVolumeFilter, TextReporter,
     HTMLReporter, JSONReporter, StockRecommender
 )
 

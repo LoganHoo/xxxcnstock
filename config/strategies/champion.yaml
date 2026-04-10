@@ -1,52 +1,36 @@
 strategy:
   name: champion_strategy
-  description: 遗传算法优化冠军策略 (fitness=0.1877)
+  description: 遗传算法优化冠军策略 (fitness=0.6050)
   version: '1.0'
   factors:
-  - name: vr
-    weight: 0.0973
+  - name: atr
+    weight: 0.1027
     threshold: 30
     params:
-      period: 30
-  - name: vosc
-    weight: 0.0997
-    threshold: 30
-    params:
-      fast_period: 10
-      slow_period: 30
-  - name: wr
-    weight: 0.0961
-    threshold: 30
-    params:
-      period: 20
+      period: 14
   - name: kdj
-    weight: 0.1047
+    weight: 0.484
     threshold: 30
     params:
-      n: 14
-      m1: 2
+      n: 5
+      m1: 4
       m2: 4
+  - name: obv
+    weight: 0.195
+    threshold: 30
+    params:
+      ma_period: 10
   - name: emv
-    weight: 0.4151
+    weight: 0.2183
     threshold: 30
     params:
-      period: 20
-  - name: turnover
-    weight: 0.098
-    threshold: 30
-    params:
-      period: 5
-  - name: cci
-    weight: 0.0892
-    threshold: 30
-    params:
-      period: 30
+      period: 14
   filters:
   - type: price
     min: 3
     max: 100
   output:
-    top_n: 8
+    top_n: 4
     min_score: 40
     formats:
     - json

@@ -1,79 +1,113 @@
-import logging
 import sys
 from pathlib import Path
-from logging.handlers import TimedRotatingFileHandler
+from loguru import logger
 from core.config import get_settings
 
 
 def setup_logger(
-    name: str,
-    level: int = logging.INFO,
-    log_file: str = None
-) -> logging.Logger:
-    """设置日志器"""
+    name: str = None,
+    level: str = "INFO",
+    log_file: str = None,
+    rotation: str = "00:00",
+    retention: str = "30 days",
+    compression: str = "zip"
+) -> "logger":
+    """
+    配置loguru日志器
+
+    Args:
+        name: 日志器名称 (可选，默认使用root logger)
+        level: 日志级别 (DEBUG, INFO, WARNING, ERROR)
+        log_file: 日志文件路径 (可选，不设置则仅输出到控制台)
+        rotation: 日志轮转时间 (默认每日00:00)
+        retention: 日志保留时间 (默认30天)
+        compression: 日志压缩格式 (默认zip)
+
+    Returns:
+        配置好的loguru logger实例
+    """
     settings = get_settings()
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    
-    # 避免重复添加handler
-    if logger.handlers:
-        return logger
-    
-    # 控制台输出
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setLevel(level)
-    console_format = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+
+    removal_action = logger.remove
+
+    logger.remove()
+
+    log_format = (
+        "<green>{time:YYYY-MM-DD HH:mm:ss}</green> | "
+        "<level>{level: <8}</level> | "
+        "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | "
+        "<level>{message}</level>"
     )
-    console_handler.setFormatter(console_format)
-    logger.addHandler(console_handler)
-    
-    # 文件输出
+
+    logger.add(
+        sys.stdout,
+        format=log_format,
+        level=level,
+        colorize=True,
+        backtrace=True,
+        diagnose=False
+    )
+
     if log_file:
         log_path = Path(settings.LOG_DIR) / log_file
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        file_handler = TimedRotatingFileHandler(
+
+        logger.add(
             log_path,
-            when="midnight",
-            backupCount=30,
-            encoding="utf-8"
+            format=log_format,
+            level=level,
+            rotation=rotation,
+            retention=retention,
+            compression=compression,
+            encoding="utf-8",
+            backtrace=True,
+            diagnose=False
         )
-        file_handler.setLevel(level)
-        file_handler.setFormatter(console_format)
-        logger.addHandler(file_handler)
-    
+
+    if name:
+        return logger.bind(name=name)
     return logger
 
 
-def get_signal_logger() -> logging.Logger:
-    """获取信号专用日志器"""
-    settings = get_settings()
-    logger = logging.getLogger("signal")
-    logger.setLevel(logging.INFO)
-    
-    if logger.handlers:
-        return logger
-    
-    # JSON格式文件处理器
-    log_path = Path(settings.LOG_DIR) / "signals" / "signals.json"
-    log_path.parent.mkdir(parents=True, exist_ok=True)
-    
-    file_handler = TimedRotatingFileHandler(
-        log_path,
-        when="midnight",
-        backupCount=180,
-        encoding="utf-8"
-    )
-    json_format = logging.Formatter(
-        '{"time": "%(asctime)s", "level": "%(levelname)s", "message": %(message)s}'
-    )
-    file_handler.setFormatter(json_format)
-    logger.addHandler(file_handler)
-    
+def get_logger(name: str = None) -> "logger":
+    """
+    获取loguru日志器
+
+    Args:
+        name: 日志器名称 (可选)
+
+    Returns:
+        loguru logger实例
+    """
+    if name:
+        return logger.bind(name=name)
     return logger
 
 
-def get_alert_logger() -> logging.Logger:
-    """获取告警日志器"""
-    return setup_logger("alert", log_file="alerts/error.log")
+def get_signal_logger(name: str = "signal") -> "logger":
+    """
+    获取信号专用日志器
+
+    Args:
+        name: 日志器名称
+
+    Returns:
+        loguru logger实例
+    """
+    return logger.bind(name=name)
+
+
+def get_alert_logger(name: str = "alert") -> "logger":
+    """
+    获取告警专用日志器
+
+    Args:
+        name: 日志器名称
+
+    Returns:
+        loguru logger实例
+    """
+    return logger.bind(name=name)
+
+
+logger = setup_logger(level="INFO")

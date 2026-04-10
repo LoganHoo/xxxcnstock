@@ -56,8 +56,6 @@ def check_data_freshness_manual():
     Returns:
         bool: 数据是否新鲜
     """
-    logger = logging.getLogger(__name__)
-    
     # 确定数据目录
     project_root = Path(__file__).parent.parent
     data_dir = project_root / "data"

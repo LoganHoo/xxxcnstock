@@ -150,7 +150,6 @@ class FilterConfigLoader:
         
         for config_file in category_dir.glob("*.yaml"):
             filter_name = config_file.stem
-            cache_key = f"{category}/{filter_name}"
             category_configs[filter_name] = self.load_filter_config(filter_name, category)
         
         return category_configs

@@ -3,7 +3,6 @@
 """
 import pytest
 import polars as pl
-from pathlib import Path
 from core.factor_engine import FactorEngine
 
 

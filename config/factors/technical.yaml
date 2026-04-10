@@ -104,12 +104,24 @@ factors:
         period: 12
       weight: 0.03
       enabled: true
-  
+    
+    - name: ma5_bias
+      description: "MA5偏差因子 - 短线超买超卖判断"
+      params: {}
+      weight: 0.03
+      enabled: true
+
   volume_price:
     - name: volume_ratio
       description: "量比因子 - 成交量相对强度"
       params:
         period: 5
+      weight: 0.06
+      enabled: true
+      
+    - name: v_ratio10
+      description: "V_ratio10因子 - 早盘放量判断"
+      params: {}
       weight: 0.06
       enabled: true
       

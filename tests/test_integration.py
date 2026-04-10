@@ -1,11 +1,26 @@
 """指数分析功能测试"""
-import pytest
 import pandas as pd
 import numpy as np
+import polars as pl
+import pyarrow.parquet as pq
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def load_parquet_frame(file_path: str) -> pd.DataFrame:
+    """兼容 pytest 环境下的 parquet 读取"""
+    try:
+        return pd.read_parquet(file_path)
+    except Exception as error:
+        if "Invalid number of indices: 0" not in str(error):
+            raise
+        try:
+            table = pq.read_table(file_path, use_pandas_metadata=False)
+            return table.to_pandas()
+        except Exception:
+            return pl.read_parquet(file_path).to_pandas()
 
 
 class TestIndexAnalysis:
@@ -79,7 +94,7 @@ class TestParquetDataValidation:
     
     def test_enhanced_scores_data_valid(self):
         """测试分析结果数据有效"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         assert len(df) > 0
         assert 'code' in df.columns
@@ -89,7 +104,7 @@ class TestParquetDataValidation:
     
     def test_enhanced_scores_grade_values(self):
         """测试评分等级值有效"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         valid_grades = {'S', 'A', 'B', 'C'}
         actual_grades = set(df['grade'].unique())
@@ -98,7 +113,7 @@ class TestParquetDataValidation:
     
     def test_enhanced_scores_score_range(self):
         """测试评分范围有效"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         assert df['enhanced_score'].min() >= 0
         assert df['enhanced_score'].max() <= 100

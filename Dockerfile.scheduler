@@ -1,0 +1,53 @@
+# Stage 1: Builder - compile dependencies
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+COPY requirements.txt .
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc default-libmysqlclient-dev pkg-config && \
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y --auto-remove gcc default-libmysqlclient-dev pkg-config && \
+    rm -rf /var/lib/apt/lists/*
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+LABEL maintainer="XCNStock"
+LABEL description="A股数据分析 APScheduler 调度器"
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmariadb3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --shell /bin/bash appuser
+
+WORKDIR /app
+
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY --chown=appuser:appuser scripts/ ./scripts/
+COPY --chown=appuser:appuser services/ ./services/
+COPY --chown=appuser:appuser models/ ./models/
+COPY --chown=appuser:appuser config/ ./config/
+COPY --chown=appuser:appuser core/ ./core/
+COPY --chown=appuser:appuser factors/ ./factors/
+COPY --chown=appuser:appuser filters/ ./filters/
+COPY --chown=appuser:appuser optimization/ ./optimization/
+COPY --chown=appuser:appuser patterns/ ./patterns/
+COPY --chown=appuser:appuser data/ ./data/
+COPY --chown=appuser:appuser reports/ ./reports/
+
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app
+
+ENV PYTHONUNBUFFERED=1
+ENV TZ=Asia/Shanghai
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD python -c "import os; assert os.path.exists('/app/logs/scheduler_heartbeat')" || exit 1
+
+CMD ["python", "scripts/apscheduler_enhanced.py"]

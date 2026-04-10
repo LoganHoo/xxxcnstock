@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ date }} 数据验证报告</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f5f7fa; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .header .subtitle { opacity: 0.9; font-size: 14px; }
+        .section { background: white; border-radius: 10px; padding: 25px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .section h2 { color: #2c3e50; font-size: 18px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #667eea; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .stat-card { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; }
+        .stat-card .value { font-size: 32px; font-weight: bold; color: #667eea; }
+        .stat-card .label { color: #7f8c8d; font-size: 14px; margin-top: 5px; }
+        .pass { color: #27ae60; font-weight: bold; }
+        .fail { color: #e74c3c; font-weight: bold; }
+        .warn { color: #f39c12; font-weight: bold; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: left; }
+        th { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-weight: 500; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #f1f3f5; }
+        .verify-btn { background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; }
+        .verify-btn:hover { background: #5a6fd6; }
+        .input-close { width: 100px; padding: 5px; border: 1px solid #ddd; border-radius: 4px; text-align: center; }
+        .info-list { list-style: none; }
+        .info-list li { padding: 10px 0; border-bottom: 1px solid #eee; }
+        .info-list li:last-child { border-bottom: none; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .conclusion { padding: 20px; border-radius: 8px; text-align: center; font-size: 18px; }
+        .conclusion.pass { background: #d4edda; color: #155724; }
+        .conclusion.fail { background: #f8d7da; color: #721c24; }
+        .alert { padding: 15px; border-radius: 5px; margin-top: 15px; }
+        .alert-danger { background: #f8d7da; color: #721c24; }
+        .alert-success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 {{ date }} 数据验证报告</h1>
+            <div class="subtitle">生成时间: {{ generate_time }}</div>
+        </div>
+
+        <div class="section">
+            <h2>1. 数据概览</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value">{{ summary.total_stocks }}</div>
+                    <div class="label">总股票数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ summary.valid_stocks }}</div>
+                    <div class="label">有效数据</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ summary.valid_rate }}%</div>
+                    <div class="label">有效率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ summary.latest_date }}</div>
+                    <div class="label">最新日期</div>
+                </div>
+            </div>
+            <div style="margin-top: 15px;">
+                <span class="badge {% if summary.date_status == 'pass' %}badge-success{% else %}badge-danger{% endif %}">
+                    {% if summary.date_status == 'pass' %}✓ 数据最新{% else %}✗ 数据异常{% endif %}
+                </span>
+                <span class="badge badge-{% if summary.quality_score >= 90 %}success{% elif summary.quality_score >= 70 %}warning{% else %}danger{% endif %}">
+                    质量评分: {{ summary.quality_score }}
+                </span>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>2. 连续性检查</h2>
+            <ul class="info-list">
+                <li><strong>随机抽检股票:</strong> {{ continuity.sample_codes|join(', ') }}</li>
+                <li><strong>检查结果:</strong> <span class="{{ continuity.status }}">{{ continuity.status_text }}</span></li>
+                <li><strong>缺失日期数:</strong> {{ continuity.missing_days|default(0) }} 天</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>3. 人工验证区 <span style="font-size: 14px; color: #e74c3c;">(需人工输入验证)</span></h2>
+            <p style="color: #7f8c8d; margin-bottom: 15px;">
+                <em>* 请登录行情软件，查询以下股票的实际收盘价，输入进行验证</em>
+            </p>
+            <table>
+                <tr>
+                    <th>股票代码</th>
+                    <th>股票名称</th>
+                    <th>日期</th>
+                    <th>开盘</th>
+                    <th>系统收盘</th>
+                    <th>最高</th>
+                    <th>最低</th>
+                    <th>成交量</th>
+                    <th>实际收盘价</th>
+                    <th>验证</th>
+                </tr>
+                {% for stock in manual_verify %}
+                <tr id="row_{{ stock.code }}">
+                    <td><strong>{{ stock.code }}</strong></td>
+                    <td>{{ stock.name }}</td>
+                    <td>{{ stock.date }}</td>
+                    <td>{{ stock.open }}</td>
+                    <td><span id="sys_close_{{ stock.code }}">{{ stock.close }}</span></td>
+                    <td>{{ stock.high }}</td>
+                    <td>{{ stock.low }}</td>
+                    <td>{{ stock.volume }}</td>
+                    <td>
+                        <input type="number" step="0.01" class="input-close" id="input_close_{{ stock.code }}"
+                               placeholder="输入实际收盘价">
+                    </td>
+                    <td>
+                        <button class="verify-btn" onclick="verifyStock('{{ stock.code }}')">验证</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </table>
+            <div id="verify_result" style="margin-top: 20px;"></div>
+            <div style="margin-top: 15px;">
+                <button class="verify-btn" style="background: #27ae60;" onclick="submitVerification()">提交验证结果</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>4. 第三方验证</h2>
+            <ul class="info-list">
+                <li><strong>验证股票:</strong> {{ third_party.code }} ({{ third_party.name }})</li>
+                <li><strong>内部数据收盘价:</strong> ¥{{ third_party.internal_close }}</li>
+                <li><strong>第三方数据收盘价:</strong> ¥{{ third_party.external_close }} <span style="font-size: 12px; color: #7f8c8d;">(来源: {{ third_party.source }})</span></li>
+                <li><strong>价格差异:</strong> <span class="{% if third_party.diff_pct < 0.1 %}pass{% else %}warn{% endif %}">{{ third_party.diff_pct }}%</span></li>
+                <li><strong>验证结果:</strong> <span class="{{ third_party.status }}">{{ third_party.status_text }}</span></li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>5. 涨跌统计验证</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="value" style="color: #e74c3c;">{{ market.rising }}</div>
+                    <div class="label">上涨股票</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" style="color: #27ae60;">{{ market.falling }}</div>
+                    <div class="label">下跌股票</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value" style="color: #7f8c8d;">{{ market.unchanged }}</div>
+                    <div class="label">平盘股票</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ market.limit_up }}</div>
+                    <div class="label">涨停</div>
+                </div>
+                <div class="stat-card">
+                    <div class="value">{{ market.limit_down }}</div>
+                    <div class="label">跌停</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>6. 验证结论</h2>
+            <div class="conclusion {{ conclusion.status }}">
+                <p>{{ conclusion.text }}</p>
+                <p style="font-size: 14px; margin-top: 10px;">
+                    {% if conclusion.status == 'pass' %}
+                    ✅ 数据验证通过，可以进入下一流程
+                    {% else %}
+                    ⚠️ 数据存在异常，请人工核查后再继续
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: #7f8c8d; font-size: 12px; margin-top: 30px; padding: 20px;">
+            <p>本报告由 xcnstock 数据验证系统自动生成</p>
+            <p>如有问题请联系管理员</p>
+        </div>
+    </div>
+
+    <script>
+        const stockCodes = {{ manual_verify|map(attribute='code')|list|tojson }};
+        const systemCloses = {};
+        {% for stock in manual_verify %}
+        systemCloses['{{ stock.code }}'] = {{ stock.close }};
+        {% endfor %}
+
+        function verifyStock(code) {
+            const inputClose = parseFloat(document.getElementById('input_close_' + code).value);
+            const sysClose = systemCloses[code];
+
+            if (isNaN(inputClose)) {
+                alert('请输入有效的收盘价');
+                return;
+            }
+
+            const diff = Math.abs(inputClose - sysClose);
+            const diffPct = (diff / sysClose * 100).toFixed(2);
+            const row = document.getElementById('row_' + code);
+
+            if (diffPct < 0.1) {
+                row.style.backgroundColor = '#d4edda';
+                document.getElementById('verify_result').innerHTML =
+                    '<div class="alert alert-success">✓ ' + code + ' 验证通过！系统收盘=' + sysClose + ', 实际收盘=' + inputClose + '</div>';
+            } else {
+                row.style.backgroundColor = '#f8d7da';
+                document.getElementById('verify_result').innerHTML =
+                    '<div class="alert alert-danger">✗ ' + code + ' 不一致！系统收盘=' + sysClose + ', 实际收盘=' + inputClose + ', 差异=' + diffPct + '%</div>';
+            }
+        }
+
+        function submitVerification() {
+            let allMatch = true;
+            let results = [];
+
+            stockCodes.forEach(code => {
+                const inputClose = parseFloat(document.getElementById('input_close_' + code).value);
+                const sysClose = systemCloses[code];
+
+                if (isNaN(inputClose)) {
+                    alert(code + ' 请输入收盘价');
+                    allMatch = false;
+                    return;
+                }
+
+                const diff = Math.abs(inputClose - sysClose);
+                const diffPct = diff / sysClose * 100;
+
+                results.push({
+                    code: code,
+                    system_close: sysClose,
+                    actual_close: inputClose,
+                    match: diffPct < 0.1
+                });
+
+                if (diffPct >= 0.1) {
+                    allMatch = false;
+                }
+            });
+
+            const resultDiv = document.getElementById('verify_result');
+            if (allMatch) {
+                resultDiv.innerHTML = '<div class="alert alert-success">✅ 所有股票验证通过！数据一致。</div>';
+            } else {
+                resultDiv.innerHTML = '<div class="alert alert-danger">⚠️ 存在不一致的数据，请检查并考虑重新采集。</div>';
+            }
+
+            console.log('验证结果:', JSON.stringify(results, null, 2));
+            alert('验证结果已记录，请查看控制台日志');
+        }
+    </script>
+</body>
+</html>

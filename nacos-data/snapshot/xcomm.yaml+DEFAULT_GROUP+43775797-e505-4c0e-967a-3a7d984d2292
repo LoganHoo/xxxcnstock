@@ -1,0 +1,33 @@
+ai:
+  api:
+    fallback_enabled: true
+    timeout: 100
+    url: http://192.168.1.168:2000
+  gemini:
+    api_key: null
+    model: gemini-3.1-pro-preview
+    model_fallback1: gemini-3-flash
+    model_fallback2: gemini-2.5-flash
+  llm:
+    api_url: http://aia.newoffen.com:11434/api/generate
+    model: llama3.2:3b
+    url: http://101.42.12.187:11434/
+email:
+  api:
+    url: http://192.168.1.168:2000/send_email
+    use_api: false
+  notification:
+    emails:
+    - 287363@qq.com
+  smtp:
+    from: 287363@qq.com
+    from_name: NextAI Box
+    password: acearvjndkaxcaad
+    port: 465
+    server: smtp.qq.com
+    timeout: 120
+    use_tls: false
+    username: 287363@qq.com
+metadata:
+  created_at: '2026-04-09T10:06:30.603169Z'
+  updated_at: '2026-04-09T10:09:54.721031+00:00'

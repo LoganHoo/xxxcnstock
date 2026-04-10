@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-04-08T08:30:12.603806",
+  "date": "2026-04-08",
+  "us_index": {
+    "name": "美股指数",
+    "data": {},
+    "status": "failed",
+    "error": "所有API均失败"
+  },
+  "asia_index": {
+    "name": "亚洲股指",
+    "data": {},
+    "status": "failed",
+    "error": "所有API均失败"
+  },
+  "us_futures": {
+    "name": "美股期货",
+    "data": {},
+    "status": "failed",
+    "error": "所有API均失败"
+  },
+  "ah_premium": {
+    "name": "AH溢价",
+    "status": "pending",
+    "data": {}
+  },
+  "tracking": {
+    "name": "推荐跟踪",
+    "status": "success"
+  }
+}

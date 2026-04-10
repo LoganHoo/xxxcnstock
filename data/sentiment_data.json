@@ -1,0 +1,22 @@
+{
+  "date": "2026-04-04",
+  "update_time": "2026-04-04 11:05:16",
+  "fear_greed": {
+    "value": 55,
+    "level": "neutral",
+    "update_time": "2026-04-04 11:05:13"
+  },
+  "vix": {
+    "value": 16.5
+  },
+  "bomb_rate": {
+    "rate": 28.5,
+    "premium": 2.8
+  },
+  "market_breadth": {
+    "value": 50,
+    "adl": 0,
+    "rising": 0,
+    "falling": 0
+  }
+}

@@ -1,11 +1,25 @@
 """功能验收测试 - End-to-End 验证"""
-import pytest
 import pandas as pd
-import numpy as np
+import polars as pl
+import pyarrow.parquet as pq
 import sys
 import os
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
+def load_parquet_frame(file_path: str) -> pd.DataFrame:
+    """兼容 pytest 环境下的 parquet 读取"""
+    try:
+        return pd.read_parquet(file_path)
+    except Exception as error:
+        if "Invalid number of indices: 0" not in str(error):
+            raise
+        try:
+            table = pq.read_table(file_path, use_pandas_metadata=False)
+            return table.to_pandas()
+        except Exception:
+            return pl.read_parquet(file_path).to_pandas()
 
 
 class TestStockAnalysisAcceptance:
@@ -13,7 +27,7 @@ class TestStockAnalysisAcceptance:
     
     def test_realtime_data_loaded(self):
         """验收：实时行情数据已加载"""
-        df = pd.read_parquet('data/realtime/20260316.parquet')
+        df = load_parquet_frame('data/realtime/20260316.parquet')
         
         assert len(df) > 5000, "实时行情数据不足5000只"
         assert 'code' in df.columns
@@ -23,7 +37,7 @@ class TestStockAnalysisAcceptance:
     
     def test_enhanced_analysis_completed(self):
         """验收：增强分析已完成"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
 
         assert len(df) >= 4800, "分析结果不足4800只"
 
@@ -35,7 +49,7 @@ class TestStockAnalysisAcceptance:
     
     def test_technical_indicators_calculated(self):
         """验收：技术指标已计算"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         # 检查必要字段
         required_fields = ['enhanced_score', 'grade', 'rsi', 'momentum_10d']
@@ -49,7 +63,7 @@ class TestStockAnalysisAcceptance:
     
     def test_s_grade_stocks_have_valid_reasons(self):
         """验收：S级股票有合理推荐理由"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         s_stocks = df[df['grade'] == 'S']
         
         # 所有S级股票应有推荐理由
@@ -60,11 +74,11 @@ class TestStockAnalysisAcceptance:
         for _, row in sample.iterrows():
             reasons = str(row['reasons'])
             assert len(reasons) >= 2, f"推荐理由过短: {row['code']}"
-        print(f"✓ S级股票推荐理由验证通过")
+        print("✓ S级股票推荐理由验证通过")
     
     def test_score_distribution_reasonable(self):
         """验收：评分分布合理"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         scores = df['enhanced_score']
         
@@ -84,7 +98,7 @@ class TestIndexAnalysisAcceptance:
     
     def test_all_indices_analyzed(self):
         """验收：所有主要指数已分析"""
-        df = pd.read_parquet('data/index_analysis_20260316.parquet')
+        df = load_parquet_frame('data/index_analysis_20260316.parquet')
         
         expected_indices = ['上证指数', '深证成指', '创业板指', '沪深300', 
                            '上证50', '中证500', '科创50', '中证1000']
@@ -96,7 +110,7 @@ class TestIndexAnalysisAcceptance:
     
     def test_index_scores_calculated(self):
         """验收：指数评分已计算"""
-        df = pd.read_parquet('data/index_analysis_20260316.parquet')
+        df = load_parquet_frame('data/index_analysis_20260316.parquet')
         
         assert 'score' in df.columns
         assert 'grade' in df.columns
@@ -143,26 +157,26 @@ class TestDataIntegrityAcceptance:
     
     def test_no_duplicate_stocks(self):
         """验收：无重复股票"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         duplicates = df['code'].duplicated().sum()
         assert duplicates == 0, f"存在{duplicates}只重复股票"
-        print(f"✓ 无重复股票")
+        print("✓ 无重复股票")
     
     def test_no_null_critical_fields(self):
         """验收：关键字段无空值"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         critical_fields = ['code', 'name', 'price', 'enhanced_score', 'grade']
         for field in critical_fields:
             null_count = df[field].isna().sum()
             assert null_count == 0, f"字段{field}存在{null_count}个空值"
         
-        print(f"✓ 关键字段无空值")
+        print("✓ 关键字段无空值")
     
     def test_price_reasonable(self):
         """验收：价格数据合理"""
-        df = pd.read_parquet('data/enhanced_scores_full.parquet')
+        df = load_parquet_frame('data/enhanced_scores_full.parquet')
         
         # 价格应>0
         assert df['price'].min() > 0, "存在非正价格"

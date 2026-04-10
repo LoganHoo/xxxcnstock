@@ -1,8 +1,6 @@
 """
 因子基类测试
 """
-import pytest
-import polars as pl
 from core.factor_library import BaseFactor, FactorRegistry, register_factor
 
 

@@ -1,0 +1,67 @@
+backtest:
+  end_date: '2023-12-31'
+  initial_capital: 1000000
+  start_date: '2023-01-01'
+  transaction_cost: 0.0003
+factors:
+  cost_peak:
+    category: market
+    description: 筹码分布最大密集峰位
+    enabled: true
+    params:
+      bins: 50
+      window: 20
+  limit_up_score:
+    category: market
+    description: 涨停家数 - 跌停家数 + 连板高度
+    enabled: true
+  ma5_bias:
+    category: technical
+    description: (当前价 - 5日均线) / 5日均线
+    enabled: true
+  pioneer_status:
+    category: market
+    description: 核心领涨个股实时涨跌幅
+    enabled: true
+    params:
+      pioneer_codes:
+      - '300255'
+  v_ratio10:
+    category: volume_price
+    description: 早盘09:30-10:00成交量与前一日同期比值
+    enabled: true
+  v_total:
+    category: market
+    description: 全市场实时总成交金额
+    enabled: true
+indicators:
+  10am_pivot:
+    price_threshold: 34.58
+    v_ratio10_threshold: 1.1
+  hedge:
+    resistance_levels:
+    - 4117
+    - 4140
+    support_level: 4067
+    v_total_threshold: 1800
+  market_sentiment:
+    thresholds:
+      cost_peak_support: 52.05279600781861
+      oscillating_v_total_max: 2250.7646458616514
+      oscillating_v_total_min: 1500.5097639077676
+      sentiment_temperature_overheat: 80
+      sentiment_temperature_strong: 50
+      strong_v_total: 1811.173108779486
+strategy:
+  four_step_exit:
+    time_points:
+    - 09:26
+    - '10:00'
+    - '14:56'
+  position:
+    cash: 0.1
+    short_term: 0.4
+    trend: 0.5
+  stock_selection:
+    short_term_stocks_limit: 10
+    trend_stocks_limit: 20
