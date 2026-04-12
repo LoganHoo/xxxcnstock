@@ -57,6 +57,9 @@ data/key_levels_latest.parquet
 data/enhanced_scores_*.parquet
 data/key_levels/key_levels_*.parquet
 
+# Checkpoints - 大文件不提交
+data/checkpoints/*.parquet
+
 # Keep directory structure
 !data/kline/.gitkeep
 !data/index/.gitkeep
