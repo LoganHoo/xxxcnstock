@@ -47,11 +47,11 @@ indicators:
   market_sentiment:
     thresholds:
       cost_peak_support: 52.05279600781861
-      oscillating_v_total_max: 2250.7646458616514
+      oscillating_v_total_max: 2250.764645861651
       oscillating_v_total_min: 1500.5097639077676
       sentiment_temperature_overheat: 80
       sentiment_temperature_strong: 50
-      strong_v_total: 1811.173108779486
+      strong_v_total: 1811.1731087794851
 strategy:
   four_step_exit:
     time_points:
