@@ -9,7 +9,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailService
-from services.notify_service.templates.morning_shao_report import get_量化战略内参_template
+from services.notify_service.templates import get_template
 from services.report_db_service import ReportDBService
 
 
@@ -430,7 +430,7 @@ class 量化战略内参Reporter:
     def generate_report(self) -> str:
         """生成完整报告"""
         data = self.generate_report_data()
-        template = get_量化战略内参_template()
+        template = get_template('morning_shao_report')
         return template.generate(data)
 
     def run(self) -> bool:

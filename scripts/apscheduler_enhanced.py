@@ -578,7 +578,7 @@ class EnhancedAPScheduler:
                 'id': 'fund_behavior_report',
                 'script': 'scripts/run_fund_behavior_strategy.py',
                 'name': '量化决策报告',
-                'cron': '9 9 * * 1-5'
+                'cron': '26 9 * * 1-5'
             },
             {
                 'id': 'data_fetch',

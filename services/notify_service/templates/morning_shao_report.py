@@ -10,7 +10,7 @@ class A股量化战略内参Template:
     """A股量化战略内参模板"""
 
     def __init__(self):
-        self.name = "A股量化战略内参"
+        self.name = "morning_shao_report"
         self.display_name = "A股量化战略内参"
 
     def generate(self, data: Dict = None) -> str:
@@ -304,3 +304,6 @@ class A股量化战略内参Template:
 def get_量化战略内参_template() -> A股量化战略内参Template:
     """获取模板实例"""
     return A股量化战略内参Template()
+
+
+MorningShaoReportTemplate = A股量化战略内参Template

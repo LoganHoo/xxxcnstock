@@ -5,6 +5,7 @@ import factors.market.market_temperature  # noqa: F401
 import factors.market.market_breadth  # noqa: F401
 import factors.market.market_sentiment  # noqa: F401
 import factors.market.market_trend  # noqa: F401
+import factors.market.market_health  # noqa: F401
 
 __all__ = [
     "emotion_factors",
@@ -12,5 +13,6 @@ __all__ = [
     "market_temperature",
     "market_breadth",
     "market_sentiment",
-    "market_trend"
+    "market_trend",
+    "market_health"
 ]

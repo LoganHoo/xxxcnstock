@@ -45,7 +45,7 @@ TASKS = [
     {
         'name': 'fund_behavior_report',
         'script': 'scripts/run_fund_behavior_strategy.py',
-        'schedule': '9 9 * * 1-5',
+        'schedule': '26 9 * * 1-5',
         'description': '资金行为报告',
         'depends_on': 'morning_data',
         'last_run': None

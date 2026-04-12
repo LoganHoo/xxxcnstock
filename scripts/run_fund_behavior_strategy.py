@@ -440,7 +440,7 @@ def distribute_results(result: dict, report_text: str, pipeline: PipelineStateMa
         logger.error(f"[DISTRIBUTE] MySQL专业服务连接失败: {e}")
         fb_db_service = None
 
-    subject = f"【量化决策】资金行为学策略 - {report_date}"
+    subject = f"【量化决策】资金行为学策略 - {report_date} - 开盘前综合决策"
     result_json = {
         'market_state': result.get('market_state', []),
         'v_total': result.get('v_total', 0),
@@ -536,7 +536,7 @@ def send_email_notification(result: dict, report_text: str) -> bool:
         from services.email_sender import EmailSender
 
         report_date = datetime.now().strftime('%Y-%m-%d')
-        subject = f"【量化决策】资金行为学策略 - {report_date}"
+        subject = f"【量化决策】资金行为学策略 - {report_date} - 开盘前综合决策"
         html_content = generate_fund_behavior_html(result)
 
         def _send_email():
@@ -792,14 +792,34 @@ def generate_decision_report(result: dict, load_meta: dict = None, config: dict 
     report_lines.append(f"  ● 量能判定：{v_total:.0f}亿元")
     report_lines.append(f"  ● 情绪温度：{sentiment_temp:.1f}°")
     report_lines.append(f"  ● 温差惯性：{delta_temp:+.1f}°")
+    
+    report_lines.append("\n【2. 防守信号】")
+    report_lines.append("-" * 50)
+    defense = result.get('defense_signals', {})
+    action = defense.get('action', 'UNKNOWN')
+    action_display = {'BUY': '✅ 买入', 'DEFENSE': '⛔ 防守', 'CAUTION': '⚠️ 谨慎'}.get(action, action)
+    report_lines.append(f"  ● 动作指令：{action_display}")
+    
+    reasons = defense.get('reasons', [])
+    if reasons:
+        for i, reason in enumerate(reasons, 1):
+            report_lines.append(f"  ● 原因{i}：{reason}")
+    else:
+        report_lines.append(f"  ● 状态：市场环境正常，可积极参与")
+    
+    details = defense.get('details', {})
+    if details.get('near_support'):
+        report_lines.append(f"  ● 位置：⚡ 接近支撑位，关注反弹机会")
+    if details.get('near_resistance'):
+        report_lines.append(f"  ● 位置：⚠️ 接近阻力位，注意回落风险")
 
-    report_lines.append("\n【2. 核心观察点】")
+    report_lines.append("\n【3. 核心观察点】")
     report_lines.append("-" * 50)
     report_lines.append(f"  ● 向上变盘：{'是' if result.get('upward_pivot') else '否'}")
     report_lines.append(f"  ● 对冲效果：{'是' if result.get('hedge_effect') else '否'}")
     report_lines.append(f"  ● 强势区域：{'是' if result.get('is_strong_region') else '否'}")
 
-    report_lines.append("\n【3. 选股结果】")
+    report_lines.append("\n【4. 选股结果】")
     report_lines.append("-" * 50)
     trend_stocks = result.get('trend_stocks', [])
     short_term_stocks = result.get('short_term_stocks', [])

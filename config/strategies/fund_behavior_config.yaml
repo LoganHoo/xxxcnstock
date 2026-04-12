@@ -34,7 +34,39 @@ factors:
     category: market
     description: 全市场实时总成交金额
     enabled: true
+  open_auction_volume:
+    category: volume_price
+    description: 09:25集合竞价成交额(开盘金额)
+    enabled: true
+    params:
+      threshold: 800  # 亿元，低于此值视为缩量
+  market_health:
+    category: market
+    description: 大盘荣枯线(MA5/MA10趋势判断)
+    enabled: true
+    params:
+      ma5_threshold: 0.0  # MA5角度阈值
+      ma10_threshold: 0.0  # MA10角度阈值
+  key_levels:
+    category: market
+    description: 关键位价格监测(支撑/阻力)
+    enabled: true
+    params:
+      support_levels:
+      - 4067
+      - 4117
+      - 4140
+      resistance_levels:
+      - 4200
+      - 4300
 indicators:
+  defense:
+    enabled: true
+    description: 防守信号 - 什么情况下绝对不能买
+    params:
+      volume_shrink_threshold: 0.6  # 成交量萎缩60%触发防守
+      support_break_threshold: -0.02  # 跌破支撑2%触发防守
+      open_auction_min: 500  # 开盘金额最小值(亿元)
   10am_pivot:
     price_threshold: 15.0
     v_ratio10_threshold: 1.1

@@ -214,10 +214,10 @@ tasks:
     timeout: 300
     depends_on: "collect_news"
 
-  # 09:09 - 量化决策报告（资金行为学策略）
+  # 09:26 - 量化决策报告（资金行为学策略 - 开盘后综合决策）
   - name: "fund_behavior_report"
-    description: "【9.量化决策】资金行为学策略执行与报告推送"
-    schedule: "9 9 * * 1-5"  # 交易日 09:09（开盘后）
+    description: "【9.量化决策】资金行为学策略执行与报告推送 - 基于昨日复盘、新闻联播、大宗商品、外盘等综合分析"
+    schedule: "26 9 * * 1-5"  # 交易日 09:26（开盘后）
     script: "scripts/run_fund_behavior_strategy.py"
     enabled: true
     day_type: "weekday"
@@ -225,6 +225,24 @@ tasks:
     depends_on: "morning_data"
 
   # ========== 非交易日任务 ==========
+
+  # 00:22 - 采集昨日新闻联播（每天凌晨主采集）
+  - name: "collect_news_cctv_midnight"
+    description: "【0.新闻采集-主采集】每天凌晨采集昨天和今天新闻联播"
+    schedule: "22 0 * * *"  # 每天 00:22
+    script: "scripts/pipeline/cctv_analyzer.py --mode full --fetch-only"
+    enabled: true
+    day_type: "daily"
+    timeout: 300
+
+  # 06:22 - 补采7天内缺失的新闻联播（每天早晨补采）
+  - name: "collect_news_cctv_morning"
+    description: "【0.新闻采集-补采】每天早晨补采7天内缺失的新闻联播"
+    schedule: "22 6 * * *"  # 每天 06:22
+    script: "scripts/pipeline/cctv_analyzer.py --mode supplement --fetch-only"
+    enabled: true
+    day_type: "daily"
+    timeout: 300
 
   # 06:00 - 更新外盘大盘指数（已废弃，由morning_data统一处理）
   # - name: "update_foreign_index"
@@ -297,7 +315,7 @@ groups:
       - manual_verification
 
   trading_day_morning:
-    description: "晨间流水线（08:30-09:15）"
+    description: "晨间流水线（08:30-09:30）"
     tasks:
       - morning_data
       - morning_report

@@ -9,7 +9,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailService
-from services.notify_service.templates.report_templates import MorningReportTemplate
+from services.notify_service.templates import get_template
 from services.report_db_service import ReportDBService
 
 
@@ -86,7 +86,7 @@ class MorningReporter:
         strategy_data = self.load_strategy_result()
         fb_data = self.load_fund_behavior_result()
 
-        template = MorningReportTemplate()
+        template = get_template('morning_report')
         return template.generate(
             market_data=market_data,
             picks_data=picks_data,

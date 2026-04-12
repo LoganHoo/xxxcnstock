@@ -15,7 +15,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailSender, EmailAPISender
-from services.notify_service.templates.report_templates import ReviewReportTemplate
+from services.notify_service.templates import get_template
 from services.report_db_service import ReportDBService
 
 logging.basicConfig(
@@ -578,7 +578,7 @@ def main():
     okr_data = generator.load_okr_data()
     ai_review_data = generator.load_ai_review_data()
 
-    template = ReviewReportTemplate()
+    template = get_template('review_report')
     text_report = template.generate(
         market_data=market_review,
         picks_review_data=picks_review,

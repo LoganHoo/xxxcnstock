@@ -1,0 +1,108 @@
+{
+  "state": "failed",
+  "report_date": "2026-04-11",
+  "updated_at": "2026-04-12T23:36:07.049530",
+  "step_results": {
+    "load": {
+      "state": "loaded",
+      "timestamp": "2026-04-12T23:36:03.427821",
+      "message": "",
+      "data": {
+        "total_rows": 197807,
+        "total_stocks": 318,
+        "date_range": "1994-07-14 ~ 2026-02-25",
+        "batch_count": 1,
+        "columns": [
+          "code",
+          "trade_date",
+          "open",
+          "close",
+          "high",
+          "low",
+          "volume"
+        ]
+      }
+    },
+    "validate": {
+      "state": "validated",
+      "timestamp": "2026-04-12T23:36:03.457243",
+      "message": "",
+      "data": {
+        "passed": false,
+        "issues": [],
+        "warnings": [],
+        "stats": {
+          "missing_rate": 0.0
+        },
+        "continuity": {
+          "passed": false,
+          "stocks_checked": 318,
+          "stocks_with_gaps": 0,
+          "recent_gaps": {},
+          "warning_stocks": [],
+          "total_records": 197807,
+          "latest_date": "2026-02-25",
+          "data_age_days": 46,
+          "recent_stocks_count": 1,
+          "latest_coverage_rate": 0.3144654088050315,
+          "warnings": [
+            "最新日期(2026-02-25)覆盖率仅0.3%"
+          ]
+        },
+        "missing": {
+          "passed": true,
+          "field_missing_rates": {},
+          "overall_missing_rate": 0.0,
+          "total_records": 197807
+        },
+        "price": {
+          "passed": true,
+          "invalid_count": 0,
+          "issues": []
+        },
+        "volume": {
+          "passed": true,
+          "zero_count": 0,
+          "negative_count": 0,
+          "warnings": []
+        }
+      }
+    },
+    "transform": {
+      "state": "transformed",
+      "timestamp": "2026-04-12T23:36:06.978284",
+      "message": "",
+      "data": {
+        "factor_count": 9,
+        "factor_names": [
+          "cost_peak",
+          "limit_up_score",
+          "ma5_bias",
+          "pioneer_status",
+          "v_ratio10",
+          "v_total",
+          "open_auction_volume",
+          "market_health",
+          "key_levels"
+        ],
+        "data_shape": [
+          197807,
+          30
+        ]
+      }
+    },
+    "buffer": {
+      "state": "buffered",
+      "timestamp": "2026-04-12T23:36:07.043682",
+      "message": "",
+      "data": {
+        "path": "data/checkpoints/fund_behavior_2026-04-11_factor.parquet.parquet"
+      }
+    },
+    "buffered": {
+      "state": "failed",
+      "timestamp": "2026-04-12T23:36:07.049525",
+      "error": "'>' not supported between instances of 'NoneType' and 'int'"
+    }
+  }
+}

@@ -7,6 +7,7 @@ from factors.volume_price.vma import VmaFactor
 from factors.volume_price.vosc import VoscFactor
 from factors.volume_price.wvad import WvadFactor
 from factors.volume_price.v_ratio import VRatio10Factor, VTotalFactor
+from factors.volume_price.open_auction_volume import OpenAuctionVolumeFactor
 
 __all__ = [
     "VolumeRatioFactor",
@@ -18,5 +19,6 @@ __all__ = [
     "VoscFactor",
     "WvadFactor",
     "VRatio10Factor",
-    "VTotalFactor"
+    "VTotalFactor",
+    "OpenAuctionVolumeFactor"
 ]

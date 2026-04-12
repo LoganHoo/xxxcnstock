@@ -384,17 +384,29 @@ class FundBehaviorHTMLReport:
         }
         state_color = state_colors.get(market_state, '#9aa0a6')
 
-        is_strong = result.get('is_strong_region', False)
-        upward_pivot = result.get('upward_pivot', False)
-
-        if is_strong and upward_pivot:
-            market_tone = "强势做多"
-            tone_class = "signal-bullish"
-            tone_icon = "🚀"
-        else:
-            market_tone = "震荡/防守"
+        # 防守信号 - 最重要的动作指令
+        defense = result.get('defense_signals', {})
+        defense_action = defense.get('action', 'BUY')
+        
+        if defense_action == 'DEFENSE':
+            market_tone = "⛔ 防守"
+            tone_class = "signal-bearish"
+            tone_icon = "🛡️"
+        elif defense_action == 'CAUTION':
+            market_tone = "⚠️ 谨慎"
             tone_class = "signal-neutral"
             tone_icon = "⚡"
+        else:
+            is_strong = result.get('is_strong_region', False)
+            upward_pivot = result.get('upward_pivot', False)
+            if is_strong and upward_pivot:
+                market_tone = "🚀 强势做多"
+                tone_class = "signal-bullish"
+                tone_icon = "🚀"
+            else:
+                market_tone = "⚡ 震荡上行"
+                tone_class = "signal-neutral"
+                tone_icon = "⚡"
 
         return f"""
         <div class="header">
@@ -569,15 +581,36 @@ class FundBehaviorHTMLReport:
 
     def _generate_warnings(self, result: Dict) -> str:
         warnings = []
-
-        if not result.get('hedge_effect', False):
-            warnings.append(("⚠️ 量能预警", "量能不足，对冲效果有限"))
-        if result.get('sentiment_temperature', 0) > 80:
-            warnings.append(("🔥 情绪预警", "情绪温度进入过热区域"))
-        if result.get('delta_temperature', 0) < -20:
-            warnings.append(("❄️ 惯性预警", "降温预判次日有惯性杀跌风险"))
-        if result.get('current_price', 0) < result.get('cost_peak', 0) and result.get('cost_peak', 0) > 0:
-            warnings.append(("📍 筹码预警", "股价跌破筹码峰位"))
+        
+        # 防守信号
+        defense = result.get('defense_signals', {})
+        defense_action = defense.get('action', 'BUY')
+        
+        if defense_action == 'DEFENSE':
+            warnings.append(("⛔ 防守指令", "成交量萎缩或跌破支撑位，禁止买入"))
+            for reason in defense.get('reasons', []):
+                warnings.append(("⚠️ 防守原因", reason))
+        elif defense_action == 'CAUTION':
+            warnings.append(("⚠️ 谨慎操作", "市场存在风险，需谨慎"))
+            for reason in defense.get('reasons', []):
+                warnings.append(("⚠️ 风险提示", reason))
+        else:
+            # 正常买入状态，检查其他风险
+            if not result.get('hedge_effect', False):
+                warnings.append(("⚠️ 量能预警", "量能不足，对冲效果有限"))
+            if result.get('sentiment_temperature', 0) > 80:
+                warnings.append(("🔥 情绪预警", "情绪温度进入过热区域"))
+            if result.get('delta_temperature', 0) < -20:
+                warnings.append(("❄️ 惯性预警", "降温预判次日有惯性杀跌风险"))
+            if result.get('current_price', 0) < result.get('cost_peak', 0) and result.get('cost_peak', 0) > 0:
+                warnings.append(("📍 筹码预警", "股价跌破筹码峰位"))
+        
+        # 关键位信息
+        details = defense.get('details', {})
+        if details.get('near_support'):
+            warnings.append(("⚡ 支撑位附近", "接近支撑位，关注反弹机会"))
+        if details.get('near_resistance'):
+            warnings.append(("⚠️ 阻力位附近", "接近阻力位，注意回落风险"))
 
         if not warnings:
             warnings.append(("✅ 无风险预警", "市场情绪稳定，可正常执行策略"))

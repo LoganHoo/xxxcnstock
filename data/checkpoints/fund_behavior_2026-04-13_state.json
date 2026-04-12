@@ -1,0 +1,12 @@
+{
+  "state": "failed",
+  "report_date": "2026-04-13",
+  "updated_at": "2026-04-13T00:15:55.291388",
+  "step_results": {
+    "start": {
+      "state": "failed",
+      "timestamp": "2026-04-13T00:15:55.291382",
+      "error": "没有可用的有效数据文件"
+    }
+  }
+}

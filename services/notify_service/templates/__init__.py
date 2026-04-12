@@ -8,8 +8,14 @@ from .report_templates import (
     ReviewReportTemplate,
     TrackingReportTemplate,
     NightReportTemplate,
+    A股量化战略内参Template,
+    MorningShaoReportTemplate,
+    FundBehaviorHTMLReport,
+    WeeklyMonthlyHTMLReport,
     get_template,
-    list_report_configs
+    get_html_template,
+    list_report_configs,
+    list_all_templates,
 )
 
 __all__ = [
@@ -19,13 +25,15 @@ __all__ = [
     'ReviewReportTemplate',
     'TrackingReportTemplate',
     'NightReportTemplate',
-    'get_template',
-    'list_report_configs',
-    'morning_shao_report',
+    'A股量化战略内参Template',
+    'MorningShaoReportTemplate',
     'FundBehaviorHTMLReport',
     'WeeklyMonthlyHTMLReport',
+    'get_template',
+    'get_html_template',
+    'list_report_configs',
+    'list_all_templates',
+    'morning_shao_report',
 ]
 
 from . import morning_shao_report
-from .fund_behavior_report_template import FundBehaviorHTMLReport, generate_fund_behavior_html
-from .weekly_monthly_report_template import WeeklyMonthlyHTMLReport, generate_weekly_html, generate_monthly_html

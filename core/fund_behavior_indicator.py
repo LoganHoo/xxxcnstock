@@ -24,31 +24,39 @@ class FundBehaviorIndicatorEngine:
         Args:
             data: 包含因子数据的DataFrame
         """
+        if data is None or len(data) == 0:
+            self.logger.warning("数据为空，跳过阈值自动调整")
+            return
+            
         if "factor_v_total" not in data.columns:
             return
 
-        # 计算实际数据范围
-        v_total_stats = data.select([
-            pl.col("factor_v_total").mean().alias("mean"),
-            pl.col("factor_v_total").min().alias("min"),
-            pl.col("factor_v_total").max().alias("max"),
-            pl.col("factor_v_total").quantile(0.25).alias("q25"),
-            pl.col("factor_v_total").quantile(0.75).alias("q75")
-        ]).to_dict(as_series=False)
+        try:
+            v_total_stats = data.select([
+                pl.col("factor_v_total").mean().alias("mean"),
+                pl.col("factor_v_total").min().alias("min"),
+                pl.col("factor_v_total").max().alias("max"),
+                pl.col("factor_v_total").quantile(0.25).alias("q25"),
+                pl.col("factor_v_total").quantile(0.75).alias("q75")
+            ]).to_dict(as_series=False)
 
-        v_total_mean = v_total_stats["mean"][0] if v_total_stats["mean"] else 0
-        v_total_q75 = v_total_stats["q75"][0] if v_total_stats["q75"] else 0
+            v_total_mean = v_total_stats["mean"][0] if v_total_stats.get("mean") and v_total_stats["mean"][0] is not None else 0
+            v_total_q75 = v_total_stats["q75"][0] if v_total_stats.get("q75") and v_total_stats["q75"][0] is not None else 0
+        except Exception as e:
+            self.logger.warning(f"计算v_total统计失败: {e}")
+            v_total_mean = 0
+            v_total_q75 = 0
 
         adjusted_items = {}
 
         # 动态调整 strong_v_total（使用75分位数）
-        if v_total_q75 > 0:
+        if v_total_q75 and v_total_q75 > 0:
             new_strong_v_total = v_total_q75 * 0.9  # 90%分位数作为强市阈值
             adjusted_items['indicators.market_sentiment.thresholds.strong_v_total'] = new_strong_v_total
             self.logger.info(f"动态调整 strong_v_total: {new_strong_v_total:.2f} (基于75分位数 {v_total_q75:.2f})")
 
         # 动态调整 oscillating 范围
-        if v_total_mean > 0:
+        if v_total_mean and v_total_mean > 0:
             new_osc_min = v_total_mean * 0.8
             new_osc_max = v_total_mean * 1.2
             adjusted_items['indicators.market_sentiment.thresholds.oscillating_v_total_min'] = new_osc_min
@@ -57,24 +65,32 @@ class FundBehaviorIndicatorEngine:
 
         # 动态调整 price_threshold（使用收盘价均值）
         if "close" in data.columns:
-            close_stats = data.select([
-                pl.col("close").mean().alias("mean"),
-                pl.col("close").quantile(0.5).alias("median")
-            ]).to_dict(as_series=False)
-            new_price_threshold = close_stats["median"][0] if close_stats["median"] else 4000
-            adjusted_items['indicators.10am_pivot.price_threshold'] = new_price_threshold
-            self.logger.info(f"动态调整 price_threshold: {new_price_threshold:.2f}")
+            try:
+                close_stats = data.select([
+                    pl.col("close").mean().alias("mean"),
+                    pl.col("close").quantile(0.5).alias("median")
+                ]).to_dict(as_series=False)
+                new_price_threshold = close_stats["median"][0] if close_stats.get("median") and close_stats["median"][0] is not None else 4000
+            except Exception as e:
+                self.logger.warning(f"计算close统计失败: {e}")
+                new_price_threshold = 4000
+            if new_price_threshold:
+                adjusted_items['indicators.10am_pivot.price_threshold'] = new_price_threshold
+                self.logger.info(f"动态调整 price_threshold: {new_price_threshold:.2f}")
 
         # 动态调整 cost_peak_support（使用实际峰位均值）
         if "factor_cost_peak" in data.columns:
-            cost_peak_stats = data.select([
-                pl.col("factor_cost_peak").mean().alias("mean"),
-                pl.col("factor_cost_peak").std().alias("std")
-            ]).to_dict(as_series=False)
-            if cost_peak_stats["mean"]:
-                new_cost_peak_support = cost_peak_stats["mean"][0] * 0.98
-                adjusted_items['indicators.market_sentiment.thresholds.cost_peak_support'] = new_cost_peak_support
-                self.logger.info(f"动态调整 cost_peak_support: {new_cost_peak_support:.2f}")
+            try:
+                cost_peak_stats = data.select([
+                    pl.col("factor_cost_peak").mean().alias("mean"),
+                    pl.col("factor_cost_peak").std().alias("std")
+                ]).to_dict(as_series=False)
+                if cost_peak_stats.get("mean") and cost_peak_stats["mean"][0] is not None:
+                    new_cost_peak_support = cost_peak_stats["mean"][0] * 0.98
+                    adjusted_items['indicators.market_sentiment.thresholds.cost_peak_support'] = new_cost_peak_support
+                    self.logger.info(f"动态调整 cost_peak_support: {new_cost_peak_support:.2f}")
+            except Exception as e:
+                self.logger.warning(f"计算cost_peak统计失败: {e}")
 
         # 批量保存
         if adjusted_items:

@@ -175,6 +175,97 @@ class FundBehaviorStrategyEngine:
         
         return effect
 
+    def _calculate_defense_signals(
+        self,
+        indicators: Dict[str, Any],
+        v_total: float,
+        current_price: float,
+        config: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        计算防守信号 - 什么情况下绝对不能买
+        
+        Args:
+            indicators: 技术指标
+            v_total: 成交量
+            current_price: 当前价格
+            config: 配置
+        
+        Returns:
+            防守信号字典
+        """
+        # 获取防守配置
+        defense_params = config.get('indicators', {}).get('defense', {}).get('params', {})
+        defense_config = {
+            'volume_shrink_threshold': defense_params.get('volume_shrink_threshold', 0.6),
+            'support_break_threshold': defense_params.get('support_break_threshold', -0.02),
+            'open_auction_min': defense_params.get('open_auction_min', 500)
+        }
+        
+        # 关键位配置
+        key_levels_params = config.get('factors', {}).get('key_levels', {}).get('params', {})
+        key_levels_config = {
+            'support_levels': key_levels_params.get('support_levels', [4067, 4117, 4140]),
+            'resistance_levels': key_levels_params.get('resistance_levels', [4200, 4300])
+        }
+        
+        signals = {
+            'action': 'BUY',  # 默认买入
+            'reasons': [],
+            'details': {}
+        }
+        
+        # 1. 成交量萎缩防守
+        avg_v_total = indicators.get("market_sentiment", {}).get("avg_v_total", [0])[-1]
+        if avg_v_total > 0 and v_total / avg_v_total < defense_config['volume_shrink_threshold']:
+            signals['action'] = 'DEFENSE'
+            signals['reasons'].append('成交量萎缩60%以上，触发防守')
+            signals['details']['volume_shrink'] = True
+        
+        # 2. 开盘金额不足防守
+        # 需要从实时数据获取开盘金额，这里用v_total模拟
+        # 实际应该从09:25集合竞价数据获取
+        if v_total < defense_config['open_auction_min']:
+            signals['action'] = 'DEFENSE'
+            signals['reasons'].append(f'开盘金额不足{v_total}亿，低于{defense_config["open_auction_min"]}亿阈值')
+            signals['details']['open_auction_low'] = True
+        
+        # 3. 跌破支撑位防守
+        support_levels = key_levels_config.get('support_levels', [4067])
+        for support in support_levels:
+            if current_price < support * (1 + defense_config['support_break_threshold']):
+                signals['action'] = 'DEFENSE'
+                signals['reasons'].append(f'跌破关键支撑位{int(support)}，触发防守')
+                signals['details']['support_break'] = True
+                break
+        
+        # 4. 情绪过热防守
+        sentiment_temp = indicators.get("market_sentiment", {}).get("sentiment_temperature", [0])[-1]
+        if sentiment_temp > 85:
+            signals['action'] = 'CAUTION'
+            signals['reasons'].append(f'情绪温度{sentiment_temp}°过高，注意风险')
+            signals['details']['sentiment_overheat'] = True
+        
+        # 5. 判断当前处于关键位附近
+        near_support = False
+        near_resistance = False
+        for support in support_levels:
+            if abs(current_price - support) / support < 0.01:
+                near_support = True
+                break
+        resistance_levels = key_levels_config.get('resistance_levels', [4200])
+        for resistance in resistance_levels:
+            if abs(current_price - resistance) / resistance < 0.01:
+                near_resistance = True
+                break
+        
+        if near_support:
+            signals['details']['near_support'] = True
+        if near_resistance:
+            signals['details']['near_resistance'] = True
+        
+        return signals
+    
     def execute_strategy(self, data: pl.DataFrame, total_capital: float, current_time: str) -> Dict[str, Any]:
         """
         执行完整策略
@@ -242,6 +333,14 @@ class FundBehaviorStrategyEngine:
         current_price = data["close"].to_numpy()[-1] if len(data) > 0 else 0
         is_strong_region = cost_peak > 0 and current_price > cost_peak * 0.995
 
+        # 计算防守信号
+        defense_signals = self._calculate_defense_signals(
+            indicators=indicators,
+            v_total=v_total_list[-1] if v_total_list else 0.0,
+            current_price=current_price,
+            config=config_manager.config
+        )
+
         result = {
             "market_state": indicators["market_sentiment"].get("market_state", []),
             "upward_pivot": upward_pivot,
@@ -251,6 +350,8 @@ class FundBehaviorStrategyEngine:
             "short_term_stocks": short_term_stocks,
             "position_size": position_size,
             "exit_signals": exit_signals,
+            # 防守信号
+            "defense_signals": defense_signals,
             # 真实数据
             "cost_peak": cost_peak,
             "current_price": current_price,

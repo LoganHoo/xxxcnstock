@@ -193,7 +193,7 @@ class APSchedulerBackup:
                     '资金行为报告',
                     job_id='fund_behavior_report'
                 ),
-                'cron': '9 9 * * 1-5',
+                'cron': '26 9 * * 1-5',
                 'name': '量化决策报告'
             },
             {

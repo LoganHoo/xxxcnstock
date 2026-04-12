@@ -12,7 +12,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailService
-from services.notify_service.templates.report_templates import MorningReportTemplate
+from services.notify_service.templates import get_template
 
 
 def get_yesterday_picks_report():
@@ -65,7 +65,8 @@ def main():
         print('没有可发送的报告')
         return
 
-    content = MorningReportTemplate.generate(
+    template = get_template('morning_report')
+    content = template.generate(
         market_data=market_data,
         picks_data=picks_data,
         foreign_data=foreign_data
