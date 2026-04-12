@@ -11,6 +11,8 @@ import re
 import json
 import requests
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from threading import Lock
 
 from core.trading_calendar import check_market_status
 
@@ -59,26 +61,39 @@ class DataCollector:
         
         self.logger.info(f"共 {len(codes)} 只股票")
 
+        # 优化：使用线程池并发采集
         success = 0
         failed = 0
         skipped = 0
         updated = 0
+        stats_lock = Lock()
 
-        for i, code in enumerate(codes):
-            if (i + 1) % 100 == 0:
-                self.logger.info(f"  进度: {i+1}/{len(codes)}")
-
+        def fetch_with_stats(code):
+            """带统计的采集函数"""
+            nonlocal success, failed, skipped, updated
             result = self._fetch_single(code)
-            if result == 'success':
-                success += 1
-            elif result == 'updated':
-                updated += 1
-            elif result == 'skipped':
-                skipped += 1
-            else:
-                failed += 1
+            with stats_lock:
+                if result == 'success':
+                    success += 1
+                elif result == 'updated':
+                    updated += 1
+                elif result == 'skipped':
+                    skipped += 1
+                else:
+                    failed += 1
+            return result
 
-            time_module.sleep(0.1)
+        # 使用8线程并发采集
+        max_workers = 8
+        self.logger.info(f"启动并发采集: {max_workers} 线程")
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {executor.submit(fetch_with_stats, code): code for code in codes}
+            completed = 0
+            for future in as_completed(futures):
+                completed += 1
+                if completed % 100 == 0:
+                    self.logger.info(f"  进度: {completed}/{len(codes)}")
 
         self.logger.info(f"采集完成: 新增 {success}, 更新 {updated}, 已是最新 {skipped}, 失败 {failed}")
 
@@ -210,7 +225,7 @@ class DataCollector:
         }
 
         try:
-            r = requests.get(url, params=params, headers=headers, timeout=15)
+            r = requests.get(url, params=params, headers=headers, timeout=10)  # 优化：从15秒减少到10秒，快速失败
             text = r.text
             match = re.match(r'kline_dayqfq_\w+=(.*)', text)
             if match:

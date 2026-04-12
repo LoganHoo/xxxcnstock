@@ -37,7 +37,7 @@ tasks:
     script: "scripts/pipeline/data_collect.py"
     enabled: true
     day_type: "weekday"
-    timeout: 5400  # 90分钟（5400秒）
+    timeout: 7200  # 120分钟（7200秒）- 优化：从90分钟增加到120分钟
     run_once: true  # 只执行一次，不进行重试采集
 
   # 16:30 - 断点续传（如果质检未通过）

@@ -544,36 +544,46 @@ def send_email_notification(result: dict, report_text: str) -> bool:
             from dotenv import load_dotenv
             load_dotenv()
             
-            import nacos
-            settings = get_settings()
-            client = nacos.NacosClient(
-                settings.NACOS_SERVER_ADDR,
-                namespace=settings.NACOS_NAMESPACE,
-                username=settings.NACOS_USERNAME,
-                password=settings.NACOS_PASSWORD or ""
-            )
-            xcomm_content = client.get_config("xcomm.yaml", "DEFAULT_GROUP")
-            
             use_env_fallback = False
+            recipients = None
+            sender = None
             
-            if xcomm_content:
-                import yaml
-                cfg = yaml.safe_load(xcomm_content)
-                email_cfg = cfg.get('email', {})
-                recipients = email_cfg.get('notification', {}).get('emails', [])
-                
-                smtp_cfg = email_cfg.get('smtp', {})
-                sender = EmailSender(
-                    smtp_host=smtp_cfg.get('server'),
-                    smtp_port=smtp_cfg.get('port', 465),
-                    smtp_user=smtp_cfg.get('username'),
-                    smtp_password=smtp_cfg.get('password'),
-                    use_ssl=True
+            # 尝试从Nacos加载配置
+            try:
+                import nacos
+                settings = get_settings()
+                client = nacos.NacosClient(
+                    settings.NACOS_SERVER_ADDR,
+                    namespace=settings.NACOS_NAMESPACE,
+                    username=settings.NACOS_USERNAME,
+                    password=settings.NACOS_PASSWORD or ""
                 )
-                logger.info("[EMAIL] 从Nacos加载邮件配置成功")
-            else:
+                xcomm_content = client.get_config("xcomm.yaml", "DEFAULT_GROUP")
+                
+                if xcomm_content:
+                    import yaml
+                    cfg = yaml.safe_load(xcomm_content)
+                    email_cfg = cfg.get('email', {})
+                    recipients = email_cfg.get('notification', {}).get('emails', [])
+                    
+                    smtp_cfg = email_cfg.get('smtp', {})
+                    sender = EmailSender(
+                        smtp_host=smtp_cfg.get('server'),
+                        smtp_port=smtp_cfg.get('port', 465),
+                        smtp_user=smtp_cfg.get('username'),
+                        smtp_password=smtp_cfg.get('password'),
+                        use_ssl=True
+                    )
+                    logger.info("[EMAIL] 从Nacos加载邮件配置成功")
+                else:
+                    use_env_fallback = True
+                    logger.info("[EMAIL] Nacos配置不存在，使用.env配置")
+            except ImportError:
                 use_env_fallback = True
-                logger.info("[EMAIL] Nacos配置不存在，使用.env配置")
+                logger.info("[EMAIL] nacos模块未安装，使用.env配置")
+            
+            # 使用环境变量作为降级方案
+            if use_env_fallback or sender is None:
                 recipients = [os.getenv('NOTIFICATION_EMAILS', '287363@qq.com')]
                 sender = EmailSender(
                     smtp_host=os.getenv('EMAIL_SMTP_SERVER', 'smtp.qq.com'),
