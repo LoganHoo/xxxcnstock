@@ -119,17 +119,23 @@ class FundBehaviorIndicatorEngine:
         # 按日期分组计算市场指标
         # 注意: limit_up_score因子已经按日期聚合了涨跌停数据
         # 每只股票在同一天的 factor_limit_up_score, total_limit_up 等值相同
-        daily_data = data.group_by("trade_date").agg([
+        agg_exprs = [
             pl.mean("factor_v_total").alias("avg_v_total"),
             pl.mean("factor_limit_up_score").alias("avg_limit_up_score"),
             pl.mean("factor_pioneer_status").alias("avg_pioneer_status"),
             pl.mean("factor_cost_peak").alias("avg_cost_peak"),
             pl.mean("close").alias("avg_close"),
             pl.mean("open").alias("avg_open"),
-            pl.count().alias("total_stocks"),
-            pl.first("total_limit_up").alias("total_limit_up"),
-            pl.first("total_limit_down").alias("total_limit_down")
-        ]).sort("trade_date")
+            pl.count().alias("total_stocks")
+        ]
+        
+        # 如果存在total_limit_up和total_limit_down列，则包含它们
+        if "total_limit_up" in data.columns:
+            agg_exprs.append(pl.first("total_limit_up").alias("total_limit_up"))
+        if "total_limit_down" in data.columns:
+            agg_exprs.append(pl.first("total_limit_down").alias("total_limit_down"))
+        
+        daily_data = data.group_by("trade_date").agg(agg_exprs).sort("trade_date")
 
         # 注意: limit_up_score 因子已经包含了全市场聚合值(每只股票该日期相同)
         # 这里取平均值即可得到市场级别的涨跌停得分

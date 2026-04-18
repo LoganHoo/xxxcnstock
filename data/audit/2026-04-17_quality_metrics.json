@@ -1,0 +1,16 @@
+{
+  "collection_rate": 99.72,
+  "completeness_rate": 99.72,
+  "freshness_score": 98.0,
+  "consistency_score": 95,
+  "overall_score": 98.35,
+  "quality_level": "excellent",
+  "total_stocks": 5300,
+  "collected_stocks": 5285,
+  "valid_stocks": 5285,
+  "invalid_stocks": 15,
+  "missing_fields_count": 0,
+  "data_freshness_days": 0,
+  "report_date": "2026-04-17",
+  "generated_at": "2026-04-17T23:33:42.898667"
+}

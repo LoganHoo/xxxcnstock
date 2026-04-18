@@ -1,191 +1,145 @@
-"""A股量化战略内参推送 - 08:45执行"""
+#!/usr/bin/env python3
+"""
+A股量化战略内参推送 - 使用 BaseReporter 重构
+【08:45执行】
+"""
 import sys
 import os
-import json
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
+from typing import Dict, List, Any
 
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from services.email_sender import EmailService
+from core.base_reporter import BaseReporter
+from core.paths import ReportPaths
 from services.notify_service.templates import get_template
 from services.report_db_service import ReportDBService
 
 
-class 量化战略内参Reporter:
+class 量化战略内参Reporter(BaseReporter):
     """A股量化战略内参推送器"""
 
-    def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent
-        self.data_dir = self.project_root / "data"
-        self.reports_dir = self.project_root / "reports"
-        self.logger = self._setup_logger()
+    @property
+    def report_type(self) -> str:
+        return "morning_shao"
 
-    def _setup_logger(self):
-        import logging
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(levelname)s - %(message)s'
-        )
-        return logging.getLogger(__name__)
+    @property
+    def required_data_sources(self) -> List[str]:
+        return ['foreign_data', 'market_data']
 
-    def load_foreign_data(self) -> dict:
-        """加载外盘数据"""
-        foreign_file = self.data_dir / "foreign_index.json"
-        if foreign_file.exists():
-            with open(foreign_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
+    @property
+    def optional_data_sources(self) -> List[str]:
+        return [
+            'macro_data', 'oil_dollar_data', 'commodities_data',
+            'sentiment_data', 'news_data', 'fund_behavior_data', 'picks_data'
+        ]
 
-    def load_market_analysis(self) -> dict:
-        """加载大盘分析数据"""
-        today = datetime.now().strftime('%Y%m%d')
-        market_file = self.reports_dir / f"market_analysis_{today}.json"
-        if not market_file.exists():
-            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-            market_file = self.reports_dir / f"market_analysis_{yesterday}.json"
-        if market_file.exists():
-            with open(market_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_macro_data(self) -> dict:
-        """加载宏观数据"""
-        macro_file = self.data_dir / "macro_data.json"
-        if macro_file.exists():
-            with open(macro_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_oil_dollar_data(self) -> dict:
-        """加载石油美元数据"""
-        oil_file = self.data_dir / "oil_dollar_data.json"
-        if oil_file.exists():
-            with open(oil_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_commodities_data(self) -> dict:
-        """加载大宗商品数据"""
-        comm_file = self.data_dir / "commodities_data.json"
-        if comm_file.exists():
-            with open(comm_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_sentiment_data(self) -> dict:
-        """加载情绪数据"""
-        sent_file = self.data_dir / "sentiment_data.json"
-        if sent_file.exists():
-            with open(sent_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_news_data(self) -> dict:
-        """加载新闻数据"""
-        news_file = self.data_dir / "news_data.json"
-        if news_file.exists():
-            with open(news_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_fund_behavior_result(self) -> dict:
-        """加载资金行为学策略结果"""
-        fb_file = self.reports_dir / "fund_behavior_result.json"
-        if fb_file.exists():
-            with open(fb_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def load_daily_picks(self) -> dict:
-        """加载选股数据"""
-        today = datetime.now().strftime('%Y%m%d')
-        picks_file = self.reports_dir / f"daily_picks_{today}.json"
-        if not picks_file.exists():
-            yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-            picks_file = self.reports_dir / f"daily_picks_{yesterday}.json"
-        if picks_file.exists():
-            with open(picks_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return {}
-
-    def calculate_macro_factor(self, data: dict) -> dict:
-        """计算宏观调节因子 M = M_macro × M_sentiment"""
-        m_macro = 1.0
-        m_sentiment = 1.0
-
-        foreign = data.get('foreign', {})
-        macro = data.get('macro', {})
-        sentiment = data.get('sentiment', {})
-        fb_data = data.get('fund_behavior', {})
-
-        us = foreign.get('us_index', {}).get('data', {})
-        if us:
-            sp500 = us.get('sp500', {})
-            nasdaq = us.get('nasdaq', {})
-            if isinstance(sp500, dict) and sp500.get('change_pct', 0) < -2:
-                m_macro *= 0.8
-            if isinstance(nasdaq, dict) and nasdaq.get('change_pct', 0) < -2:
-                m_macro *= 0.8
-
-        dxy = macro.get('dxy', {})
-        if isinstance(dxy, dict):
-            if dxy.get('change_pct', 0) > 1:
-                m_macro *= 0.9
-
-        bomb = sentiment.get('bomb_rate', {})
-        if isinstance(bomb, dict):
-            if bomb.get('rate', 0) > 40:
-                m_sentiment *= 0.7
-            elif bomb.get('rate', 0) < 20:
-                m_sentiment *= 1.2
-
-        cvd_signal = fb_data.get('cvd_signal', 'neutral')
-        if cvd_signal == 'sell_dominant':
-            m_sentiment *= 0.8
-        elif cvd_signal == 'buy_dominant':
-            m_sentiment *= 1.1
-
-        fear_greed = sentiment.get('fear_greed', {})
-        if isinstance(fear_greed, dict):
-            fg_value = fear_greed.get('value', 50)
-            if fg_value >= 75:
-                m_sentiment *= 0.85
-
+    def load_data(self) -> Dict[str, Any]:
+        """加载战略内参所需数据"""
         return {
-            'm_macro': round(m_macro, 2),
-            'm_sentiment': round(m_sentiment, 2),
-            'final': round(m_macro * m_sentiment, 2)
+            'foreign_data': self._load_json_file(ReportPaths.foreign_index()),
+            'market_data': self._load_json_file(
+                ReportPaths.market_analysis(fallback_to_yesterday=True)
+            ),
+            'macro_data': self._load_json_file(ReportPaths.macro_data()),
+            'oil_dollar_data': self._load_json_file(ReportPaths.oil_dollar_data()),
+            'commodities_data': self._load_json_file(ReportPaths.commodities_data()),
+            'sentiment_data': self._load_json_file(ReportPaths.sentiment_data()),
+            'news_data': self._load_json_file(ReportPaths.news_data()),
+            'fund_behavior_data': self._load_json_file(ReportPaths.fund_behavior_result()),
+            'picks_data': self._load_json_file(
+                ReportPaths.daily_picks(fallback_to_yesterday=True)
+            )
         }
 
-    def generate_reverse_logic(self, data: dict) -> list:
-        """生成AI反向逻辑提醒"""
-        reverse_items = []
+    # 保持向后兼容的方法名
+    def load_foreign_data(self) -> dict:
+        return self._load_json_file(ReportPaths.foreign_index())
 
+    def load_market_analysis(self) -> dict:
+        file_path = ReportPaths.market_analysis(fallback_to_yesterday=True)
+        return self._load_json_file(file_path) if file_path else None
+
+    def load_macro_data(self) -> dict:
+        return self._load_json_file(ReportPaths.macro_data())
+
+    def load_oil_dollar_data(self) -> dict:
+        return self._load_json_file(ReportPaths.oil_dollar_data())
+
+    def load_commodities_data(self) -> dict:
+        return self._load_json_file(ReportPaths.commodities_data())
+
+    def load_sentiment_data(self) -> dict:
+        return self._load_json_file(ReportPaths.sentiment_data())
+
+    def load_news_data(self) -> list:
+        return self._load_json_file(ReportPaths.news_data()) or []
+
+    def load_fund_behavior_result(self) -> dict:
+        return self._load_json_file(ReportPaths.fund_behavior_result())
+
+    def load_daily_picks(self) -> dict:
+        file_path = ReportPaths.daily_picks(fallback_to_yesterday=True)
+        return self._load_json_file(file_path) if file_path else None
+
+    def _calculate_macro_factor(self, data: Dict) -> Dict:
+        """计算宏观因子"""
         foreign = data.get('foreign', {})
+        macro = data.get('macro', {})
+        oil_dollar = data.get('oil_dollar', {})
+        commodities = data.get('commodities', {})
+
+        factors = []
+
+        us = foreign.get('us_index', {}).get('data', {}) if foreign else {}
+        if isinstance(us, dict):
+            for name, val in us.items():
+                if isinstance(val, dict) and val.get('change_pct', 0) > 0:
+                    factors.append(1)
+                else:
+                    factors.append(0)
+
+        dxy = macro.get('dxy', {}) if macro else {}
+        if isinstance(dxy, dict) and dxy.get('change_pct', 0) < 0.5:
+            factors.append(1)
+        else:
+            factors.append(0)
+
+        oil = oil_dollar.get('oil', {}) if oil_dollar else {}
+        if isinstance(oil, dict):
+            brent = oil.get('brent', {})
+            if isinstance(brent, dict) and brent.get('change_pct', 0) < 3:
+                factors.append(1)
+            else:
+                factors.append(0)
+
+        gold = commodities.get('metals', {}).get('gold', {}) if commodities else {}
+        if isinstance(gold, dict) and gold.get('change_pct', 0) < 2:
+            factors.append(1)
+        else:
+            factors.append(0)
+
+        final_score = sum(factors) / len(factors) if factors else 0.5
+        return {'final': round(final_score, 2), 'details': factors}
+
+    def _generate_reverse_logic(self, data: Dict) -> List[Dict]:
+        """生成反向逻辑"""
+        reverse_items = []
         sentiment = data.get('sentiment', {})
-        news = data.get('news', [])
         fb_data = data.get('fund_behavior', {})
         macro = data.get('macro', {})
+        news = data.get('news', [])
 
-        us = foreign.get('us_index', {}).get('data', {})
-        if us:
-            sp500 = us.get('sp500', {})
-            if isinstance(sp500, dict) and sp500.get('change_pct', 0) < -2:
-                reverse_items.append({
-                    'type': '外围',
-                    'content': '美股标普500大幅下跌，留意A股开盘压力'
-                })
-
-        bomb = sentiment.get('bomb_rate', {})
+        bomb = sentiment.get('bomb_rate', {}) if sentiment else {}
         if bomb and bomb.get('rate', 0) > 40:
             reverse_items.append({
                 'type': '情绪',
                 'content': f'炸板率{bomb.get("rate", 0):.1f}%偏高，亏钱效应放大，谨慎打板'
             })
 
-        fear_greed = sentiment.get('fear_greed', {})
+        fear_greed = sentiment.get('fear_greed', {}) if sentiment else {}
         if fear_greed:
             fg_value = fear_greed.get('value', 50)
             if fg_value >= 75:
@@ -194,14 +148,14 @@ class 量化战略内参Reporter:
                     'content': f'恐慌贪婪指数{fg_value}进入极度贪婪区，注意获利了结'
                 })
 
-        cvd_signal = fb_data.get('cvd_signal', 'neutral')
+        cvd_signal = fb_data.get('cvd_signal', 'neutral') if fb_data else 'neutral'
         if cvd_signal == 'sell_dominant':
             reverse_items.append({
                 'type': '资金',
                 'content': 'CVD显示主力资金净流出，短期偏空'
             })
 
-        dxy = macro.get('dxy', {})
+        dxy = macro.get('dxy', {}) if macro else {}
         if isinstance(dxy, dict) and dxy.get('change_pct', 0) > 1:
             reverse_items.append({
                 'type': '宏观',
@@ -219,29 +173,32 @@ class 量化战略内参Reporter:
 
         return reverse_items[:4]
 
-    def generate_report_data(self) -> dict:
-        """生成报告数据"""
-        foreign = self.load_foreign_data()
-        market = self.load_market_analysis()
-        macro = self.load_macro_data()
-        oil_dollar = self.load_oil_dollar_data()
-        commodities = self.load_commodities_data()
-        sentiment = self.load_sentiment_data()
-        news = self.load_news_data()
-        fb_data = self.load_fund_behavior_result()
-        picks = self.load_daily_picks()
+    def _transform_data(self, raw_data: Dict) -> Dict:
+        """转换数据为模板所需格式"""
+        foreign = raw_data.get('foreign_data', {})
+        market = raw_data.get('market_data', {})
+        macro = raw_data.get('macro_data', {})
+        oil_dollar = raw_data.get('oil_dollar_data', {})
+        commodities = raw_data.get('commodities_data', {})
+        sentiment = raw_data.get('sentiment_data', {})
+        news = raw_data.get('news_data', [])
+        fb_data = raw_data.get('fund_behavior_data', {})
+        picks = raw_data.get('picks_data', {})
 
-        data = {
+        # 计算宏观因子和反向逻辑
+        data_for_calc = {
             'foreign': foreign,
             'macro': macro,
+            'oil_dollar': oil_dollar,
+            'commodities': commodities,
             'sentiment': sentiment,
             'fund_behavior': fb_data,
             'news': news
         }
+        macro_factor = self._calculate_macro_factor(data_for_calc)
+        reverse_logic = self._generate_reverse_logic(data_for_calc)
 
-        macro_factor = self.calculate_macro_factor(data)
-        reverse_logic = self.generate_reverse_logic(data)
-
+        # 构建 global_alpha
         global_alpha = {
             'foreign': {},
             'macro': {},
@@ -306,6 +263,7 @@ class 量化战略内参Reporter:
                 'lithium': agriculture.get('lithium', {})
             }
 
+        # 构建 domestic_core
         domestic_core = {
             'yesterday': {},
             'key_levels': {},
@@ -328,32 +286,32 @@ class 量化战略内参Reporter:
                     'prediction': idx.get('analysis', {}).get('action', '等待确认')
                 }
         else:
-            market_review_file = self.data_dir / "market_review.json"
+            market_review_file = ReportPaths.market_review()
             if market_review_file.exists():
-                with open(market_review_file, 'r', encoding='utf-8') as f:
-                    review = json.load(f)
-                    summary = review.get('summary', {})
-                    cvd = review.get('cvd', {})
-                    domestic_core['yesterday'] = {
-                        'indices': [],
-                        'summary': {
-                            'rising': summary.get('rising_count', 0),
-                            'falling': summary.get('falling_count', 0),
-                            'limit_up': summary.get('limit_up_count', 0),
-                            'limit_down': summary.get('limit_down_count', 0),
-                            'volume': summary.get('total_volume', 0) * 10000
-                        }
+                review = self._load_json_file(market_review_file)
+                summary = review.get('summary', {})
+                cvd = review.get('cvd', {})
+                domestic_core['yesterday'] = {
+                    'indices': [],
+                    'summary': {
+                        'rising': summary.get('rising_count', 0),
+                        'falling': summary.get('falling_count', 0),
+                        'limit_up': summary.get('limit_up_count', 0),
+                        'limit_down': summary.get('limit_down_count', 0),
+                        'volume': summary.get('total_volume', 0) * 10000
                     }
-                    domestic_core['key_levels'] = {
-                        '市场状态': {
-                            'resistance': 'N/A',
-                            'support': 'N/A',
-                            'prediction': cvd.get('signal', 'neutral')
-                        }
+                }
+                domestic_core['key_levels'] = {
+                    '市场状态': {
+                        'resistance': 'N/A',
+                        'support': 'N/A',
+                        'prediction': cvd.get('signal', 'neutral')
                     }
+                }
 
         domestic_core['news'] = news[:4] if isinstance(news, list) else []
 
+        # 构建 sentiment_engine
         sentiment_engine = {
             'board': {},
             'bomb_rate': {},
@@ -374,13 +332,12 @@ class 量化战略内参Reporter:
             }
 
         if not sentiment_engine.get('bomb_rate'):
-            sentiment_data_file = self.data_dir / "sentiment_data.json"
+            sentiment_data_file = ReportPaths.sentiment_data()
             if sentiment_data_file.exists():
-                with open(sentiment_data_file, 'r', encoding='utf-8') as f:
-                    sent_data = json.load(f)
-                    bomb = sent_data.get('bomb_rate', {})
-                    if bomb:
-                        sentiment_engine['bomb_rate'] = bomb
+                sent_data = self._load_json_file(sentiment_data_file)
+                bomb = sent_data.get('bomb_rate', {})
+                if bomb:
+                    sentiment_engine['bomb_rate'] = bomb
 
         if market:
             summary = market.get('summary', {})
@@ -389,6 +346,7 @@ class 量化战略内参Reporter:
                 'premium': summary.get('avg_premium', 0)
             }
 
+        # 构建 ai_strategy
         ai_strategy = {
             'focus_themes': [],
             'stocks': {'s_grade': [], 'a_grade': []},
@@ -427,74 +385,70 @@ class 量化战略内参Reporter:
             'ai_strategy': ai_strategy
         }
 
-    def generate_report(self) -> str:
-        """生成完整报告"""
-        data = self.generate_report_data()
+    # 保持向后兼容的方法名
+    def generate_report_data(self) -> dict:
+        """生成报告数据（兼容旧接口）"""
+        return self._transform_data(self.load_data())
+
+    def generate(self, data: Dict[str, Any]) -> str:
+        """生成战略内参报告"""
+        # 转换数据格式
+        template_data = self._transform_data(data)
+
         template = get_template('morning_shao_report')
-        return template.generate(data)
+        return template.generate(template_data)
+
+    # 保持向后兼容的方法名
+    def generate_report(self) -> str:
+        """生成报告（兼容旧接口）"""
+        data = self.load_data()
+        return self.generate(data)
+
+    def _send(self, content: str) -> bool:
+        """发送报告并保存到数据库"""
+        success = super()._send(content)
+
+        if success:
+            try:
+                db_service = ReportDBService()
+                today = datetime.now().strftime('%Y-%m-%d')
+                subject = f"【A股量化战略内参】{today} 盘前"
+
+                db_service.save_report(
+                    report_type='morning_shao',
+                    report_date=today,
+                    subject=subject,
+                    text_content=content
+                )
+                self.logger.info("报告已保存到数据库")
+
+                # 保存TXT文件
+                txt_path = db_service.save_txt_file('morning_shao', today, content)
+                self.logger.info(f"TXT已保存: {txt_path}")
+
+            except Exception as e:
+                self.logger.warning(f"保存到数据库失败: {e}")
+
+        return success
 
     def run(self) -> bool:
-        """执行推送"""
-        self.logger.info("开始推送A股量化战略内参...")
+        """执行推送（兼容旧接口）"""
+        return super().run()
 
-        try:
-            content = self.generate_report()
-            self.logger.info(f"报告内容:\n{content}")
 
-            email_service = EmailService()
+def main():
+    """主函数"""
+    reporter = 量化战略内参Reporter()
+    success = reporter.run()
 
-            recipients_str = os.getenv('NOTIFICATION_EMAILS', '287363@qq.com')
-            recipients = [r.strip() for r in recipients_str.split(',') if r.strip()]
+    result = reporter.get_last_result()
+    if result:
+        print(f"\n执行结果: {result.status.value}")
+        if result.error_message:
+            print(f"错误: {result.error_message}")
 
-            if not recipients:
-                self.logger.error("未配置收件人")
-                return False
-
-            today = datetime.now().strftime('%Y-%m-%d')
-            subject = f"【A股量化战略内参】{today} 盘前"
-
-            self.logger.info(f"发送邮件到: {recipients}")
-            self.logger.info(f"主题: {subject}")
-
-            result = email_service.send(
-                to_addrs=recipients,
-                subject=subject,
-                content=content
-            )
-
-            if result:
-                self.logger.info("量化战略内参推送成功")
-                self.save_report_to_db(today, subject, content)
-                return True
-            else:
-                self.logger.error("量化战略内参推送失败")
-                return False
-
-        except Exception as e:
-            self.logger.error(f"量化战略内参推送异常: {e}")
-            return False
-
-    def save_report_to_db(self, report_date: str, subject: str, text_content: str):
-        """保存报告到MySQL和TXT"""
-        try:
-            db_service = ReportDBService()
-            db_service.init_tables()
-
-            db_service.save_report(
-                report_type='morning_shao',
-                report_date=report_date,
-                subject=subject,
-                text_content=text_content
-            )
-
-            txt_path = db_service.save_txt_file('morning_shao', report_date, text_content)
-            self.logger.info(f"TXT已保存: {txt_path}")
-
-        except Exception as e:
-            self.logger.warning(f"保存报告到数据库失败: {e}")
+    sys.exit(0 if success else 1)
 
 
 if __name__ == "__main__":
-    reporter = 量化战略内参Reporter()
-    result = reporter.run()
-    sys.exit(0 if result else 1)
+    main()

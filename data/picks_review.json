@@ -1,15 +1,75 @@
 {
-  "date": "2026-03-31",
-  "recommend_date": "2026-03-30",
+  "date": "2026-04-17",
+  "recommend_date": "2026-04-16",
   "summary": {
-    "total_picks": 0,
-    "reviewed_picks": 0,
-    "win_count": 0,
-    "loss_count": 0,
-    "hold_count": 0,
-    "win_rate": 0
+    "total_picks": 6,
+    "reviewed_picks": 6,
+    "win_count": 2,
+    "loss_count": 3,
+    "hold_count": 1,
+    "win_rate": 33.3
   },
-  "top_picks": [],
-  "details": [],
-  "generated_at": "2026-03-31 20:31:47"
+  "filters": {
+    "s_grade": {
+      "stocks": [
+        {
+          "code": "002297",
+          "name": "\u535a\u4e91\u65b0\u6750",
+          "score": 85,
+          "reasons": "\u5f3a\u52bf\u4e0a\u6da8,\u591a\u5934\u6392\u5217",
+          "prev_close": 8.52,
+          "curr_close": 9.15,
+          "change_pct": 7.39
+        },
+        {
+          "code": "000570",
+          "name": "\u82cf\u5e38\u67f4A",
+          "score": 82,
+          "reasons": "\u5f3a\u52bf\u4e0a\u6da8,\u591a\u5934\u6392\u5217",
+          "prev_close": 5.28,
+          "curr_close": 5.05,
+          "change_pct": -4.36
+        },
+        {
+          "code": "688531",
+          "name": "\u65e5\u8054\u79d1\u6280",
+          "score": 80,
+          "reasons": "\u5f3a\u52bf\u4e0a\u6da8,\u591a\u5934\u6392\u5217",
+          "prev_close": 68.5,
+          "curr_close": 70.2,
+          "change_pct": 2.48
+        }
+      ]
+    },
+    "a_grade": {
+      "stocks": [
+        {
+          "code": "000002",
+          "name": "\u4e07\u79d1A",
+          "score": 75,
+          "prev_close": 18.2,
+          "curr_close": 17.5,
+          "change_pct": -3.85
+        },
+        {
+          "code": "000026",
+          "name": "\u98de\u4e9a\u8fbe",
+          "score": 72,
+          "prev_close": 12.35,
+          "curr_close": 12.1,
+          "change_pct": -2.02
+        },
+        {
+          "code": "000030",
+          "name": "\u5bcc\u5965\u80a1\u4efd",
+          "score": 70,
+          "prev_close": 6.8,
+          "curr_close": 6.85,
+          "change_pct": 0.74
+        }
+      ]
+    }
+  },
+  "generated_at": "2026-04-17 23:30:00",
+  "timestamp": "2026-04-18T17:23:41.858116"
 }

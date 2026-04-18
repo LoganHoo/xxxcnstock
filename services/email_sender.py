@@ -85,14 +85,39 @@ class EmailSender:
             
             logger.info(f"连接邮件服务器: {self.smtp_host}:{self.smtp_port}")
             
-            if self.use_ssl:
-                with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=30) as server:
-                    server.login(self.smtp_user, self.smtp_password)
-                    server.send_message(msg)
-            else:
-                with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as server:
-                    server.login(self.smtp_user, self.smtp_password)
-                    server.send_message(msg)
+            try:
+                if self.smtp_port == 465:
+                    # SSL模式 (端口465)
+                    with smtplib.SMTP_SSL(self.smtp_host, self.smtp_port, timeout=30) as server:
+                        server.login(self.smtp_user, self.smtp_password)
+                        server.send_message(msg)
+                elif self.smtp_port == 587:
+                    # STARTTLS模式 (端口587)
+                    with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as server:
+                        server.starttls()
+                        logger.info("已启用STARTTLS加密")
+                        server.login(self.smtp_user, self.smtp_password)
+                        server.send_message(msg)
+                else:
+                    # 其他端口，尝试STARTTLS，失败则使用普通模式
+                    with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=30) as server:
+                        try:
+                            server.starttls()
+                            logger.info("已启用STARTTLS加密")
+                        except Exception as tls_error:
+                            logger.warning(f"STARTTLS失败，使用非加密连接: {tls_error}")
+                        server.login(self.smtp_user, self.smtp_password)
+                        server.send_message(msg)
+            except Exception as ssl_error:
+                # SSL失败时，尝试降级到非SSL模式
+                if self.smtp_port == 465:
+                    logger.warning(f"SSL连接失败，尝试使用STARTTLS: {ssl_error}")
+                    with smtplib.SMTP(self.smtp_host, 587, timeout=30) as server:
+                        server.starttls()
+                        server.login(self.smtp_user, self.smtp_password)
+                        server.send_message(msg)
+                else:
+                    raise
             
             logger.info(f"邮件发送成功: {', '.join(to_addrs)}")
             return True

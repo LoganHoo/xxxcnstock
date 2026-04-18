@@ -1,16 +1,16 @@
 {
-  "state": "failed",
+  "state": "done",
   "report_date": "2026-04-11",
-  "updated_at": "2026-04-12T23:36:07.049530",
+  "updated_at": "2026-04-13T22:54:45.040538",
   "step_results": {
     "load": {
       "state": "loaded",
-      "timestamp": "2026-04-12T23:36:03.427821",
+      "timestamp": "2026-04-13T22:52:23.752887",
       "message": "",
       "data": {
-        "total_rows": 197807,
-        "total_stocks": 318,
-        "date_range": "1994-07-14 ~ 2026-02-25",
+        "total_rows": 3279505,
+        "total_stocks": 5393,
+        "date_range": "1994-07-14 ~ 2026-04-13",
         "batch_count": 1,
         "columns": [
           "code",
@@ -25,35 +25,32 @@
     },
     "validate": {
       "state": "validated",
-      "timestamp": "2026-04-12T23:36:03.457243",
+      "timestamp": "2026-04-13T22:52:23.897286",
       "message": "",
       "data": {
-        "passed": false,
+        "passed": true,
         "issues": [],
         "warnings": [],
         "stats": {
           "missing_rate": 0.0
         },
         "continuity": {
-          "passed": false,
-          "stocks_checked": 318,
+          "passed": true,
+          "stocks_checked": 5393,
           "stocks_with_gaps": 0,
           "recent_gaps": {},
           "warning_stocks": [],
-          "total_records": 197807,
-          "latest_date": "2026-02-25",
-          "data_age_days": 46,
-          "recent_stocks_count": 1,
-          "latest_coverage_rate": 0.3144654088050315,
-          "warnings": [
-            "最新日期(2026-02-25)覆盖率仅0.3%"
-          ]
+          "total_records": 3279505,
+          "latest_date": "2026-04-13",
+          "data_age_days": 0,
+          "recent_stocks_count": 5068,
+          "latest_coverage_rate": 93.97366957166697
         },
         "missing": {
           "passed": true,
           "field_missing_rates": {},
           "overall_missing_rate": 0.0,
-          "total_records": 197807
+          "total_records": 3279505
         },
         "price": {
           "passed": true,
@@ -70,7 +67,7 @@
     },
     "transform": {
       "state": "transformed",
-      "timestamp": "2026-04-12T23:36:06.978284",
+      "timestamp": "2026-04-13T22:54:35.863563",
       "message": "",
       "data": {
         "factor_count": 9,
@@ -86,23 +83,82 @@
           "key_levels"
         ],
         "data_shape": [
-          197807,
+          3279505,
           30
         ]
       }
     },
     "buffer": {
       "state": "buffered",
-      "timestamp": "2026-04-12T23:36:07.043682",
+      "timestamp": "2026-04-13T22:54:41.753954",
       "message": "",
       "data": {
         "path": "data/checkpoints/fund_behavior_2026-04-11_factor.parquet.parquet"
       }
     },
-    "buffered": {
-      "state": "failed",
-      "timestamp": "2026-04-12T23:36:07.049525",
-      "error": "'>' not supported between instances of 'NoneType' and 'int'"
+    "execute": {
+      "state": "executed",
+      "timestamp": "2026-04-13T22:54:43.171716",
+      "message": "",
+      "data": {
+        "applied_filters": [
+          {
+            "name": "data_freshness_filter",
+            "removed": 3178166
+          },
+          {
+            "name": "volume_filter",
+            "removed": 97833
+          },
+          {
+            "name": "price_range_filter",
+            "removed": 71
+          }
+        ],
+        "trend_count": 43,
+        "short_term_count": 10,
+        "market_state": [
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "risk",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak"
+        ]
+      }
+    },
+    "distribute": {
+      "state": "distributed",
+      "timestamp": "2026-04-13T22:54:43.743786",
+      "message": "",
+      "data": {
+        "mysql_general": "success",
+        "mysql_fund_behavior": "success",
+        "txt": "success",
+        "html": "success"
+      }
+    },
+    "done": {
+      "state": "done",
+      "timestamp": "2026-04-13T22:54:45.040531",
+      "message": "",
+      "data": {
+        "report_date": "2026-04-11"
+      }
     }
   }
 }

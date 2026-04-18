@@ -1,0 +1,15 @@
+{
+  "report_type": "final_test",
+  "status": "success",
+  "start_time": "2026-04-15T22:07:29.573976",
+  "end_time": "2026-04-15T22:07:29.574019",
+  "duration_seconds": 4.3e-05,
+  "missing_required": [],
+  "missing_optional": [],
+  "error_message": "",
+  "stack_trace": "",
+  "output_files": [],
+  "email_sent": false,
+  "db_saved": false,
+  "metadata": {}
+}

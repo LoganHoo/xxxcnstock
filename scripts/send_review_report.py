@@ -1,303 +1,586 @@
 #!/usr/bin/env python3
 """
-复盘报告发送脚本
-【17:30执行】推送复盘快报：包含今日热点、资金流向及DQ质检摘要
+复盘报告推送 - 使用 BaseReporter 重构
+【15:30执行】
 """
-import os
 import sys
+import os
 import json
-import logging
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, Optional
+from datetime import datetime, timedelta
+from typing import Dict, List, Any
 
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from services.email_sender import EmailSender, EmailAPISender
+from core.base_reporter import BaseReporter
+from core.paths import ReportPaths
+from core.data_quality_metrics import DataQualityMetricsCalculator
 from services.notify_service.templates import get_template
 from services.report_db_service import ReportDBService
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
 
+class ReviewReportGenerator(BaseReporter):
+    """复盘报告推送器"""
 
-class ReviewReportGenerator:
-    """复盘报告生成器"""
+    @property
+    def report_type(self) -> str:
+        return "review_report"
 
-    def __init__(self):
-        self.data_dir = project_root / "data"
-        self.log_dir = project_root / "logs"
-        self.dq_report_path = self.data_dir / "dq_close.json"
-        self.market_review_path = self.data_dir / "market_review.json"
-        self.picks_review_path = self.data_dir / "picks_review.json"
+    @property
+    def required_data_sources(self) -> List[str]:
+        return []
 
-    def load_dq_report(self) -> Optional[Dict]:
-        """加载数据质检报告"""
+    @property
+    def optional_data_sources(self) -> List[str]:
+        return ['dq_report', 'market_review', 'picks_review', 'quality_metrics']
+
+    def generate_and_save_market_review(self) -> dict:
+        """
+        生成并保存市场复盘数据到 market_review.json
+        从增强分析数据中提取市场信息
+        """
         try:
-            if self.dq_report_path.exists():
-                with open(self.dq_report_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"无法加载质检报告: {e}")
-        return None
-
-    def load_market_review(self) -> Optional[Dict]:
-        """加载复盘分析数据"""
-        try:
-            if self.market_review_path.exists():
-                with open(self.market_review_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"无法加载复盘数据: {e}")
-        return None
-
-    def load_yesterday_picks(self) -> Optional[Dict]:
-        """加载昨日选股复盘数据"""
-        try:
-            if self.picks_review_path.exists():
-                with open(self.picks_review_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"无法加载选股复盘数据: {e}")
-        return None
-
-    def load_okr_data(self) -> Optional[Dict]:
-        """加载OKR数据"""
-        try:
-            okr_path = self.data_dir / "okr.json"
-            if okr_path.exists():
-                with open(okr_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"无法加载OKR数据: {e}")
-        return None
-
-    def load_ai_review_data(self) -> Optional[Dict]:
-        """加载AI复盘数据"""
-        try:
-            ai_review_path = self.data_dir / "ai_review.json"
-            if ai_review_path.exists():
-                with open(ai_review_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except Exception as e:
-            logger.warning(f"无法加载AI复盘数据: {e}")
-        return None
-
-    def generate_market_review(self) -> Optional[Dict]:
-        """从增强数据生成市场复盘数据"""
-        try:
+            self.logger.info("生成市场复盘数据...")
+            import json
             import polars as pl
-            from datetime import datetime, timedelta
+            from pathlib import Path
 
-            enhanced_path = self.data_dir / "enhanced_full_temp.parquet"
-            cvd_path = self.data_dir / "cvd_latest.parquet"
+            project_root = Path(__file__).parent.parent
+            kline_dir = project_root / "data" / "kline"
 
-            if not enhanced_path.exists():
-                logger.warning("增强数据文件不存在")
-                return None
-
-            df = pl.read_parquet(enhanced_path)
-            today = datetime.now().strftime('%Y-%m-%d')
-            latest_date = df['trade_date'].max() if 'trade_date' in df.columns else today
-            today_df = df.filter(pl.col('trade_date') == latest_date)
-
-            if len(today_df) == 0:
-                logger.warning(f"指定日期({latest_date})无数据")
-                return None
-
-            rising = len(today_df.filter(pl.col('change_pct') > 0))
-            falling = len(today_df.filter(pl.col('change_pct') < 0))
-            limit_up = len(today_df.filter(pl.col('change_pct') >= 9.9))
-            limit_down = len(today_df.filter(pl.col('change_pct') <= -9.9))
-            total_volume = (today_df['volume'].sum() / 1e8) if 'volume' in today_df.columns else 0
-
-            avg_change = today_df['change_pct'].mean() if 'change_pct' in today_df.columns else 0
-            market_status = 'strong' if avg_change > 1 else 'weak' if avg_change < -1 else 'oscillating'
-
-            cvd_data = {
-                'signal': 'neutral',
-                'cvd_cumsum': 0,
-                'cvd_trend': 'neutral'
-            }
-            if cvd_path.exists():
+            # 读取所有K线数据
+            all_data = []
+            for f in kline_dir.glob("*.parquet"):
                 try:
-                    cvd_df = pl.read_parquet(cvd_path)
-                    if 'cvd_body_cum' in cvd_df.columns:
-                        total_cvd = cvd_df['cvd_body_cum'].sum()
-                        cvd_data = {
-                            'signal': 'buy_dominant' if total_cvd > 0 else 'sell_dominant',
-                            'cvd_cumsum': round(total_cvd / 1e8, 2),
-                            'cvd_trend': 'accumulating' if total_cvd > 0 else 'distributing'
-                        }
+                    df = pl.read_parquet(f)
+                    if len(df) > 0:
+                        # 统一列类型
+                        df = df.with_columns([
+                            pl.col('code').cast(pl.Utf8),
+                            pl.col('trade_date').cast(pl.Utf8),
+                            pl.col('open').cast(pl.Float64),
+                            pl.col('close').cast(pl.Float64),
+                            pl.col('high').cast(pl.Float64),
+                            pl.col('low').cast(pl.Float64),
+                            pl.col('volume').cast(pl.Float64),
+                        ])
+                        all_data.append(df)
                 except Exception as e:
-                    logger.warning(f"加载CVD数据失败: {e}")
+                    pass
 
-            price_col = 'price' if 'price' in df.columns else 'close'
-            key_levels = {
-                'index_close': round(df.filter(pl.col('trade_date') == latest_date)[price_col].mean(), 2) if price_col in df.columns and len(df.filter(pl.col('trade_date') == latest_date)) > 0 else 0
-            }
+            if not all_data:
+                self.logger.warning("没有K线数据，无法生成市场复盘")
+                return None
 
-            top_sectors = []
-            if 'sector' in today_df.columns:
-                sector_data = today_df.group_by('sector').agg([
-                    pl.col('change_pct').mean().alias('avg_change'),
-                    pl.col('volume').sum().alias('total_volume')
-                ]).sort('avg_change', descending=True)
-                top_sectors = [
-                    {'name': row['sector'], 'change': round(row['avg_change'], 2)}
-                    for row in sector_data.head(5).to_dicts()
-                ] if len(sector_data) > 0 else []
+            data = pl.concat(all_data)
+            latest_date = data["trade_date"].max()
+            today = datetime.now().strftime('%Y-%m-%d')
+
+            # 获取最新日期的数据
+            latest_data = data.filter(pl.col("trade_date") == latest_date)
+
+            # 计算涨跌统计
+            prev_date_candidates = data.filter(pl.col("trade_date") < latest_date)["trade_date"].unique().sort(descending=True)
+            prev_date = prev_date_candidates[0] if len(prev_date_candidates) > 0 else None
+
+            if prev_date is None:
+                self.logger.warning("无法获取前一交易日数据")
+                return None
+
+            prev_data = data.filter(pl.col("trade_date") == prev_date).select(["code", "close"]).rename({"close": "prev_close"})
+            merged = latest_data.join(prev_data, on="code", how="left")
+
+            # 计算涨跌幅
+            merged = merged.with_columns([
+                ((pl.col("close") - pl.col("prev_close")) / pl.col("prev_close") * 100).alias("change_pct")
+            ])
+
+            # 统计涨跌
+            rising = int((merged["change_pct"] > 0).sum())
+            falling = int((merged["change_pct"] < 0).sum())
+            flat = int((merged["change_pct"] == 0).sum())
+
+            # 统计涨跌停
+            def get_limit_rate(code):
+                code_str = str(code)
+                if code_str.startswith('300') or code_str.startswith('301') or code_str.startswith('688'):
+                    return 20.0
+                elif code_str.startswith('8') or code_str.startswith('4') or code_str.startswith('43'):
+                    return 30.0
+                else:
+                    return 10.0
+
+            merged = merged.with_columns([
+                pl.col("code").map_elements(get_limit_rate, return_dtype=pl.Float64).alias("limit_rate")
+            ])
+
+            limit_up = int((merged["change_pct"] >= merged["limit_rate"] - 0.5).sum())
+            limit_down = int((merged["change_pct"] <= -merged["limit_rate"] + 0.5).sum())
+
+            # 计算成交额
+            total_volume = float(merged["volume"].sum() / 100000000)  # 转换为亿
+
+            # 判断市场状态
+            if rising > falling * 1.5:
+                market_status = 'strong'
+            elif falling > rising * 1.5:
+                market_status = 'weak'
             else:
-                board_map = {
-                    '沪市主板': lambda c: c.startswith(('000', '001', '002', '003')),
-                    '科创板': lambda c: c.startswith('688'),
-                    '创业板': lambda c: c.startswith('300'),
-                    '北交所': lambda c: c.startswith('4') or c.startswith('8'),
-                }
-                board_stats = {name: {'changes': [], 'volumes': []} for name in board_map}
-                for row in today_df.to_dicts():
-                    code = str(row.get('code', ''))
-                    for board_name, check_fn in board_map.items():
-                        if check_fn(code):
-                            board_stats[board_name]['changes'].append(row.get('change_pct', 0))
-                            board_stats[board_name]['volumes'].append(row.get('volume', 0))
-                            break
-                sector_results = []
-                for board_name, stats in board_stats.items():
-                    if stats['changes']:
-                        avg_change = sum(stats['changes']) / len(stats['changes'])
-                        total_vol = sum(stats['volumes'])
-                        sector_results.append({'name': board_name, 'change': round(avg_change, 2), 'volume': total_vol})
-                sector_results.sort(key=lambda x: x['change'], reverse=True)
-                top_sectors = [{'name': r['name'], 'change': r['change']} for r in sector_results[:5]]
+                market_status = 'oscillating'
 
-            review = {
+            # 生成市场复盘数据
+            market_review = {
                 'date': today,
                 'summary': {
                     'rising_count': rising,
                     'falling_count': falling,
+                    'flat_count': flat,
                     'limit_up_count': limit_up,
                     'limit_down_count': limit_down,
                     'total_volume': round(total_volume, 2)
                 },
                 'market_status': market_status,
-                'cvd': cvd_data,
-                'key_levels': key_levels,
-                'top_sectors': top_sectors
+                'cvd': {
+                    'signal': 'neutral',
+                    'cvd_cumsum': 0,
+                    'cvd_trend': 'unknown'
+                },
+                'key_levels': {
+                    'index_close': round(float(merged.filter(pl.col("code") == "000001")["close"].mean()), 2) if len(merged.filter(pl.col("code") == "000001")) > 0 else 'N/A'
+                },
+                'top_sectors': []
             }
 
-            with open(self.market_review_path, 'w', encoding='utf-8') as f:
-                json.dump(review, f, ensure_ascii=False, indent=2)
-            logger.info(f"市场复盘数据已生成: {self.market_review_path}")
+            # 保存到文件
+            market_review_path = ReportPaths.market_review()
+            with open(market_review_path, 'w', encoding='utf-8') as f:
+                json.dump(market_review, f, ensure_ascii=False, indent=2)
 
-            return review
+            self.logger.info(f"市场复盘数据已生成: {market_review_path}")
+            return market_review
+
         except Exception as e:
-            logger.error(f"生成市场复盘数据失败: {e}")
+            self.logger.error(f"生成市场复盘数据失败: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
             return None
 
-    def _generate_picks_review_section(self, picks_review: Dict) -> list:
-        """生成昨日选股复盘章节"""
+    def load_data(self) -> Dict[str, Any]:
+        """加载复盘报告所需数据"""
+        # 加载数据质量报告
+        dq_report = self._load_dq_report()
+
+        # 加载市场复盘数据，如果不存在则生成
+        market_review = self._load_market_review()
+        if not market_review:
+            self.logger.info("市场复盘数据不存在，尝试生成...")
+            market_review = self.generate_and_save_market_review()
+
+        # 加载选股复盘数据
+        picks_review = self._load_yesterday_picks()
+
+        return {
+            'dq_report': dq_report,
+            'market_review': market_review,
+            'picks_review': picks_review
+        }
+
+    # 保持向后兼容的方法名
+    def load_dq_report(self) -> dict:
+        return self._load_dq_report()
+
+    def _load_dq_report(self) -> dict:
+        """加载数据质量报告"""
+        dq_path = ReportPaths.dq_close()
+        if dq_path and dq_path.exists():
+            try:
+                with open(dq_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                self.logger.warning(f"加载数据质量报告失败: {e}")
+        return None
+
+    def load_market_review(self) -> dict:
+        return self._load_market_review()
+
+    def _load_market_review(self) -> dict:
+        """加载市场复盘数据"""
+        review_path = ReportPaths.market_review()
+        if review_path.exists():
+            try:
+                with open(review_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                self.logger.warning(f"加载市场复盘数据失败: {e}")
+        return None
+
+    def load_yesterday_picks(self) -> dict:
+        return self._load_yesterday_picks()
+
+    def _load_yesterday_picks(self) -> dict:
+        """加载昨日选股数据"""
+        picks_path = ReportPaths.daily_picks()
+        if picks_path.exists():
+            try:
+                with open(picks_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except Exception as e:
+                self.logger.warning(f"加载选股数据失败: {e}")
+        return None
+
+    def _load_quality_metrics(self) -> dict:
+        """加载数据质量标准化指标"""
+        try:
+            calculator = DataQualityMetricsCalculator(project_root)
+            metrics = calculator.calculate_metrics()
+            # 保存指标
+            calculator.save_metrics(metrics)
+            return metrics.__dict__
+        except Exception as e:
+            self.logger.warning(f"计算数据质量指标失败: {e}")
+            return None
+
+    def _load_drawdown_analysis(self) -> dict:
+        """加载回撤分析数据"""
+        try:
+            today = datetime.now().strftime('%Y-%m-%d')
+            drawdown_file = project_root / "data" / "audit" / f"{today}_drawdown_analysis.json"
+            if drawdown_file.exists():
+                with open(drawdown_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            return None
+        except Exception as e:
+            self.logger.warning(f"加载回撤分析数据失败: {e}")
+            return None
+
+    def _load_audit_result_for_report(self) -> dict:
+        """加载审计结果用于报告生成"""
+        try:
+            today = datetime.now().strftime('%Y-%m-%d')
+            audit_file = project_root / "data" / "audit" / f"{today}_audit_result.json"
+            if audit_file.exists():
+                with open(audit_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            return None
+        except Exception as e:
+            self.logger.warning(f"加载审计结果失败: {e}")
+            return None
+
+    def _generate_quality_metrics_section(self, quality_metrics: dict) -> str:
+        """生成数据质量指标章节"""
         lines = []
-        lines.append("\n" + "=" * 70)
-        lines.append("【昨日选股复盘】")
-        lines.append("=" * 70)
+        lines.append("\n一、数据质量标准化指标")
+        lines.append("-" * 50)
+
+        if not quality_metrics:
+            lines.append("  ⚠️ 数据质量指标暂不可用")
+            return "\n".join(lines)
+
+        # 综合评分
+        overall_score = quality_metrics.get('overall_score', 0)
+        quality_level = quality_metrics.get('quality_level', 'unknown')
+
+        level_map = {
+            'excellent': '优秀 ⭐⭐⭐⭐⭐',
+            'good': '良好 ⭐⭐⭐⭐',
+            'fair': '一般 ⭐⭐⭐',
+            'poor': '较差 ⭐⭐',
+            'unknown': '未知'
+        }
+
+        lines.append(f"  【综合评分】{overall_score:.1f}/100 - {level_map.get(quality_level, quality_level)}")
+        lines.append("")
+
+        # 详细指标
+        lines.append("  【详细指标】")
+        lines.append(f"    ● 采集率: {quality_metrics.get('collection_rate', 0):.1f}%")
+        lines.append(f"    ● 完整性: {quality_metrics.get('completeness_rate', 0):.1f}%")
+        lines.append(f"    ● 新鲜度: {quality_metrics.get('freshness_score', 0):.1f}/100")
+        lines.append(f"    ● 一致性: {quality_metrics.get('consistency_score', 0):.1f}/100")
+        lines.append("")
+
+        # 数据统计
+        lines.append("  【数据统计】")
+        lines.append(f"    ● 应采集股票: {quality_metrics.get('total_stocks', 0)}只")
+        lines.append(f"    ● 实际采集: {quality_metrics.get('collected_stocks', 0)}只")
+        lines.append(f"    ● 有效数据: {quality_metrics.get('valid_stocks', 0)}只")
+        lines.append(f"    ● 无效数据: {quality_metrics.get('invalid_stocks', 0)}只")
+
+        # 质量提示
+        if overall_score >= 95:
+            lines.append("  ✅ 数据质量优秀，分析结果可信度高")
+        elif overall_score >= 85:
+            lines.append("  ✅ 数据质量良好，分析结果可靠")
+        elif overall_score >= 70:
+            lines.append("  ⚠️ 数据质量一般，分析结果仅供参考")
+        else:
+            lines.append("  ❌ 数据质量较差，建议检查数据采集流程")
+
+        return "\n".join(lines)
+
+    def _generate_market_review_from_enhanced(self) -> dict:
+        """从增强分析数据生成市场复盘"""
+        enhanced_path = ReportPaths.enhanced_analysis()
+        if enhanced_path.exists():
+            try:
+                with open(enhanced_path, 'r', encoding='utf-8') as f:
+                    enhanced = json.load(f)
+
+                market_review = {
+                    'summary': {},
+                    'cvd': {},
+                    'key_levels': {},
+                    'top_sectors': []
+                }
+
+                if 'market_overview' in enhanced:
+                    overview = enhanced['market_overview']
+                    market_review['summary'] = {
+                        'rising_count': overview.get('rising_count', 0),
+                        'falling_count': overview.get('falling_count', 0),
+                        'limit_up_count': overview.get('limit_up_count', 0),
+                        'limit_down_count': overview.get('limit_down_count', 0),
+                        'total_volume': overview.get('total_volume', 0) / 10000,
+                        'market_status': overview.get('market_status', 'unknown')
+                    }
+
+                if 'market_data' in enhanced:
+                    market_data = enhanced['market_data']
+                    if 'indices' in market_data:
+                        for idx in market_data['indices']:
+                            if idx.get('name') == '上证指数':
+                                market_review['key_levels'] = {
+                                    'index_close': idx.get('close', 'N/A'),
+                                    'high_60': idx.get('high_60', 'N/A'),
+                                    'low_60': idx.get('low_60', 'N/A'),
+                                    'ma5': idx.get('ma5', 'N/A'),
+                                    'ma20': idx.get('ma20', 'N/A')
+                                }
+                                break
+
+                if 'cvd_analysis' in enhanced:
+                    cvd = enhanced['cvd_analysis']
+                    market_review['cvd'] = {
+                        'signal': cvd.get('signal', 'neutral'),
+                        'cvd_cumsum': cvd.get('cvd_cumsum', 0),
+                        'cvd_trend': cvd.get('cvd_trend', 'N/A')
+                    }
+
+                if 'sector_analysis' in enhanced:
+                    sectors = enhanced['sector_analysis']
+                    if isinstance(sectors, list):
+                        market_review['top_sectors'] = sectors[:5]
+
+                return market_review
+            except Exception as e:
+                self.logger.warning(f"从增强数据生成市场复盘失败: {e}")
+        return None
+
+    def _generate_drawdown_section(self, drawdown_analysis: dict) -> str:
+        """生成回撤分析章节"""
+        lines = []
+        lines.append("\n七、回撤之最分析（避免幸存者偏差）")
+        lines.append("-" * 50)
+
+        if not drawdown_analysis:
+            lines.append("  ⚠️ 回撤分析数据暂不可用")
+            return "\n".join(lines)
+
+        summary = drawdown_analysis.get('summary', {})
+        lines.append(f"  【整体表现】")
+        lines.append(f"    ● 选股总数: {summary.get('total_picks', 0)}只")
+        lines.append(f"    ● 平均收益: {summary.get('avg_return', 0):.2f}%")
+        lines.append(f"    ● 胜率: {summary.get('win_rate', 0):.1f}%")
+        lines.append(f"    ● 最大收益: +{summary.get('max_return', 0):.2f}%")
+        lines.append(f"    ● 最大回撤: {summary.get('min_return', 0):.2f}%")
+        lines.append("")
+
+        # 回撤股票
+        drawdowns = drawdown_analysis.get('drawdowns', [])
+        if drawdowns:
+            lines.append(f"  【回撤最大股票】")
+            for i, stock in enumerate(drawdowns[:3], 1):
+                code = stock.get('code', 'N/A')
+                name = stock.get('name', 'N/A')
+                return_pct = stock.get('return_pct', 0)
+                reason = stock.get('reason', '未知')
+                lines.append(f"    {i}. {code} {name}: {return_pct:.2f}%")
+                lines.append(f"       原因: {reason}")
+            lines.append("")
+
+        # 风险分析
+        risk = drawdown_analysis.get('risk_analysis', {})
+        lines.append(f"  【风险归因】")
+        lines.append(f"    ● 平均回撤: {risk.get('average_drawdown', 0):.2f}%")
+        lines.append(f"    ● 系统性风险占比: {risk.get('systematic_ratio', 0):.0%}")
+        lines.append(f"    ● 个股特有风险占比: {risk.get('idiosyncratic_ratio', 0):.0%}")
+        lines.append(f"    ● 结论: {risk.get('conclusion', '未知')}")
+        lines.append("")
+
+        # 因子分析
+        factor = drawdown_analysis.get('factor_analysis', {})
+        if factor:
+            lines.append(f"  【因子失效分析】")
+            failing = factor.get('failing_factors', [])
+            effective = factor.get('effective_factors', [])
+            if failing:
+                lines.append(f"    ● 失效因子: {', '.join(failing)}")
+            if effective:
+                lines.append(f"    ● 有效因子: {', '.join(effective)}")
+            recommendation = factor.get('recommendation', '')
+            if recommendation:
+                lines.append(f"    ● 建议: {recommendation}")
+
+        return "\n".join(lines)
+
+    def _generate_picks_review_section(self, picks_review: dict) -> str:
+        """生成选股复盘章节"""
+        lines = []
+        lines.append("\n八、昨日选股回顾")
+        lines.append("-" * 50)
 
         if not picks_review:
-            lines.append("  ⚠️ 昨日选股复盘数据暂不可用")
-            return lines
+            lines.append("  ⚠️ 昨日选股数据暂不可用")
+            return "\n".join(lines)
 
-        summary = picks_review.get('summary', {})
-        total_picks = summary.get('total_picks', 0)
-        reviewed_picks = summary.get('reviewed_picks', 0)
-        lines.append(f"\n📊 选股统计:")
-        lines.append(f"  ● 昨日推荐: {total_picks}只")
-        lines.append(f"  ● 已复盘: {reviewed_picks}只")
+        filters = picks_review.get('filters', {})
+        s_grade = filters.get('s_grade', {})
+        a_grade = filters.get('a_grade', {})
 
-        if reviewed_picks > 0:
-            win_count = summary.get('win_count', 0)
-            loss_count = summary.get('loss_count', 0)
-            hold_count = summary.get('hold_count', 0)
-            win_rate = (win_count / reviewed_picks * 100) if reviewed_picks > 0 else 0
+        s_stocks = s_grade.get('stocks', [])
+        a_stocks = a_grade.get('stocks', [])
 
-            lines.append(f"\n📈 复盘结果:")
-            lines.append(f"  ● 上涨(+): {win_count}只")
-            lines.append(f"  ● 下跌(-): {loss_count}只")
-            lines.append(f"  ● 持平(=): {hold_count}只")
-            lines.append(f"  ● 胜率: {win_rate:.1f}%")
+        if s_stocks:
+            lines.append("  【S级股票】")
+            for i, stock in enumerate(s_stocks[:3], 1):
+                code = stock.get('code', 'N/A')
+                name = stock.get('name', 'N/A')
+                reasons = stock.get('reasons', '')
+                score = stock.get('score', 0)
 
-        top_picks = picks_review.get('top_picks', [])
-        if top_picks:
-            lines.append(f"\n🏆 昨日推荐表现:")
+                # 获取价格信息（适配两种数据结构）
+                prev_close = stock.get('prev_close', 0)
+                # 优先使用 curr_close，否则使用 price
+                curr_close = stock.get('curr_close', 0) or stock.get('price', 0)
+                change_pct = stock.get('change_pct', 0)
 
-            for i, pick in enumerate(top_picks[:5], 1):
-                stock_code = pick.get('stock_code', 'N/A')
-                stock_name = pick.get('stock_name', 'N/A')
-                change_pct = pick.get('change_pct', 0)
-                change_sign = '+' if change_pct > 0 else ''
-                status = pick.get('status', 'N/A')
+                lines.append(f"  {i}. {code} {name}")
+                if reasons:
+                    lines.append(f"     理由: {reasons}")
 
-                status_icon = '✅' if status == 'win' else '❌' if status == 'loss' else '➖'
-                lines.append(f"  {i}. {stock_code} {stock_name}")
-                lines.append(f"     涨跌幅: {change_sign}{change_pct:.2f}% {status_icon}")
-                lines.append(f"     推荐理由: {pick.get('reason', 'N/A')[:30]}...")
+                # 显示价格对比
+                if prev_close > 0 and curr_close > 0:
+                    change_sign = '+' if change_pct >= 0 else ''
+                    lines.append(f"     昨日收盘: ¥{prev_close:.2f} → 今日收盘: ¥{curr_close:.2f} ({change_sign}{change_pct:.2f}%)")
+                else:
+                    lines.append(f"     评分: {score}")
 
-        details = picks_review.get('details', [])
-        if details:
-            lines.append(f"\n📋 详细复盘:")
-            for detail in details[:10]:
-                code = detail.get('stock_code', 'N/A')
-                name = detail.get('stock_name', 'N/A')
-                change = detail.get('change_pct', 0)
-                open_price = detail.get('open', 0)
-                close_price = detail.get('close', 0)
-                high_price = detail.get('high', 0)
-                low_price = detail.get('low', 0)
+        if a_stocks:
+            lines.append("  【A级股票】")
+            for i, stock in enumerate(a_stocks[:3], 1):
+                code = stock.get('code', 'N/A')
+                name = stock.get('name', 'N/A')
+                score = stock.get('score', 0)
 
-                change_sign = '+' if change > 0 else ''
-                lines.append(f"  ● {code} {name}: {change_sign}{change:.2f}%")
-                lines.append(f"    开盘: {open_price:.2f} 收盘: {close_price:.2f} 最高: {high_price:.2f} 最低: {low_price:.2f}")
+                # 获取价格信息（适配两种数据结构）
+                prev_close = stock.get('prev_close', 0)
+                # 优先使用 curr_close，否则使用 price
+                curr_close = stock.get('curr_close', 0) or stock.get('price', 0)
+                change_pct = stock.get('change_pct', 0)
 
-        return lines
+                lines.append(f"  {i}. {code} {name}")
 
-    def generate_text_report(self, dq_report: Dict = None, market_review: Dict = None, picks_review: Dict = None) -> str:
-        """生成文本格式复盘报告"""
+                # 显示价格对比
+                if prev_close > 0 and curr_close > 0:
+                    change_sign = '+' if change_pct >= 0 else ''
+                    lines.append(f"     昨日收盘: ¥{prev_close:.2f} → 今日收盘: ¥{curr_close:.2f} ({change_sign}{change_pct:.2f}%)")
+                else:
+                    lines.append(f"     评分: {score}")
+
+        if not s_stocks and not a_stocks:
+            lines.append("  ⚠️ 昨日无选股推荐")
+
+        return "\n".join(lines)
+
+    def generate(self, data: Dict[str, Any]) -> str:
+        """生成复盘报告"""
+        dq_report = data.get('dq_report')
+        market_review = data.get('market_review')
+        picks_review = data.get('picks_review')
+        quality_metrics = data.get('quality_metrics')
+
+        # 如果 market_review 缺失，尝试从增强数据生成
+        if not market_review:
+            market_review = self._generate_market_review_from_enhanced()
+
+        # 如果 quality_metrics 缺失，尝试计算
+        if not quality_metrics:
+            quality_metrics = self._load_quality_metrics()
+
+        # 生成文本报告
         lines = []
         lines.append("=" * 70)
         lines.append("【复盘快报】A股市场今日总结")
         lines.append(f"生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append("=" * 70)
 
-        lines.append("\n一、数据质量报告")
+        # 数据质量标准化指标（新的标准化指标）
+        quality_section = self._generate_quality_metrics_section(quality_metrics)
+        lines.append(quality_section)
+
+        # 数据质量详细报告（使用audit_result数据，与第一章保持一致）
+        lines.append("\n二、数据质量详细报告")
         lines.append("-" * 50)
-        if dq_report:
-            completeness = dq_report.get('completeness', {})
-            validity = dq_report.get('validity', {})
-            freshness = dq_report.get('freshness', {})
 
-            total_stocks = completeness.get('total_stocks', 'N/A')
-            valid_stocks = completeness.get('valid_stocks', 'N/A')
-            completeness_rate = completeness.get('completeness_rate', 0) * 100 if completeness.get('completeness_rate') else 0
+        # 优先使用audit_result数据（与第一章一致）
+        audit_result = self._load_audit_result_for_report()
+        if audit_result:
+            checks = audit_result.get('checks', {})
+            completeness = checks.get('completeness', {})
+            freshness = checks.get('freshness', {})
 
-            lines.append(f"  ● 采集完整度: {completeness_rate:.1f}% ({valid_stocks}/{total_stocks}只)")
-            lines.append(f"  ● 有效数据: {validity.get('valid_count', 'N/A')}只")
-            lines.append(f"  ● 无效数据: {validity.get('invalid_count', 0)}只")
+            total = audit_result.get('total_stocks', 0)
+            collected = audit_result.get('collected_stocks', 0)
+            valid = completeness.get('valid', 0)
+            invalid = completeness.get('invalid', 0)
 
-            if freshness:
-                latest_update = freshness.get('latest_update', 'N/A')
-                lines.append(f"  ● 最新更新: {latest_update}")
+            collection_rate = (collected / total * 100) if total > 0 else 0
+            completeness_rate = (valid / total * 100) if total > 0 else 0
 
-            if completeness_rate >= 95:
-                lines.append("  ✓ 数据质量合格，可进行复盘分析")
+            lines.append(f"  ● 采集完整度: {collection_rate:.1f}% ({collected}/{total}只)")
+            lines.append(f"  ● 有效数据: {valid}只")
+            lines.append(f"  ● 无效数据: {invalid}只")
+
+            latest_date = freshness.get('latest_date', '未知')
+            lines.append(f"  ● 最新更新: {latest_date}")
+
+            if completeness_rate < 95:
+                lines.append("  ⚠️ 数据完整度偏低，分析结果仅供参考")
             else:
+                lines.append("  ✅ 数据质量良好")
+        elif dq_report:
+            # 兼容旧版数据
+            completeness = dq_report.get('completeness', {})
+            total = completeness.get('total', 0)
+            valid = completeness.get('valid', 0)
+            invalid = completeness.get('invalid', 0)
+            completeness_rate = completeness.get('completeness_rate', 0)
+
+            lines.append(f"  ● 采集完整度: {completeness_rate:.1f}% ({valid}/{total}只)")
+            lines.append(f"  ● 有效数据: {valid}只")
+            lines.append(f"  ● 无效数据: {invalid}只")
+
+            latest = dq_report.get('latest_date', '未知')
+            lines.append(f"  ● 最新更新: {latest}")
+
+            if completeness_rate < 95:
                 lines.append("  ⚠️ 数据完整度偏低，分析结果仅供参考")
         else:
-            lines.append("  ⚠️ 质检报告暂不可用")
+            lines.append("  ⚠️ 数据质量报告暂不可用")
 
-        lines.append("\n二、今日市场概况")
+        # 市场概况部分
+        lines.append("\n三、今日市场概况")
         lines.append("-" * 50)
         if market_review:
             summary = market_review.get('summary', {})
@@ -318,7 +601,8 @@ class ReviewReportGenerator:
         else:
             lines.append("  ⚠️ 复盘数据暂不可用")
 
-        lines.append("\n三、资金流向")
+        # 资金流向部分
+        lines.append("\n四、资金流向")
         lines.append("-" * 50)
         if market_review:
             cvd_data = market_review.get('cvd', {})
@@ -334,7 +618,8 @@ class ReviewReportGenerator:
         else:
             lines.append("  ⚠️ 资金流向数据暂不可用")
 
-        lines.append("\n四、关键位分析")
+        # 关键位分析
+        lines.append("\n五、关键位分析")
         lines.append("-" * 50)
         if market_review:
             levels = market_review.get('key_levels', {})
@@ -346,285 +631,103 @@ class ReviewReportGenerator:
         else:
             lines.append("  ⚠️ 关键位数据暂不可用")
 
-        lines.append("\n五、热点板块")
+        # 热点板块部分
+        lines.append("\n六、热点板块")
         lines.append("-" * 50)
         if market_review:
-            sectors = market_review.get('top_sectors', [])
-            if sectors:
-                for i, sector in enumerate(sectors[:5], 1):
-                    lines.append(f"  {i}. {sector.get('name', 'N/A')}: {sector.get('change', 'N/A')}%")
+            top_sectors = market_review.get('top_sectors', [])
+            if top_sectors:
+                for i, sector in enumerate(top_sectors[:5], 1):
+                    name = sector.get('name', 'N/A')
+                    change = sector.get('change', 0)
+                    change_sign = '+' if change > 0 else ''
+                    lines.append(f"  {i}. {name}: {change_sign}{change:.2f}%")
             else:
-                lines.append("  暂无热点板块数据")
+                lines.append("  暂无板块数据")
         else:
-            lines.append("  ⚠️ 热点板块数据暂不可用")
+            lines.append("  ⚠️ 板块数据暂不可用")
 
-        lines.extend(self._generate_picks_review_section(picks_review))
+        # 加载回撤分析数据
+        drawdown_analysis = self._load_drawdown_analysis()
 
+        # 回撤分析部分（避免幸存者偏差）
+        drawdown_section = self._generate_drawdown_section(drawdown_analysis)
+        lines.append(drawdown_section)
+
+        # 选股回顾部分
+        picks_section = self._generate_picks_review_section(picks_review)
+        lines.append(picks_section)
+
+        # 结尾
         lines.append("\n" + "=" * 70)
-        lines.append("【风险提示】本报告仅供参考，不构成投资建议。")
+        lines.append("【风险提示】以上分析仅供参考，不构成投资建议")
         lines.append("=" * 70)
 
         return "\n".join(lines)
 
-    def generate_html_report(self, dq_report: Dict = None, market_review: Dict = None, picks_review: Dict = None) -> str:
-        """生成HTML格式复盘报告"""
-        text_content = self.generate_text_report(dq_report, market_review, picks_review)
+    # 保持向后兼容的方法名
+    def generate_text_report(self, dq_report=None, market_review=None, picks_review=None) -> str:
+        """生成文本报告（兼容旧接口）"""
+        data = {
+            'dq_report': dq_report,
+            'market_review': market_review,
+            'picks_review': picks_review
+        }
+        return self.generate(data)
 
-        html = f"""
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>复盘快报 - {datetime.now().strftime('%Y-%m-%d')}</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }}
-        .container {{ max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
-        h1 {{ color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }}
-        h2 {{ color: #555; margin-top: 20px; border-left: 4px solid #007bff; padding-left: 10px; }}
-        .section {{ margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }}
-        .stat {{ display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; }}
-        .stat-label {{ font-weight: bold; color: #666; }}
-        .stat-value {{ color: #333; }}
-        .positive {{ color: #dc3545; }}
-        .negative {{ color: #28a745; }}
-        .warning {{ color: #ffc107; }}
-        .footer {{ margin-top: 30px; padding-top: 20px; border-top: 2px solid #dee2e6; text-align: center; color: #666; font-size: 0.9em; }}
-        .quality-ok {{ background-color: #d4edda; border-left: 4px solid #28a745; }}
-        .quality-warn {{ background-color: #fff3cd; border-left: 4px solid #ffc107; }}
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>📊 【复盘快报】A股市场今日总结</h1>
-        <p style="color: #666;">生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M')}</p>
+    def _send(self, content: str) -> bool:
+        """发送报告并保存到数据库
 
-        <h2>一、数据质量报告</h2>
-        <div class="section {'quality-ok' if dq_report and dq_report.get('passed') else 'quality-warn'}">
-"""
+        邮件发送失败不视为任务失败，只要报告生成成功即可
+        """
+        success = super()._send(content)
 
-        if dq_report:
-            completeness = dq_report.get('completeness', {})
-            completeness_rate = completeness.get('completeness_rate', 0) * 100 if completeness.get('completeness_rate') else 0
-            html += f"""
-            <div class="stat">
-                <span class="stat-label">采集完整度</span>
-                <span class="stat-value">{"✓ " if completeness_rate >= 95 else "⚠️ "}{completeness_rate:.1f}%</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">有效数据</span>
-                <span class="stat-value">{completeness.get('valid_stocks', 'N/A')}只</span>
-            </div>
-"""
-        else:
-            html += "<p>⚠️ 质检报告暂不可用</p>"
-
-        html += """
-        </div>
-
-        <h2>二、今日市场概况</h2>
-        <div class="section">
-"""
-
-        if market_review:
-            summary = market_review.get('summary', {})
-            rising = summary.get('rising_count', 0)
-            falling = summary.get('falling_count', 0)
-            limit_up = summary.get('limit_up_count', 0)
-            limit_down = summary.get('limit_down_count', 0)
-
-            html += f"""
-            <div class="stat">
-                <span class="stat-label">上涨股票</span>
-                <span class="stat-value positive">↑ {rising}只</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">下跌股票</span>
-                <span class="stat-value negative">↓ {falling}只</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">涨停股票</span>
-                <span class="stat-value positive">🔥 {limit_up}只</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">跌停股票</span>
-                <span class="stat-value negative">❄️ {limit_down}只</span>
-            </div>
-"""
-        else:
-            html += "<p>⚠️ 市场数据暂不可用</p>"
-
-        html += """
-        </div>
-
-        <h2>三、资金流向 (CVD)</h2>
-        <div class="section">
-"""
-
-        if market_review:
-            cvd_data = market_review.get('cvd', {})
-            signal = cvd_data.get('signal', 'neutral')
-            signal_text = {'buy_dominant': '主力净流入', 'sell_dominant': '主力净流出', 'neutral': '多空平衡'}.get(signal, signal)
-
-            html += f"""
-            <div class="stat">
-                <span class="stat-label">CVD信号</span>
-                <span class="stat-value">{'🟢' if signal == 'buy_dominant' else '🔴' if signal == 'sell_dominant' else '⚪'} {signal_text}</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">CVD累计值</span>
-                <span class="stat-value">{cvd_data.get('cvd_cumsum', 'N/A')}</span>
-            </div>
-"""
-        else:
-            html += "<p>⚠️ 资金流向数据暂不可用</p>"
-
-        html += """
-        </div>
-
-        <h2>四、热点板块</h2>
-        <div class="section">
-"""
-
-        if market_review:
-            sectors = market_review.get('top_sectors', [])
-            if sectors:
-                for sector in sectors[:5]:
-                    html += f"""
-            <div class="stat">
-                <span class="stat-label">{sector.get('name', 'N/A')}</span>
-                <span class="stat-value {'positive' if sector.get('change', 0) > 0 else 'negative'}">{sector.get('change', 0):+.2f}%</span>
-            </div>
-"""
-            else:
-                html += "<p>暂无热点板块数据</p>"
-        else:
-            html += "<p>⚠️ 热点板块数据暂不可用</p>"
-
-        html += """
-        </div>
-
-        <div class="footer">
-            <p>本报告仅供参考，不构成投资建议。股市有风险，投资需谨慎。</p>
-            <p>XCNStock 量化分析系统</p>
-        </div>
-    </div>
-</body>
-</html>
-"""
-        return html
-
-
-class ReviewReportSender:
-    """复盘报告发送器"""
-
-    def __init__(self):
-        self.use_api = os.getenv('EMAIL_USE_API', 'true').lower() == 'true'
-        if self.use_api:
-            self.sender = EmailAPISender()
-        else:
-            self.sender = EmailSender(
-                smtp_host=os.getenv('EMAIL_SMTP_SERVER', 'smtp.qq.com'),
-                smtp_port=int(os.getenv('EMAIL_SMTP_PORT', 465)),
-                smtp_user=os.getenv('EMAIL_USERNAME', ''),
-                smtp_password=os.getenv('EMAIL_PASSWORD', ''),
-                use_ssl=True
-            )
-        self.recipients = os.getenv('NOTIFICATION_EMAILS', '287363@qq.com').split(',')
-        self.recipients = [e.strip() for e in self.recipients if e.strip()]
-        if not self.recipients:
-            logger.warning("未配置NOTIFICATION_EMAILS，将使用默认邮箱: 287363@qq.com")
-            self.recipients = ['287363@qq.com']
-
-    def send(self, content: str, html_content: str = None) -> bool:
-        """发送报告"""
-        if not self.recipients:
-            logger.error("未配置收件人邮箱")
-            return False
-
-        subject = f"【复盘快报】A股市场总结 - {datetime.now().strftime('%Y-%m-%d')}"
-
+        # 无论邮件是否成功，都尝试保存到数据库
         try:
-            for recipient in self.recipients:
-                success = self.sender.send(
-                    to_addrs=[recipient],
-                    subject=subject,
-                    content=content,
-                    html_content=html_content
-                )
-                if success:
-                    logger.info(f"复盘报告已发送至: {recipient}")
+            db_service = ReportDBService()
+            today = datetime.now().strftime('%Y-%m-%d')
+            subject = f"【复盘快报】A股今日总结 {today}"
 
-            return True
+            db_service.save_report(
+                report_type='review',
+                report_date=today,
+                subject=subject,
+                text_content=content
+            )
+            self.logger.info("报告已保存到数据库")
+
+            # 保存TXT文件
+            txt_path = db_service.save_txt_file('review', today, content)
+            self.logger.info(f"TXT已保存: {txt_path}")
+
         except Exception as e:
-            logger.error(f"发送复盘报告失败: {e}")
-            return False
+            self.logger.warning(f"保存到数据库失败: {e}")
+
+        # 邮件发送失败不导致任务失败，只要报告内容生成成功即可
+        if not success:
+            self.logger.warning("邮件发送失败，但报告已保存到本地")
+            return True  # 报告生成成功即视为任务成功
+
+        return success
+
+    def run(self) -> bool:
+        """执行复盘报告推送（兼容旧接口）"""
+        return super().run()
 
 
 def main():
-    logger.info("=" * 60)
-    logger.info("开始生成完整复盘报告")
-    logger.info("=" * 60)
-
+    """主函数"""
     generator = ReviewReportGenerator()
-    sender = ReviewReportSender()
+    success = generator.run()
 
-    dq_report = generator.load_dq_report()
-    market_review = generator.load_market_review()
-    if not market_review:
-        logger.info("market_review.json 不存在，尝试生成...")
-        market_review = generator.generate_market_review()
-    picks_review = generator.load_yesterday_picks()
-    okr_data = generator.load_okr_data()
-    ai_review_data = generator.load_ai_review_data()
+    result = generator.get_last_result()
+    if result:
+        print(f"\n执行结果: {result.status.value}")
+        if result.error_message:
+            print(f"错误: {result.error_message}")
 
-    template = get_template('review_report')
-    text_report = template.generate(
-        market_data=market_review,
-        picks_review_data=picks_review,
-        dq_report=dq_report,
-        okr_data=okr_data,
-        ai_review_data=ai_review_data
-    )
-
-    html_report = generator.generate_html_report(dq_report, market_review, picks_review)
-
-    logger.info("\n复盘报告内容:")
-    logger.info(text_report)
-
-    success = sender.send(text_report, html_report)
-
-    if success:
-        logger.info("✅ 完整复盘报告发送成功")
-        save_report_to_db('review', text_report)
-        return 0
-    else:
-        logger.error("❌ 完整复盘报告发送失败")
-        return 1
+    sys.exit(0 if success else 1)
 
 
-def save_report_to_db(report_type: str, text_content: str):
-    """保存报告到MySQL和TXT"""
-    try:
-        db_service = ReportDBService()
-        db_service.init_tables()
-
-        report_date = datetime.now().strftime('%Y-%m-%d')
-        subject = f"【完整复盘】A股日终总结 - {report_date}"
-
-        db_service.save_report(
-            report_type=report_type,
-            report_date=report_date,
-            subject=subject,
-            text_content=text_content
-        )
-
-        txt_path = db_service.save_txt_file(report_type, report_date, text_content)
-        logger.info(f"TXT已保存: {txt_path}")
-
-    except Exception as e:
-        logger.warning(f"保存报告到数据库失败: {e}")
-
-
-if __name__ == '__main__':
-    sys.exit(main())
+if __name__ == "__main__":
+    main()

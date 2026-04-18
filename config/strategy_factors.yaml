@@ -1,0 +1,247 @@
+# 策略因子配置文件
+# 定义各策略使用的因子及其参数
+
+# ==================== 主力行为策略因子配置 ====================
+fund_behavior:
+  name: "主力行为策略"
+  description: "基于主力资金流向的选股策略"
+  version: "2.0.0"
+  
+  # 选股使用的因子列表
+  factors:
+    # 波段选股因子
+    trend:
+      - name: "ma5_bias"
+        weight: 0.30
+        enabled: true
+        params:
+          window: 5
+        description: "MA5乖离率，衡量趋势强度"
+      
+      - name: "ma5_slope"
+        weight: 0.20
+        enabled: true
+        params:
+          window: 5
+        description: "MA5斜率，衡量趋势方向"
+      
+      - name: "v_ratio10"
+        weight: 0.20
+        enabled: true
+        params:
+          compare_time: "10:00"
+        description: "10点量比，衡量早盘量能"
+      
+      - name: "limit_up_score"
+        weight: 0.15
+        enabled: true
+        description: "涨停情绪得分"
+      
+      - name: "cost_peak"
+        weight: 0.15
+        enabled: true
+        params:
+          window: 20
+          bins: 50
+        description: "筹码峰位，衡量支撑压力"
+    
+    # 短线选股因子
+    short_term:
+      - name: "is_limit_up"
+        weight: 100.0
+        enabled: true
+        description: "涨停标记，最高优先级"
+      
+      - name: "limit_up_score"
+        weight: 10.0
+        enabled: true
+        description: "涨停情绪得分"
+      
+      - name: "pioneer_status"
+        weight: 8.0
+        enabled: true
+        params:
+          pioneer_codes:
+            - "300255"
+        description: "先锋股状态"
+      
+      - name: "ma5_bias"
+        weight: 5.0
+        enabled: true
+        description: "MA5乖离率"
+      
+      - name: "v_ratio10"
+        weight: 5.0
+        enabled: true
+        description: "10点量比"
+  
+  # 市场判断因子
+  market:
+    - name: "market_health"
+      enabled: true
+      description: "市场健康度"
+    
+    - name: "market_sentiment"
+      enabled: true
+      description: "市场情绪温度"
+    
+    - name: "v_total"
+      enabled: true
+      description: "全市场成交额"
+    
+    - name: "open_auction_volume"
+      enabled: true
+      params:
+        threshold: 800
+      description: "开盘金额"
+  
+  # 风控因子
+  risk:
+    - name: "key_levels"
+      enabled: true
+      params:
+        support_levels:
+          - 4067
+          - 4117
+          - 4140
+        resistance_levels:
+          - 4200
+          - 4300
+      description: "关键位监测"
+
+# ==================== 多因子策略配置 ====================
+multi_factor:
+  name: "多因子策略"
+  description: "多因子综合评分策略"
+  version: "1.0.0"
+  
+  factors:
+    # 价值因子
+    value:
+      - name: "pe_ratio"
+        weight: 0.15
+        enabled: true
+        description: "市盈率"
+      
+      - name: "pb_ratio"
+        weight: 0.10
+        enabled: true
+        description: "市净率"
+    
+    # 质量因子
+    quality:
+      - name: "roe"
+        weight: 0.15
+        enabled: true
+        description: "净资产收益率"
+      
+      - name: "profit_growth"
+        weight: 0.10
+        enabled: true
+        description: "利润增长率"
+    
+    # 技术因子
+    technical:
+      - name: "rsi"
+        weight: 0.15
+        enabled: true
+        params:
+          period: 14
+        description: "RSI相对强弱指标"
+      
+      - name: "macd"
+        weight: 0.15
+        enabled: true
+        description: "MACD指标"
+      
+      - name: "ma_trend"
+        weight: 0.10
+        enabled: true
+        description: "均线趋势"
+    
+    # 动量因子
+    momentum:
+      - name: "momentum_20d"
+        weight: 0.10
+        enabled: true
+        description: "20日动量"
+
+# ==================== 趋势跟踪策略配置 ====================
+trend_following:
+  name: "趋势跟踪策略"
+  description: "基于趋势跟踪的选股策略"
+  version: "1.0.0"
+  
+  factors:
+    trend:
+      - name: "ma_trend"
+        weight: 0.35
+        enabled: true
+        params:
+          short_period: 5
+          long_period: 20
+        description: "均线趋势判断"
+      
+      - name: "adx"
+        weight: 0.25
+        enabled: true
+        params:
+          period: 14
+        description: "ADX趋势强度"
+      
+      - name: "bollinger_position"
+        weight: 0.20
+        enabled: true
+        description: "布林带位置"
+      
+      - name: "volume_trend"
+        weight: 0.20
+        enabled: true
+        description: "成交量趋势"
+
+# ==================== 因子有效性阈值配置 ====================
+factor_validation:
+  # IC指标阈值
+  ic:
+    min_ic_mean: 0.02          # 最小IC均值
+    min_ic_ir: 0.30            # 最小IC_IR
+    min_ic_positive_ratio: 0.55  # 最小IC正比例
+  
+  # 收益指标阈值
+  return:
+    min_long_short_return: 0.05   # 最小多空年化收益(5%)
+    min_long_short_sharpe: 0.50   # 最小多空夏普比率
+  
+  # 稳定性阈值
+  stability:
+    max_turnover: 0.80           # 最大换手率
+    max_drawdown: -0.20          # 最大回撤
+  
+  # 显著性阈值
+  significance:
+    max_p_value: 0.05            # 最大p值
+    min_t_statistic: 2.0         # 最小t统计量
+
+# ==================== 因子优化配置 ====================
+factor_optimization:
+  # 参数优化范围
+  parameter_ranges:
+    ma5_bias:
+      window: [3, 5, 10, 20]
+    
+    v_ratio10:
+      compare_time: ["09:45", "10:00", "10:30"]
+    
+    cost_peak:
+      window: [10, 20, 30, 60]
+      bins: [30, 50, 100]
+  
+  # 优化目标
+  objectives:
+    - "ic_ir"                    # 最大化IC_IR
+    - "long_short_return"        # 最大化多空收益
+    - "sharpe_ratio"             # 最大化夏普比率
+  
+  # 优化方法
+  method: "grid_search"          # grid_search / random_search / bayesian
+  n_iterations: 100              # 迭代次数

@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime
 
 from services.mainforce_resonance import MainForceDetector, scan_mainforce_signals, MainForceSignal
+from services.stock_selection_db_service import StockSelectionDBService
 
 
 class StockPicker:
@@ -16,6 +17,7 @@ class StockPicker:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent
         self.logger = self._setup_logger()
+        self.db_service = StockSelectionDBService()
 
     def _setup_logger(self):
         import logging
@@ -51,26 +53,34 @@ class StockPicker:
         """过滤不合格股票
 
         过滤条件：
-        1. 涨停股（涨幅接近10%已无法买入）
-        2. 跌停股（流动性枯竭）
-        3. 停牌股（volume=0）
-        4. 成交额极低（volume < 100万，排除流动性枯竭）
-        5. 科创/创业/北交所过滤（首板计算逻辑差异大）
+        1. 涨停股（涨幅接近10%已无法买入）- 可选，保留用于观察
+        2. 跌停股（流动性枯竭）- 必须过滤
+        3. 停牌股（volume=0）- 必须过滤
+        4. 成交额极低（volume < 10万，排除流动性枯竭）
+        5. ST股票 - 过滤
         """
         original_count = len(scores)
-        MIN_VOLUME = 1_000_000
-        MIN_AMOUNT = 1_000_000
+        MIN_VOLUME = 100_000  # 降低到10万股，避免过度过滤
 
+        # 先过滤停牌和跌停（严重影响交易）
         scores = scores.filter(
             (pl.col("volume") > 0) &
-            (pl.col("volume") >= MIN_VOLUME) &
-            (pl.col("change_pct") < 9.9) &
-            (pl.col("change_pct") > -9.9)
+            (pl.col("change_pct") > -9.9)  # 过滤跌停
         )
+
+        # 再过滤低流动性（但保留高分股票）
+        # 策略：高分股票(>=85)放宽流动性要求，低分股票严格过滤
+        high_score = scores.filter(pl.col("enhanced_score") >= 85)
+        normal_score = scores.filter(
+            (pl.col("enhanced_score") < 85) &
+            (pl.col("volume") >= MIN_VOLUME)
+        )
+
+        scores = pl.concat([high_score, normal_score])
 
         filtered_count = original_count - len(scores)
         if filtered_count > 0:
-            self.logger.info(f"过滤股票: 剔除{filtered_count}只(停牌/涨跌停/低流动性)")
+            self.logger.info(f"过滤股票: 剔除{filtered_count}只(停牌/跌停/低流动性)")
 
         return scores
 
@@ -155,18 +165,61 @@ class StockPicker:
         return picks
 
     def _save_picks(self, picks):
-        """保存选股结果"""
+        """保存选股结果到JSON和数据库"""
         import json
 
         today = datetime.now().strftime("%Y%m%d")
+        report_date = datetime.now().strftime("%Y-%m-%d")
         reports_dir = self.project_root / "data" / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
 
+        # 保存到JSON
         path = reports_dir / f"picks_{today}.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(picks, f, ensure_ascii=False, indent=2)
 
-        self.logger.info(f"选股报告已保存: {path}")
+        self.logger.info(f"选股报告已保存到JSON: {path}")
+
+        # 保存到数据库
+        try:
+            self.db_service.init_tables()
+
+            # 转换S级推荐为数据库格式
+            s_selections = []
+            for i, stock in enumerate(picks.get('s_grade', [])):
+                s_selections.append({
+                    'code': stock.get('code'),
+                    'name': stock.get('name'),
+                    'selection_type': 's_grade',
+                    'score': stock.get('enhanced_score', 0),
+                    'rank': i + 1,
+                    'close_price': stock.get('price', 0)
+                })
+
+            # 转换A级推荐为数据库格式
+            a_selections = []
+            for i, stock in enumerate(picks.get('a_grade', [])):
+                a_selections.append({
+                    'code': stock.get('code'),
+                    'name': stock.get('name'),
+                    'selection_type': 'a_grade',
+                    'score': stock.get('enhanced_score', 0),
+                    'rank': i + 1,
+                    'close_price': stock.get('price', 0)
+                })
+
+            # 保存到数据库
+            if s_selections:
+                self.db_service.save_selections(report_date, s_selections, market_state='normal')
+                self.logger.info(f"S级选股已保存到数据库: {len(s_selections)}只")
+
+            if a_selections:
+                self.db_service.save_selections(report_date, a_selections, market_state='normal')
+                self.logger.info(f"A级选股已保存到数据库: {len(a_selections)}只")
+
+        except Exception as e:
+            self.logger.error(f"保存选股到数据库失败: {e}")
+            # 数据库保存失败不影响JSON保存结果
 
 
 if __name__ == "__main__":

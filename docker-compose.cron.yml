@@ -15,6 +15,13 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - PYTHONUNBUFFERED=1
+      # 禁用代理，避免requests库使用系统代理
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - ALL_PROXY=
+      - http_proxy=
+      - https_proxy=
+      - all_proxy=
       - DB_HOST=49.233.10.199
       - DB_PORT=3306
       - DB_USER=nextai
@@ -53,9 +60,20 @@ services:
       - ./logs:/app/logs
       - ./config:/app/config:ro
       - ./reports:/app/reports
+      - ./scripts:/app/scripts:ro
+      - ./services:/app/services:ro
+      - ./core:/app/core:ro
+      - ./models:/app/models:ro
     environment:
       - TZ=Asia/Shanghai
       - PYTHONUNBUFFERED=1
+      # 禁用代理，避免requests库使用系统代理
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - ALL_PROXY=
+      - http_proxy=
+      - https_proxy=
+      - all_proxy=
       - DB_HOST=49.233.10.199
       - DB_PORT=3306
       - DB_USER=nextai

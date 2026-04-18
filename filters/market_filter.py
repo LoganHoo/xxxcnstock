@@ -150,11 +150,35 @@ class DataFreshnessFilter(BaseFilter):
             self.logger.warning("缺少trade_date字段，跳过数据新鲜度过滤")
             return stock_list
 
-        from datetime import date, timedelta
-        cutoff_date = (date.today() - timedelta(days=self.max_data_age_days)).isoformat()
+        from datetime import date, timedelta, datetime
+
+        # 计算截止日期
+        cutoff_date = date.today() - timedelta(days=self.max_data_age_days)
 
         original_count = len(stock_list)
-        filtered = stock_list.filter(pl.col("trade_date") >= cutoff_date)
+
+        # 检查trade_date列的数据类型
+        trade_date_dtype = stock_list['trade_date'].dtype
+
+        if trade_date_dtype == pl.Date:
+            # Date类型直接比较
+            filtered = stock_list.filter(pl.col("trade_date") >= cutoff_date)
+        elif trade_date_dtype == pl.Datetime:
+            # Datetime类型转换为date比较
+            filtered = stock_list.filter(
+                pl.col("trade_date").dt.date() >= cutoff_date
+            )
+        elif trade_date_dtype == pl.Utf8:
+            # String类型，先转换再比较
+            filtered = stock_list.filter(
+                pl.col("trade_date").str.to_date() >= cutoff_date
+            )
+        else:
+            # 其他类型，尝试转换为字符串再处理
+            self.logger.warning(f"未知的trade_date类型: {trade_date_dtype}，尝试转换")
+            filtered = stock_list.filter(
+                pl.col("trade_date").cast(pl.Utf8).str.to_date() >= cutoff_date
+            )
 
         removed_count = original_count - len(filtered)
         if removed_count > 0:

@@ -23,10 +23,32 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.logger import get_logger
+from core.logger import setup_logger
 
 os.environ['PYTHONUNBUFFERED'] = '1'
-logger = get_logger(__name__)
+
+# 设置日志输出到文件和控制台
+logger = setup_logger(
+    name=__name__,
+    level="INFO",
+    log_file="system/scheduler.log",
+    rotation="00:00",
+    retention="30 days"
+)
+
+
+def load_cron_config():
+    """从 cron_tasks.yaml 加载任务配置"""
+    import yaml
+    config_path = project_root / 'config' / 'cron_tasks.yaml'
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+        logger.info(f"✅ 成功加载配置文件: {config_path}")
+        return config
+    except Exception as e:
+        logger.error(f"❌ 加载配置文件失败: {e}")
+        return None
 
 HEARTBEAT_FILE = '/app/logs/scheduler_heartbeat'
 STATE_FILE = '/app/logs/task_states.json'
@@ -89,10 +111,28 @@ class TaskStateManager:
     def increment_retry(self, job_id: str, date: str = None) -> int:
         key = f"{job_id}_{date or datetime.now().strftime('%Y%m%d')}"
         if key not in self.states:
-            self.states[key] = {'retries': 0}
+            self.states[key] = {'retries': 0, 'retry_history': []}
+
+        # 增加重试计数
         self.states[key]['retries'] = self.states.get(key, {}).get('retries', 0) + 1
+
+        # 记录重试历史
+        if 'retry_history' not in self.states[key]:
+            self.states[key]['retry_history'] = []
+
+        self.states[key]['retry_history'].append({
+            'time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'retry_count': self.states[key]['retries']
+        })
+
         self._save_states()
         return self.states[key]['retries']
+
+    def get_retry_history(self, job_id: str, date: str = None) -> list:
+        """获取任务的重试历史"""
+        key = f"{job_id}_{date or datetime.now().strftime('%Y%m%d')}"
+        state = self.states.get(key, {})
+        return state.get('retry_history', [])
 
     def get_retry_count(self, job_id: str, date: str = None) -> int:
         return self.get_state(job_id, date).get('retries', 0)
@@ -266,14 +306,17 @@ class EnhancedAPScheduler:
                 return True
             else:
                 error_msg = f'返回码: {result.returncode}' if result else '未知错误'
-                self.handle_failure(job_id, job_name, error_msg, date, output_content, error_content)
+                self.handle_failure(job_id, job_name, error_msg, date, output_content, error_content,
+                                   script_path=script_path, timeout=timeout, args=args)
                 return False
 
         except subprocess.TimeoutExpired:
-            self.handle_failure(job_id, job_name, '任务超时', date)
+            self.handle_failure(job_id, job_name, '任务超时', date,
+                               script_path=script_path, timeout=timeout, args=args)
             return False
         except Exception as e:
-            self.handle_failure(job_id, job_name, str(e), date)
+            self.handle_failure(job_id, job_name, str(e), date,
+                               script_path=script_path, timeout=timeout, args=args)
             return False
 
     def _generate_report(self, job_name: str, job_id: str, stdout: str, stderr: str, success: bool = True) -> str:
@@ -535,13 +578,19 @@ class EnhancedAPScheduler:
         return result
 
     def handle_failure(self, job_id: str, job_name: str, error: str,
-                       date: str = None, stdout: str = "", stderr: str = ""):
+                       date: str = None, stdout: str = "", stderr: str = "",
+                       script_path: Path = None, timeout: int = 600, args: list = None):
         retry_count = self.state_mgr.increment_retry(job_id, date)
         logger.error(f"❌ 任务失败: {job_name}, 错误: {error}, 重试次数: {retry_count}/{MAX_RETRIES}")
 
         if retry_count < MAX_RETRIES:
             self.state_mgr.set_state(job_id, 'retry_scheduled', f'失败,{retry_count}次重试', date)
-            threading.Thread(target=self.delayed_retry, args=(job_id, job_name, date), daemon=True).start()
+            # 传递完整的任务信息以便重试
+            threading.Thread(
+                target=self.delayed_retry,
+                args=(job_id, job_name, date, script_path, timeout, args),
+                daemon=True
+            ).start()
         else:
             self.state_mgr.set_state(job_id, 'failed', error, date)
             report_details = self._generate_report(job_name, job_id, stdout, stderr, success=False)
@@ -550,131 +599,108 @@ class EnhancedAPScheduler:
                 report_details
             )
 
-    def delayed_retry(self, job_id: str, job_name: str, date: str):
+    def delayed_retry(self, job_id: str, job_name: str, date: str,
+                      script_path: Path = None, timeout: int = 600, args: list = None):
+        """延迟重试任务
+
+        Args:
+            job_id: 任务ID
+            job_name: 任务名称
+            date: 日期
+            script_path: 脚本路径（可选，如果提供则直接执行脚本）
+            timeout: 超时时间
+            args: 脚本参数
+        """
         logger.info(f"⏳ 计划 {RETRY_DELAY}秒 后重试任务: {job_name}")
         time.sleep(RETRY_DELAY)
-        job = self.scheduler.get_job(job_id)
-        if job:
-            logger.info(f"🔄 执行重试: {job_name}")
-            job.func()
+
+        # 检查任务是否已经在重试后成功
+        state = self.state_mgr.get_state(job_id, date)
+        if state.get('status') == 'completed':
+            logger.info(f"✅ 任务 {job_name} 已在重试前成功，跳过重试")
+            return
+
+        # 如果提供了脚本路径，直接执行脚本
+        if script_path and script_path.exists():
+            logger.info(f"🔄 执行重试（直接调用脚本）: {job_name}")
+            self.run_script(
+                script_path=script_path,
+                job_name=f"{job_name} (重试)",
+                job_id=job_id,
+                timeout=timeout,
+                date=date,
+                args=args
+            )
+        else:
+            # 否则尝试从调度器获取任务
+            job = self.scheduler.get_job(job_id)
+            if job:
+                logger.info(f"🔄 执行重试（调用调度器任务）: {job_name}")
+                try:
+                    result = job.func()
+                    if result:
+                        logger.info(f"✅ 重试成功: {job_name}")
+                    else:
+                        logger.error(f"❌ 重试失败: {job_name}")
+                except Exception as e:
+                    logger.error(f"❌ 重试异常: {job_name}, 错误: {e}")
+            else:
+                logger.error(f"❌ 无法重试: 任务 {job_id} 不存在")
 
     def add_jobs(self):
-        """添加所有任务 - 与 cron_tasks.yaml 保持一致"""
-        jobs = [
-            {
-                'id': 'morning_data',
-                'script': 'scripts/pipeline/morning_update.py',
-                'name': '晨间更新',
-                'cron': '30 8 * * 1-5'
-            },
-            {
-                'id': 'morning_report',
-                'script': 'scripts/pipeline/send_morning.py',
-                'name': '晨间报告',
-                'cron': '45 8 * * 1-5',
-                'depends_on': 'morning_data'
-            },
-            {
-                'id': 'fund_behavior_report',
-                'script': 'scripts/run_fund_behavior_strategy.py',
-                'name': '量化决策报告',
-                'cron': '26 9 * * 1-5'
-            },
-            {
-                'id': 'data_fetch',
-                'script': 'scripts/pipeline/data_collect.py',
-                'name': '数据采集',
-                'cron': '0 16 * * 1-5'
-            },
-            {
-                'id': 'data_fetch_retry',
-                'script': 'scripts/pipeline/data_collect.py',
-                'name': '断点续传',
-                'cron': '30 16 * * 1-5',
-                'args': ['--retry']
-            },
-            {
-                'id': 'data_quality_check',
-                'script': 'scripts/pipeline/data_audit.py',
-                'name': '数据质检',
-                'cron': '0 17 * * 1-5'
-            },
-            {
-                'id': 'market_review',
-                'script': 'scripts/pipeline/daily_review.py',
-                'name': '复盘分析',
-                'cron': '30 17 * * 1-5'
-            },
-            {
-                'id': 'picks_review',
-                'script': 'scripts/pipeline/stock_pick.py',
-                'name': '选股复盘',
-                'cron': '45 17 * * 1-5'
-            },
-            {
-                'id': 'review_report',
-                'script': 'scripts/send_review_report.py',
-                'name': '复盘报告',
-                'cron': '0 18 * * 1-5'
-            },
-            {
-                'id': 'review_brief',
-                'script': 'scripts/pipeline/morning_push.py',
-                'name': '复盘快报',
-                'cron': '0 19 * * 1-5'
-            },
-            {
-                'id': 'update_tracking',
-                'script': 'scripts/pipeline/update_tracking.py',
-                'name': '跟踪更新',
-                'cron': '30 19 * * 1-5'
-            },
-            {
-                'id': 'precompute',
-                'script': 'scripts/pipeline/precompute.py',
-                'name': '预计算评分',
-                'cron': '0 20 * * 1-5'
-            },
-            {
-                'id': 'night_analysis',
-                'script': 'scripts/pipeline/night_picks.py',
-                'name': '晚间分析',
-                'cron': '30 20 * * 1-5'
-            },
-        ]
+        """添加所有任务 - 从 cron_tasks.yaml 读取配置"""
+        config = load_cron_config()
+        if not config:
+            logger.error("❌ 无法加载任务配置，调度器无法启动")
+            return
 
-        for job in jobs:
-            timeout = 600
-            if job['id'] in ['data_fetch', 'data_fetch_retry']:
-                timeout = 6600
+        tasks = config.get('tasks', [])
+        global_config = config.get('global', {})
 
-            def make_func(j):
+        # 过滤出启用的任务
+        enabled_tasks = [t for t in tasks if t.get('enabled', True)]
+        logger.info(f"📋 从配置文件加载了 {len(enabled_tasks)} 个启用任务")
+
+        for task in enabled_tasks:
+            job_id = task['name']
+            job_name = task.get('description', job_id)
+            script = task.get('script', '')
+            schedule = task.get('schedule', '')
+            timeout = task.get('timeout', 600)
+
+            # 解析脚本和参数
+            script_parts = script.split()
+            script_path = project_root / script_parts[0]
+            args = script_parts[1:] if len(script_parts) > 1 else []
+
+            def make_func(t, script_path, args, timeout):
                 def func():
                     today = datetime.now().strftime('%Y%m%d')
-                    if self.state_mgr.is_completed_today(j['id']):
-                        logger.info(f"⏭️  任务已完成，跳过: {j['name']}")
+                    if self.state_mgr.is_completed_today(t['name']):
+                        logger.info(f"⏭️  任务已完成，跳过: {t.get('description', t['name'])}")
                         return True
-                    args = j.get('args', [])
-                    script_path = project_root / j['script']
                     return self.run_script(
                         script_path,
-                        j['name'],
-                        job_id=j['id'],
+                        t.get('description', t['name']),
+                        job_id=t['name'],
                         timeout=timeout,
                         date=today,
                         args=args
                     )
                 return func
 
-            trigger = CronTrigger.from_crontab(job['cron'])
-            self.scheduler.add_job(
-                make_func(job),
-                trigger=trigger,
-                id=job['id'],
-                name=job['name'],
-                replace_existing=True
-            )
-            logger.info(f"✅ 已添加任务: {job['id']} ({job['name']}) - {job['cron']}")
+            try:
+                trigger = CronTrigger.from_crontab(schedule)
+                self.scheduler.add_job(
+                    make_func(task, script_path, args, timeout),
+                    trigger=trigger,
+                    id=job_id,
+                    name=job_name,
+                    replace_existing=True
+                )
+                logger.info(f"✅ 已添加任务: {job_id} - {schedule}")
+            except Exception as e:
+                logger.error(f"❌ 添加任务失败 {job_id}: {e}")
 
     def check_missed_tasks(self):
         """检查今日未执行的任务并尝试补执行"""

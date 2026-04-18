@@ -92,6 +92,11 @@ class CostPeakFactor(BaseFactor):
                 result_data.append({"code": code, "trade_date": date, self.get_factor_column_name(): peak})
 
         result_df = pl.DataFrame(result_data)
+        # 确保code列类型一致（处理Categorical类型）
+        if data['code'].dtype != result_df['code'].dtype:
+            result_df = result_df.with_columns([
+                pl.col('code').cast(data['code'].dtype)
+            ])
         data = data.join(result_df, on=["code", "trade_date"], how="left")
         data = data.with_columns([
             pl.col(self.get_factor_column_name()).fill_nan(pl.col("close"))

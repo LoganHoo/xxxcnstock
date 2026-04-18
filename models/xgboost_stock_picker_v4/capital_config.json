@@ -1,0 +1,6 @@
+{
+  "initial_capital": 1000000,
+  "max_position_per_stock": 0.1,
+  "lot_size": 100,
+  "reserve_ratio": 0.05
+}

@@ -156,17 +156,50 @@ class DataQualityChecker:
             elif isinstance(latest_date, datetime):
                 cutoff_date = latest_date.date()
 
+            cutoff = None
             if cutoff_date:
                 cutoff = datetime.combine(cutoff_date, datetime.min.time()) - timedelta(days=recent_days)
                 cutoff = cutoff.date() if isinstance(cutoff, datetime) else cutoff
 
-            recent_data = data.filter(
-                pl.col('trade_date') >= str(cutoff)
-            )
+            # 确保 latest_date 是 date 对象用于比较
+            if isinstance(latest_date, str):
+                latest_date_obj = datetime.fromisoformat(latest_date).date()
+            elif isinstance(latest_date, datetime):
+                latest_date_obj = latest_date.date()
+            else:
+                latest_date_obj = latest_date
 
-            latest_date_stocks = recent_data.filter(
-                pl.col('trade_date') == latest_str
-            )['code'].n_unique()
+            # 检查trade_date列的类型
+            trade_date_dtype = data['trade_date'].dtype
+            is_date_type = 'Date' in str(trade_date_dtype) or 'date' in str(trade_date_dtype)
+
+            if is_date_type:
+                # trade_date是Date类型，使用date对象进行比较
+                if cutoff:
+                    recent_data = data.filter(
+                        pl.col('trade_date') >= pl.lit(cutoff)
+                    )
+                else:
+                    recent_data = data
+
+                latest_date_stocks = recent_data.filter(
+                    pl.col('trade_date') == pl.lit(latest_date_obj)
+                )['code'].n_unique()
+            else:
+                # trade_date是字符串类型，使用字符串进行比较
+                cutoff_str = cutoff.isoformat() if cutoff else None
+                latest_date_str = latest_date_obj.isoformat() if hasattr(latest_date_obj, 'isoformat') else str(latest_date_obj)
+
+                if cutoff_str:
+                    recent_data = data.filter(
+                        pl.col('trade_date') >= pl.lit(cutoff_str)
+                    )
+                else:
+                    recent_data = data
+
+                latest_date_stocks = recent_data.filter(
+                    pl.col('trade_date') == pl.lit(latest_date_str)
+                )['code'].n_unique()
 
             result['recent_stocks_count'] = latest_date_stocks
             result['stocks_checked'] = data['code'].n_unique()

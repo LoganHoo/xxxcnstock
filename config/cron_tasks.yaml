@@ -30,14 +30,14 @@ global:
 tasks:
   # ========== 交易日盘后流水线 ==========
 
-  # 16:00 - 基础数据采集（收盘后）
+  # 16:00 - 基础数据采集（收盘后）- 使用微服务主备架构
   - name: "data_fetch"
-    description: "【1.数据采集】采集A股所有行情数据（日线）- 初始采集"
+    description: "【1.数据采集】采集A股所有行情数据（日线）- 微服务主备架构"
     schedule: "0 16 * * 1-5"  # 交易日 16:00（收盘后采集）
     script: "scripts/pipeline/data_collect.py"
     enabled: true
     day_type: "weekday"
-    timeout: 7200  # 120分钟（7200秒）- 优化：从90分钟增加到120分钟
+    timeout: 3600  # 60分钟
     run_once: true  # 只执行一次，不进行重试采集
 
   # 16:30 - 断点续传（如果质检未通过）
@@ -50,49 +50,60 @@ tasks:
     timeout: 3600  # 60分钟
     retry_mode: true  # 断点续传模式
     depends_on: "data_fetch"
-    skip_if_passed: "data_quality_check"  # 如果质检已通过则跳过
+    skip_if_passed: "data_audit_unified"  # 如果审计已通过则跳过
 
   # 17:30 - 断点续传（如果质检仍未通过）
   - name: "data_fetch_retry2"
     description: "【1.6.断点续传】第二轮补充数据"
-    schedule: "30 17 * * 1-5"  # 交易日 17:30
+    schedule: "35 17 * * 1-5"  # 交易日 17:35
     script: "scripts/pipeline/data_collect.py --retry"
     enabled: true
     day_type: "weekday"
     timeout: 3600  # 60分钟
     retry_mode: true
     depends_on: "data_fetch_retry"
-    skip_if_passed: "data_quality_check"  # 如果质检已通过则跳过
+    skip_if_passed: "data_audit_unified"  # 如果审计已通过则跳过
 
-  # 17:00 - 数据质检
-  - name: "data_quality_check"
-    description: "【2.数据质检】验证今日数据完整度"
-    schedule: "0 17 * * 1-5"  # 交易日 17:00
-    script: "scripts/pipeline/data_audit.py"
+  # 16:32 - 龙虎榜数据独立采集（延迟数据）
+  - name: "dragon_tiger_fetch"
+    description: "【2.1.龙虎榜采集】延迟发布的龙虎榜数据（可选数据，不影响主流程）"
+    schedule: "32 16 * * 1-5"  # 交易日 16:32开始
+    script: "scripts/pipeline/fetch_dragon_tiger.py --incremental --max-wait 3600"
     enabled: true
     day_type: "weekday"
-    timeout: 600  # 10分钟
+    timeout: 3600  # 60分钟（等待数据发布）
+    optional: true  # 标记为可选数据
     depends_on: "data_fetch"
 
-  # 19:30 - CVD指标计算（晚间CVD分析）
+  # 16:50 - 智能数据审计（带熔断机制）
+  - name: "data_audit_unified"
+    description: "【2.2.智能数据审计】验证数据新鲜度、完整性、质量（带熔断机制：最大5次重试，17:20死线）"
+    schedule: "50 16 * * 1-5"  # 交易日 16:50（采集完成后）
+    script: "scripts/pipeline/smart_data_audit.py --threshold 0.85 --max-retries 5 --deadline 17:20"
+    enabled: true
+    day_type: "weekday"
+    timeout: 1800  # 30分钟（含重试时间）
+    depends_on: "data_fetch"
+
+  # 17:15 - CVD指标计算（晚间CVD分析）
   - name: "calculate_cvd"
     description: "【2.5.CVD计算】计算60日累积成交量差指标"
-    schedule: "15 17 * * 1-5"  # 交易日 17:15（质检后）
+    schedule: "15 17 * * 1-5"  # 交易日 17:15（审计后）
     script: "scripts/calculate_cvd.py"
     enabled: true
     day_type: "weekday"
     timeout: 600  # 10分钟
-    depends_on: "data_quality_check"  # 必须等待质检通过
+    depends_on: "data_audit_unified"
 
-  # 17:30 - 当日复盘分析
+  # 17:30 - 当日复盘分析（采集和更新大盘数据，市场分析）
   - name: "market_review"
-    description: "【3.复盘分析】计算涨跌停家数、板块强度、CVD资金净流入"
+    description: "【3.复盘分析】采集和更新大盘数据，计算涨跌停家数、板块强度、CVD资金净流入"
     schedule: "30 17 * * 1-5"  # 交易日 17:30
     script: "scripts/pipeline/daily_review.py"
     enabled: true
     day_type: "weekday"
     timeout: 900  # 15分钟
-    depends_on: "data_quality_check"  # 必须等待质检通过
+    depends_on: "data_audit_unified"
 
   # 17:45 - 选股复盘（验证昨日推荐表现）
   - name: "picks_review"
@@ -104,15 +115,44 @@ tasks:
     timeout: 600
     depends_on: "market_review"
 
-  # 18:00 - 推送完整复盘报告
+  # 18:10 - 每日选股复盘（含多周期表现更新）- 推迟避免冲突
+  - name: "daily_selection_review"
+    description: "【3.6.每日选股复盘】更新昨日选股次日表现，批量更新历史多周期表现"
+    schedule: "10 18 * * 1-5"  # 交易日 18:10
+    script: "scripts/pipeline/daily_stock_selection_review.py --all"
+    enabled: true
+    day_type: "weekday"
+    timeout: 1800  # 30分钟
+    depends_on: "picks_review"
+
+  # 每周六 - 批量更新历史多周期表现（补全遗漏数据）
+  - name: "weekly_multi_period_update"
+    description: "【周末任务】批量更新过去90天的多周期表现数据"
+    schedule: "0 10 * * 6"  # 每周六 10:00
+    script: "scripts/pipeline/daily_stock_selection_review.py --update-multi-period --days-back 90"
+    enabled: true
+    day_type: "any"
+    timeout: 3600  # 60分钟
+
+  # 17:50 - 回撤分析（避免幸存者偏差）
+  - name: "drawdown_analysis"
+    description: "【3.8.回撤分析】分析昨日选股回撤情况，识别因子失效和系统性风险"
+    schedule: "50 17 * * 1-5"  # 交易日 17:50
+    script: "scripts/pipeline/drawdown_analyzer.py"
+    enabled: true
+    day_type: "weekday"
+    timeout: 300  # 5分钟
+    depends_on: "picks_review"
+
+  # 18:00 - 推送完整复盘报告（大盘关键位和预测、热点热门、个股、前交易日选股比较）
   - name: "review_report"
-    description: "【4.完整复盘】大盘情况、昨日推荐追踪、OKR、AI复盘+人工修正"
+    description: "【4.完整复盘】大盘关键位和预测、热点热门、个股分析、前交易日选股比较、回撤之最分析"
     schedule: "0 18 * * 1-5"  # 交易日 18:00
     script: "scripts/send_review_report.py"
     enabled: true
     day_type: "weekday"
     timeout: 600
-    depends_on: "market_review"
+    depends_on: "drawdown_analysis"
 
   # 19:00 - 推送精简复盘快报
   - name: "review_brief"
@@ -134,19 +174,19 @@ tasks:
     enabled: true
     day_type: "weekday"
     timeout: 1200  # 20分钟
-    depends_on: "data_quality_check"  # 必须等待质检通过
+    depends_on: "data_audit_unified"
 
   # 20:30 - 晚间综合预测
   - name: "night_analysis"
     description: "【6.晚间分析】结合消息面的选股推荐"
-    schedule: "30 20 * * 1-5"  # 交易日 20:30
+    schedule: "35 20 * * 1-5"  # 交易日 20:35
     script: "scripts/pipeline/night_picks.py"
     enabled: true
     day_type: "weekday"
     timeout: 900  # 15分钟
     env:
       PICK_TYPE: "night"
-    depends_on: "precompute"  # 必须等待预计算完成
+    depends_on: "precompute"
 
   # ========== 晨间流水线 ==========
 
@@ -204,6 +244,25 @@ tasks:
     day_type: "weekday"
     timeout: 120
 
+  # 08:25 - 预测自我修正检查
+  - name: "prediction_correction_check"
+    description: "【6.5.预测修正】检查是否需要修正昨日预测（隔夜新闻、跳空等）"
+    schedule: "25 8 * * 1-5"  # 交易日 08:25
+    script: "scripts/pipeline/prediction_confidence.py --check-correction"
+    enabled: true
+    day_type: "weekday"
+    timeout: 120
+
+  # 08:42 - 大盘关键位与CVD分析
+  - name: "market_analysis"
+    description: "【7.6大盘分析】计算大盘关键位和CVD指标"
+    schedule: "42 8 * * 1-5"  # 交易日 08:42
+    script: "scripts/market_analysis.py"
+    enabled: true
+    day_type: "weekday"
+    timeout: 120
+    depends_on: "morning_data"
+
   # 08:45 - 推送晨前哨报
   - name: "morning_report"
     description: "【8.晨前哨报】外盘+大盘+宏观+石油+大宗+情绪+事件+AI建议"
@@ -214,15 +273,67 @@ tasks:
     timeout: 300
     depends_on: "collect_news"
 
-  # 09:26 - 量化决策报告（资金行为学策略 - 开盘后综合决策）
-  - name: "fund_behavior_report"
-    description: "【9.量化决策】资金行为学策略执行与报告推送 - 基于昨日复盘、新闻联播、大宗商品、外盘等综合分析"
-    schedule: "26 9 * * 1-5"  # 交易日 09:26（开盘后）
-    script: "scripts/run_fund_behavior_strategy.py"
+  # ========== 09:26 核心任务资源保障链（简化版）==========
+  # 优化后时间线：
+  # 08:30 - morning_data (晨间数据)
+  # 09:15 - fund_behavior_resource_prepare (数据准备：预热+锁定)
+  # 09:22 - fund_behavior_resource_validate (资源验证：检查+快速通道)
+  # 09:24 - fund_behavior_guardian_check (前置检查)
+  # 09:26 - fund_behavior_report (核心任务执行)
+  #
+  # 优化：6个任务 → 3个任务，容错时间从2分钟增加到4分钟
+
+  # 09:15 - 数据准备 - 预热+锁定合并
+  - name: "fund_behavior_resource_prepare"
+    description: "【核心-资源保障】09:26任务数据准备 - 预热+锁定"
+    schedule: "15 9 * * 1-5"  # 交易日 09:15
+    script: "scripts/pipeline/fund_behavior_resource_guardian.py --phase prepare"
     enabled: true
     day_type: "weekday"
-    timeout: 600
+    timeout: 420  # 7分钟（预热5分钟+锁定2分钟）
+    priority: "critical"
     depends_on: "morning_data"
+
+  # 09:22 - 资源验证 - 检查+快速通道合并
+  - name: "fund_behavior_resource_validate"
+    description: "【核心-资源保障】09:26任务资源验证 - 检查+快速通道"
+    schedule: "22 9 * * 1-5"  # 交易日 09:22
+    script: "scripts/pipeline/fund_behavior_resource_guardian.py --phase validate"
+    enabled: true
+    day_type: "weekday"
+    timeout: 120  # 2分钟（检查1分钟+快速通道1分钟）
+    priority: "critical"
+    depends_on: "fund_behavior_resource_prepare"
+
+  # 09:24 - 前置检查 - 最终数据就绪检查（提前2分钟）
+  - name: "fund_behavior_guardian_check"
+    description: "【核心-前置检查】9:26核心任务前置条件检查"
+    schedule: "24 9 * * 1-5"  # 交易日 09:24
+    script: "scripts/core_task_guardian.py check"
+    enabled: true
+    day_type: "weekday"
+    timeout: 60
+    priority: "critical"
+    depends_on: "fund_behavior_resource_validate"
+
+  # 核心任务 - 带完整保障机制 + 熔断 + 兜底
+  - name: "fund_behavior_report"
+    description: "【9.量化决策-核心】资金行为学策略执行与报告推送 - 基于昨日复盘、新闻联播、大宗商品、外盘等综合分析"
+    schedule: "26 9 * * 1-5"  # 交易日 09:26（开盘后）
+    script: "scripts/core_task_guardian.py full"  # 使用守护程序执行
+    enabled: true
+    day_type: "weekday"
+    timeout: 900  # 15分钟（含重试时间）
+    depends_on: "fund_behavior_guardian_check"
+    priority: "critical"  # 标记为核心任务
+    retry_max: 5  # 最多重试5次
+    alert_on_failure: true  # 失败时发送告警
+    # 熔断机制配置
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 3  # 连续失败3次触发熔断
+      recovery_timeout: 3600  # 熔断后1小时尝试恢复
+      fallback_script: "scripts/pipeline/fund_behavior_fallback.py"  # 兜底脚本
 
   # ========== 非交易日任务 ==========
 
@@ -292,40 +403,123 @@ tasks:
     enabled: true
     day_type: "weekday"
     timeout: 600  # 10分钟
-    depends_on: "data_quality_check"  # 必须等待质检通过
+    depends_on: "data_audit_unified"
 
-# 任务分组（注意：disabled的任务不在此列）
+  # ========== 监控和保障任务 ==========
+
+  # 03:00 - 缓存清理（每天凌晨）
+  - name: "cache_cleanup"
+    description: "【系统维护】清理损坏的缓存和过期checkpoint"
+    schedule: "0 3 * * *"  # 每天 03:00
+    script: "scripts/cache_monitor.py"
+    enabled: true
+    day_type: "daily"
+    timeout: 300
+
+  # 09:05 - 数据完整性检查（晨间任务后）
+  - name: "data_integrity_check"
+    description: "【监控】验证核心数据表记录数和数据新鲜度"
+    schedule: "5 9 * * 1-5"  # 交易日 09:05
+    script: "scripts/data_integrity_check.py"
+    enabled: true
+    day_type: "weekday"
+    timeout: 300
+    depends_on: "fund_behavior_report"
+
+  # 每10分钟 - 生成监控面板
+  - name: "generate_dashboard"
+    description: "【监控】生成任务监控面板HTML"
+    schedule: "*/10 * * * *"  # 每10分钟
+    script: "scripts/monitoring_dashboard.py"
+    enabled: true
+    day_type: "daily"
+    timeout: 60
+
+  # 08:55 - 早间监控摘要邮件
+  - name: "morning_monitoring_summary"
+    description: "【监控】发送晨间任务监控摘要"
+    schedule: "55 8 * * 1-5"  # 交易日 08:55
+    script: "scripts/monitoring_dashboard.py --email"
+    enabled: true
+    day_type: "weekday"
+    timeout: 60
+
+  # 18:05 - 盘后监控摘要邮件
+  - name: "evening_monitoring_summary"
+    description: "【监控】发送盘后任务监控摘要"
+    schedule: "5 18 * * 1-5"  # 交易日 18:05
+    script: "scripts/monitoring_dashboard.py --email"
+    enabled: true
+    day_type: "weekday"
+    timeout: 60
+
+# 任务分组（按交易时段划分）
 groups:
-  trading_day_afternoon:
-    description: "盘后流水线（16:00-19:00）"
+  pre_market_morning:
+    description: "盘前上午（08:30-09:30）- 开盘前数据准备与核心决策"
+    tasks:
+      - morning_data
+      - collect_macro
+      - collect_oil_dollar
+      - collect_commodities
+      - collect_sentiment
+      - collect_news
+      - prediction_correction_check
+      - market_analysis
+      - morning_report
+      - fund_behavior_resource_prepare
+      - fund_behavior_resource_validate
+      - fund_behavior_guardian_check
+      - fund_behavior_report
+      - morning_monitoring_summary
+      - data_integrity_check
+
+  post_market_afternoon:
+    description: "盘后下午（16:00-19:00）- 收盘数据采集与复盘分析"
     tasks:
       - data_fetch
       - data_fetch_retry
       - data_fetch_retry2
-      - data_quality_check
+      - dragon_tiger_fetch
+      - data_audit_unified
+      - calculate_cvd
       - market_review
+      - picks_review
+      - drawdown_analysis
+      - daily_selection_review
       - review_report
+      - review_brief
+      - update_tracking
       - update_index_data
+      - evening_monitoring_summary
 
-  trading_day_evening:
-    description: "晚间流水线（20:00-21:00）"
+  post_market_evening:
+    description: "盘后夜间（20:00-21:00）- 晚间分析与预计算"
     tasks:
       - precompute
       - night_analysis
       - manual_verification
 
-  trading_day_morning:
-    description: "晨间流水线（08:30-09:30）"
+  resource_guarantee:
+    description: "09:26核心任务资源保障链"
     tasks:
-      - morning_data
-      - morning_report
-      - fund_behavior_report
-      - update_tracking
+      - fund_behavior_resource_prepare
+      - fund_behavior_resource_validate
+      - fund_behavior_guardian_check
 
   daily:
     description: "每日凌晨任务"
     tasks:
-      - update_foreign_index
+      - collect_news_cctv_midnight
+      - collect_news_cctv_morning
+      - weekly_multi_period_update
+
+  system_maintenance:
+    description: "系统维护和监控"
+    tasks:
+      - scheduler_watchdog
+      - cache_cleanup
+      - generate_dashboard
 
 # 环境变量配置
 # 注意：敏感信息已迁移到 .env 文件

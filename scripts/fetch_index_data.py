@@ -1,8 +1,14 @@
 """获取并保存大盘指数历史数据"""
+import os
 import akshare as ak
 import polars as pl
 from pathlib import Path
 from datetime import datetime
+
+# 清除代理设置，避免连接问题
+for proxy_var in ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']:
+    if proxy_var in os.environ:
+        del os.environ[proxy_var]
 
 print('=== 获取大盘指数历史数据 ===')
 print()

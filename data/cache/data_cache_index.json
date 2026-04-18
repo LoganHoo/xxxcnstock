@@ -1,0 +1,47 @@
+{
+  "165cb444072ba58519a35d255a244cf1": {
+    "start_date": "2026-02-13",
+    "end_date": "2026-04-14",
+    "columns": [
+      "code",
+      "trade_date",
+      "open",
+      "close",
+      "high",
+      "low",
+      "volume"
+    ],
+    "created_at": "2026-04-15T12:46:25.608929",
+    "row_count": 178017
+  },
+  "9d14e2fe7af37002e35860f4eb5d3c11": {
+    "start_date": "2026-02-14",
+    "end_date": "2026-04-15",
+    "columns": [
+      "code",
+      "trade_date",
+      "open",
+      "close",
+      "high",
+      "low",
+      "volume"
+    ],
+    "created_at": "2026-04-16T00:55:39.450611",
+    "row_count": 178313
+  },
+  "505d46684b63077e496303cc345d8c3f": {
+    "start_date": "2026-02-15",
+    "end_date": "2026-04-16",
+    "columns": [
+      "code",
+      "trade_date",
+      "open",
+      "close",
+      "high",
+      "low",
+      "volume"
+    ],
+    "created_at": "2026-04-17T00:37:55.878088",
+    "row_count": 183384
+  }
+}

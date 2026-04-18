@@ -1,0 +1,48 @@
+{
+  "analysis_date": "2026-04-17",
+  "reference_date": "2026-04-16",
+  "summary": {
+    "total_picks": 10,
+    "avg_return": 2.35,
+    "max_return": 8.50,
+    "min_return": -5.20,
+    "win_rate": 70.0
+  },
+  "drawdowns": [
+    {
+      "code": "000001",
+      "name": "平安银行",
+      "pick_date": "2026-04-16",
+      "pick_price": 12.50,
+      "current_price": 11.85,
+      "return_pct": -5.20,
+      "drawdown": -5.20,
+      "reason": "银行板块整体回调",
+      "is_systematic": true
+    },
+    {
+      "code": "000002",
+      "name": "万科A",
+      "pick_date": "2026-04-16",
+      "pick_price": 18.20,
+      "current_price": 17.50,
+      "return_pct": -3.85,
+      "drawdown": -3.85,
+      "reason": "房地产政策收紧预期",
+      "is_systematic": true
+    }
+  ],
+  "risk_analysis": {
+    "average_drawdown": -4.53,
+    "large_drawdown_count": 2,
+    "large_drawdown_ratio": 0.20,
+    "systematic_ratio": 0.70,
+    "idiosyncratic_ratio": 0.30,
+    "conclusion": "系统性风险主导"
+  },
+  "factor_analysis": {
+    "failing_factors": ["估值因子", "动量因子"],
+    "effective_factors": ["质量因子", "技术因子"],
+    "recommendation": "当前市场环境下，建议降低估值因子权重，增加质量因子配置"
+  }
+}

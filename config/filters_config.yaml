@@ -1,0 +1,298 @@
+# 过滤器配置管理文件
+# 定义所有可用过滤器及其参数
+
+# ==================== 基础过滤器 ====================
+base_filters:
+  # 数据新鲜度过滤器
+  data_freshness:
+    name: "数据新鲜度过滤"
+    category: "base"
+    description: "过滤数据过旧的股票"
+    enabled: true
+    params:
+      max_data_age_days: 30
+    optimization_range:
+      max_data_age_days: [7, 14, 30, 60]
+  
+  # 退市股票过滤
+  delisting:
+    name: "退市过滤"
+    category: "base"
+    description: "过滤已退市股票"
+    enabled: true
+    params:
+      keywords: ["退市", "终止上市"]
+  
+  # ST股票过滤
+  st_filter:
+    name: "ST过滤"
+    category: "base"
+    description: "过滤ST/*ST股票"
+    enabled: true
+    params:
+      keywords: ["ST", "*ST"]
+  
+  # 停牌过滤
+  suspension:
+    name: "停牌过滤"
+    category: "base"
+    description: "过滤停牌股票"
+    enabled: true
+    params:
+      min_volume: 0
+
+# ==================== 流动性过滤器 ====================
+liquidity_filters:
+  # 成交量过滤
+  min_volume:
+    name: "最小成交量"
+    category: "liquidity"
+    description: "过滤成交量过低的股票"
+    enabled: true
+    params:
+      min_volume: 1000000  # 100万股
+    optimization_range:
+      min_volume: [500000, 1000000, 2000000]
+  
+  # 成交额过滤
+  min_amount:
+    name: "最小成交额"
+    category: "liquidity"
+    description: "过滤成交额过低的股票"
+    enabled: true
+    params:
+      min_amount: 5000000  # 500万元
+    optimization_range:
+      min_amount: [3000000, 5000000, 10000000]
+  
+  # 换手率过滤
+  turnover_rate:
+    name: "换手率范围"
+    category: "liquidity"
+    description: "过滤换手率异常的股票"
+    enabled: true
+    params:
+      min_turnover: 0.005  # 0.5%
+      max_turnover: 0.30   # 30%
+    optimization_range:
+      min_turnover: [0.001, 0.005, 0.01]
+      max_turnover: [0.20, 0.30, 0.50]
+
+# ==================== 价格过滤器 ====================
+price_filters:
+  # 股价范围
+  price_range:
+    name: "股价范围"
+    category: "price"
+    description: "过滤股价过高或过低的股票"
+    enabled: true
+    params:
+      min_price: 3.0
+      max_price: 200.0
+    optimization_range:
+      min_price: [2.0, 3.0, 5.0]
+      max_price: [100.0, 200.0, 500.0]
+  
+  # 涨跌幅过滤
+  price_change:
+    name: "涨跌幅限制"
+    category: "price"
+    description: "过滤涨跌幅异常的股票"
+    enabled: true
+    params:
+      max_daily_change: 0.20  # 20%
+
+# ==================== 板块过滤器 ====================
+sector_filters:
+  # 科创板过滤
+  exclude_kcb:
+    name: "过滤科创板"
+    category: "sector"
+    description: "过滤688开头的科创板股票"
+    enabled: true
+    params:
+      excluded_prefixes: ["688"]
+  
+  # 北交所过滤
+  exclude_bse:
+    name: "过滤北交所"
+    category: "sector"
+    description: "过滤8/4开头的北交所股票"
+    enabled: true
+    params:
+      excluded_prefixes: ["8", "4"]
+  
+  # 创业板过滤
+  exclude_cyb:
+    name: "过滤创业板"
+    category: "sector"
+    description: "过滤300开头的创业板股票"
+    enabled: false
+    params:
+      excluded_prefixes: ["300"]
+  
+  # 特定板块过滤
+  exclude_sectors:
+    name: "板块黑名单"
+    category: "sector"
+    description: "过滤特定板块"
+    enabled: false
+    params:
+      excluded_sectors: []
+
+# ==================== 市值过滤器 ====================
+market_cap_filters:
+  # 流通市值
+  float_cap:
+    name: "流通市值"
+    category: "market_cap"
+    description: "过滤流通市值不符合要求的股票"
+    enabled: true
+    params:
+      min_float_cap: 1000000000   # 10亿
+      max_float_cap: 500000000000 # 500亿
+    optimization_range:
+      min_float_cap: [500000000, 1000000000, 2000000000]
+      max_float_cap: [200000000000, 500000000000]
+  
+  # 总市值
+  total_cap:
+    name: "总市值"
+    category: "market_cap"
+    description: "过滤总市值不符合要求的股票"
+    enabled: false
+    params:
+      min_total_cap: 2000000000
+      max_total_cap: 1000000000000
+
+# ==================== 基本面过滤器 ====================
+fundamental_filters:
+  # 市盈率
+  pe_ratio:
+    name: "市盈率"
+    category: "fundamental"
+    description: "过滤PE异常的股票"
+    enabled: false
+    params:
+      min_pe: 0
+      max_pe: 100
+    optimization_range:
+      max_pe: [50, 100, 200]
+  
+  # 市净率
+  pb_ratio:
+    name: "市净率"
+    category: "fundamental"
+    description: "过滤PB异常的股票"
+    enabled: false
+    params:
+      min_pb: 0
+      max_pb: 10
+  
+  # ROE
+  roe:
+    name: "ROE"
+    category: "fundamental"
+    description: "过滤ROE过低的股票"
+    enabled: false
+    params:
+      min_roe: 0.05  # 5%
+    optimization_range:
+      min_roe: [0.03, 0.05, 0.10]
+
+# ==================== 技术形态过滤器 ====================
+pattern_filters:
+  # 均线多头排列
+  ma_bullish:
+    name: "均线多头排列"
+    category: "pattern"
+    description: "过滤均线多头排列的股票"
+    enabled: false
+    params:
+      ma_periods: [5, 10, 20]
+  
+  # 突破形态
+  breakout:
+    name: "突破形态"
+    category: "pattern"
+    description: "过滤突破形态的股票"
+    enabled: false
+    params:
+      lookback_period: 20
+      breakout_threshold: 0.03
+  
+  # 横盘过滤
+  sideways:
+    name: "横盘过滤"
+    category: "pattern"
+    description: "过滤横盘震荡的股票"
+    enabled: true
+    params:
+      max_volatility: 0.05  # 5日波动率小于5%
+      lookback_period: 5
+
+# ==================== 过滤器组合配置 ====================
+filter_combinations:
+  # 基础过滤组合
+  base_combo:
+    name: "基础过滤"
+    description: "所有选股的基础过滤条件"
+    filters:
+      - data_freshness
+      - delisting
+      - st_filter
+      - suspension
+  
+  # 波段选股过滤
+  trend_filters:
+    name: "波段过滤"
+    description: "波段选股专用过滤器"
+    filters:
+      - data_freshness
+      - delisting
+      - st_filter
+      - min_volume
+      - price_range
+      - exclude_kcb
+      - exclude_bse
+  
+  # 短线打板过滤
+  short_term_filters:
+    name: "短线过滤"
+    description: "短线打板专用过滤器"
+    filters:
+      - data_freshness
+      - delisting
+      - st_filter
+      - min_volume
+      - price_range
+      - turnover_rate
+  
+  # 严格过滤
+  strict_filters:
+    name: "严格过滤"
+    description: "高要求过滤条件"
+    filters:
+      - data_freshness
+      - delisting
+      - st_filter
+      - suspension
+      - min_volume
+      - min_amount
+      - price_range
+      - exclude_kcb
+      - exclude_bse
+      - float_cap
+      - sideways
+
+# ==================== 过滤器优化配置 ====================
+filter_optimization:
+  # 优化目标
+  objectives:
+    - "coverage"       # 最大化覆盖股票数
+    - "effectiveness"  # 最大化过滤有效性
+    - "balance"        # 平衡覆盖和过滤
+  
+  # 优化方法
+  method: "grid_search"
+  n_iterations: 50

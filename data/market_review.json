@@ -1,33 +1,39 @@
 {
-  "date": "2026-04-09",
+  "date": "2026-04-17",
   "summary": {
-    "rising_count": 1702,
-    "falling_count": 3063,
-    "limit_up_count": 12,
-    "limit_down_count": 0,
-    "total_volume": 2.68
+    "rising_count": 2396,
+    "falling_count": 2986,
+    "flat_count": 406,
+    "limit_up_count": 48,
+    "limit_down_count": 32,
+    "total_volume": 1.12
   },
-  "market_status": "oscillating",
+  "market_status": "weak",
   "cvd": {
-    "signal": "buy_dominant",
-    "cvd_cumsum": 487.14,
-    "cvd_trend": "accumulating"
+    "signal": "sell_dominant",
+    "cvd_cumsum": -1250,
+    "cvd_trend": "decreasing"
   },
   "key_levels": {
-    "index_close": 26.5
+    "index_close": 3272.36,
+    "high_60": 3380.0,
+    "low_60": 3140.0,
+    "ma5": 3285.5,
+    "ma20": 3250.8
   },
   "top_sectors": [
     {
-      "name": "科创板",
-      "change": 0.17
+      "name": "\u623f\u5730\u4ea7",
+      "change": 2.35
     },
     {
-      "name": "创业板",
-      "change": -0.25
+      "name": "\u5efa\u7b51\u6750\u6599",
+      "change": 1.82
     },
     {
-      "name": "沪市主板",
-      "change": -0.57
+      "name": "\u94f6\u884c",
+      "change": 1.15
     }
-  ]
+  ],
+  "timestamp": "2026-04-18T17:23:41.856687"
 }

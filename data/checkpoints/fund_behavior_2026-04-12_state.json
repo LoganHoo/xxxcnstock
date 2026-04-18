@@ -1,0 +1,164 @@
+{
+  "state": "done",
+  "report_date": "2026-04-12",
+  "updated_at": "2026-04-13T22:48:27.069344",
+  "step_results": {
+    "load": {
+      "state": "loaded",
+      "timestamp": "2026-04-13T22:46:00.190040",
+      "message": "",
+      "data": {
+        "total_rows": 3279505,
+        "total_stocks": 5393,
+        "date_range": "1994-07-14 ~ 2026-04-13",
+        "batch_count": 1,
+        "columns": [
+          "code",
+          "trade_date",
+          "open",
+          "close",
+          "high",
+          "low",
+          "volume"
+        ]
+      }
+    },
+    "validate": {
+      "state": "validated",
+      "timestamp": "2026-04-13T22:46:00.336342",
+      "message": "",
+      "data": {
+        "passed": true,
+        "issues": [],
+        "warnings": [],
+        "stats": {
+          "missing_rate": 0.0
+        },
+        "continuity": {
+          "passed": true,
+          "stocks_checked": 5393,
+          "stocks_with_gaps": 0,
+          "recent_gaps": {},
+          "warning_stocks": [],
+          "total_records": 3279505,
+          "latest_date": "2026-04-13",
+          "data_age_days": 0,
+          "recent_stocks_count": 5068,
+          "latest_coverage_rate": 93.97366957166697
+        },
+        "missing": {
+          "passed": true,
+          "field_missing_rates": {},
+          "overall_missing_rate": 0.0,
+          "total_records": 3279505
+        },
+        "price": {
+          "passed": true,
+          "invalid_count": 0,
+          "issues": []
+        },
+        "volume": {
+          "passed": true,
+          "zero_count": 0,
+          "negative_count": 0,
+          "warnings": []
+        }
+      }
+    },
+    "transform": {
+      "state": "transformed",
+      "timestamp": "2026-04-13T22:48:18.098606",
+      "message": "",
+      "data": {
+        "factor_count": 9,
+        "factor_names": [
+          "cost_peak",
+          "limit_up_score",
+          "ma5_bias",
+          "pioneer_status",
+          "v_ratio10",
+          "v_total",
+          "open_auction_volume",
+          "market_health",
+          "key_levels"
+        ],
+        "data_shape": [
+          3279505,
+          30
+        ]
+      }
+    },
+    "buffer": {
+      "state": "buffered",
+      "timestamp": "2026-04-13T22:48:24.139155",
+      "message": "",
+      "data": {
+        "path": "data/checkpoints/fund_behavior_2026-04-12_factor.parquet.parquet"
+      }
+    },
+    "execute": {
+      "state": "executed",
+      "timestamp": "2026-04-13T22:48:25.326646",
+      "message": "",
+      "data": {
+        "applied_filters": [
+          {
+            "name": "data_freshness_filter",
+            "removed": 3178166
+          },
+          {
+            "name": "volume_filter",
+            "removed": 97833
+          },
+          {
+            "name": "price_range_filter",
+            "removed": 71
+          }
+        ],
+        "trend_count": 43,
+        "short_term_count": 10,
+        "market_state": [
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "risk",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak",
+          "weak"
+        ]
+      }
+    },
+    "distribute": {
+      "state": "distributed",
+      "timestamp": "2026-04-13T22:48:25.894657",
+      "message": "",
+      "data": {
+        "mysql_general": "success",
+        "mysql_fund_behavior": "success",
+        "txt": "success",
+        "html": "success"
+      }
+    },
+    "done": {
+      "state": "done",
+      "timestamp": "2026-04-13T22:48:27.069335",
+      "message": "",
+      "data": {
+        "report_date": "2026-04-12"
+      }
+    }
+  }
+}

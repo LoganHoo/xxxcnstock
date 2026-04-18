@@ -1,31 +1,32 @@
 {
-  "timestamp": "2026-04-08T08:30:12.603806",
-  "date": "2026-04-08",
+  "timestamp": "2026-04-18T17:23:41.855724",
+  "date": "2026-04-17",
   "us_index": {
-    "name": "美股指数",
+    "name": "\u7f8e\u80a1\u6307\u6570",
     "data": {},
     "status": "failed",
-    "error": "所有API均失败"
+    "error": "\u6240\u6709API\u5747\u5931\u8d25"
   },
   "asia_index": {
-    "name": "亚洲股指",
+    "name": "\u4e9a\u6d32\u80a1\u6307",
     "data": {},
     "status": "failed",
-    "error": "所有API均失败"
+    "error": "\u6240\u6709API\u5747\u5931\u8d25"
   },
   "us_futures": {
-    "name": "美股期货",
+    "name": "\u7f8e\u80a1\u671f\u8d27",
     "data": {},
     "status": "failed",
-    "error": "所有API均失败"
+    "error": "\u6240\u6709API\u5747\u5931\u8d25"
   },
   "ah_premium": {
-    "name": "AH溢价",
+    "name": "AH\u6ea2\u4ef7",
     "status": "pending",
     "data": {}
   },
   "tracking": {
-    "name": "推荐跟踪",
-    "status": "success"
+    "name": "\u63a8\u8350\u8ddf\u8e2a",
+    "status": "skipped",
+    "note": "\u8ddf\u8e2a\u811a\u672c\u4e0d\u5b58\u5728"
   }
 }

@@ -1,0 +1,72 @@
+{
+  "date": "2026-04-17",
+  "month": "2026-04",
+  "week": "W16",
+  "objectives": {
+    "O1": {
+      "objective": "\u63d0\u5347\u9009\u80a1\u51c6\u786e\u7387",
+      "key_results": [
+        {
+          "kr": "S\u7ea7\u80a1\u7968\u80dc\u7387 >= 60%",
+          "target": 60,
+          "current": 55,
+          "unit": "%"
+        },
+        {
+          "kr": "A\u7ea7\u80a1\u7968\u80dc\u7387 >= 50%",
+          "target": 50,
+          "current": 48,
+          "unit": "%"
+        },
+        {
+          "kr": "\u5e73\u5747\u6536\u76ca >= 3%",
+          "target": 3,
+          "current": 2.5,
+          "unit": "%"
+        }
+      ]
+    },
+    "O2": {
+      "objective": "\u4f18\u5316\u98ce\u9669\u63a7\u5236",
+      "key_results": [
+        {
+          "kr": "\u6700\u5927\u56de\u64a4 <= 5%",
+          "target": 5,
+          "current": 4.2,
+          "unit": "%"
+        },
+        {
+          "kr": "\u6b62\u635f\u6267\u884c\u7387 100%",
+          "target": 100,
+          "current": 95,
+          "unit": "%"
+        }
+      ]
+    },
+    "O3": {
+      "objective": "\u63d0\u9ad8\u6570\u636e\u8d28\u91cf",
+      "key_results": [
+        {
+          "kr": "\u6570\u636e\u5b8c\u6574\u7387 >= 98%",
+          "target": 98,
+          "current": 94,
+          "unit": "%"
+        },
+        {
+          "kr": "\u8d28\u68c0\u901a\u8fc7\u7387 >= 95%",
+          "target": 95,
+          "current": 92,
+          "unit": "%"
+        }
+      ]
+    }
+  },
+  "weekly_goals": {
+    "\u9009\u80a1\u76ee\u6807": 5,
+    "\u5df2\u9009\u80a1": 3,
+    "\u590d\u76d8\u5b8c\u6210\u7387": 100,
+    "\u6570\u636e\u8d28\u68c0": "\u901a\u8fc7"
+  },
+  "generated_at": "2026-04-16 23:26:07",
+  "timestamp": "2026-04-18T17:23:41.852440"
+}

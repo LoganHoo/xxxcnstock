@@ -3,11 +3,11 @@
 实现资金行为学系统的策略层逻辑
 """
 import polars as pl
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 import logging
 
 from core.fund_behavior_indicator import FundBehaviorIndicatorEngine
-from core.fund_behavior_config import config_manager
+from core.unified_config import config, StrategyConfig, FactorConfig
 
 logger = logging.getLogger(__name__)
 
@@ -19,60 +19,112 @@ class FundBehaviorStrategyEngine:
         self.logger = logging.getLogger(f"{__name__}.FundBehaviorStrategyEngine")
         self.indicator_engine = FundBehaviorIndicatorEngine()
     
-    def select_trend_stocks(self, data: pl.DataFrame) -> List[str]:
+    def select_trend_stocks(self, data: pl.DataFrame, max_stocks: int = 50) -> Tuple[List[str], pl.DataFrame]:
         """
-        选择波段趋势股票
-        选股：主线板块且处于MA5之上的个股
-        
+        选择波段趋势股票（精选版）
+        选股：多因子综合评分，精选优质趋势股
+
         Args:
             data: 包含因子数据的DataFrame
-        
+            max_stocks: 最大选股数量，默认50只
+
         Returns:
-            选中的股票代码列表
+            (选中的股票代码列表, 选股结果DataFrame包含composite_score)
         """
-        # 筛选MA5之上的股票
-        trend_stocks = data.filter(
-            (pl.col("factor_ma5_bias") > 0)
-        )
-        
-        # 按MA5偏差排序，选择前N只
-        trend_stocks = trend_stocks.sort("factor_ma5_bias", descending=True)
-        
-        # 获取股票代码
-        selected_codes = trend_stocks["code"].unique().to_list()
-        
-        self.logger.info(f"波段趋势选股: {len(selected_codes)} 只股票")
-        return selected_codes
+        # 基础筛选条件（过滤掉688开头的科创板股票）
+        # 将code列转换为字符串以进行字符串操作
+        # 计算MA5斜率（使用close价格的5日变化率作为替代）
+        if "ma5_slope" not in data.columns:
+            data = data.with_columns([
+                ((pl.col("close") - pl.col("close").shift(5).over("code")) /
+                 pl.col("close").shift(5).over("code") * 100).alias("ma5_slope")
+            ])
+
+        trend_stocks = data.with_columns([
+            pl.col("code").cast(pl.Utf8).alias("code_str")
+        ]).filter(
+            (pl.col("factor_ma5_bias") > 0) &  # MA5之上
+            (pl.col("ma5_slope") > 0) &   # MA5趋势向上
+            (pl.col("factor_v_ratio10") > 1.0) &  # 成交量放大
+            (~pl.col("code_str").str.starts_with("688"))  # 过滤科创板
+        ).drop("code_str")
+
+        # 计算综合评分（多因子加权）
+        trend_stocks = trend_stocks.with_columns([
+            (
+                pl.col("factor_ma5_bias") * 0.3 +
+                pl.col("ma5_slope") * 0.2 +
+                pl.col("factor_v_ratio10") * 0.2 +
+                pl.col("factor_limit_up_score") * 0.15 +
+                pl.col("factor_cost_peak") * 0.15
+            ).alias("composite_score")
+        ])
+
+        # 按综合评分排序，选择前N只
+        trend_stocks = trend_stocks.sort("composite_score", descending=True)
+
+        # 获取股票代码（限制数量）
+        selected_codes = trend_stocks["code"].unique().to_list()[:max_stocks]
+
+        self.logger.info(f"波段趋势选股: {len(selected_codes)} 只股票（精选前{max_stocks}）")
+        return selected_codes, trend_stocks
     
-    def select_short_term_stocks(self, data: pl.DataFrame, upward_pivot: bool) -> List[str]:
+    def select_short_term_stocks(self, data: pl.DataFrame, upward_pivot: bool, max_stocks: int = 20) -> Tuple[List[str], pl.DataFrame]:
         """
-        选择短线打板股票
-        选股：情绪先锋、热点龙回头
-        
+        选择短线打板股票（改进版）
+        选股：情绪先锋、热点龙回头，即使10点定基调向下也选少量强势股
+
         Args:
             data: 包含因子数据的DataFrame
             upward_pivot: 10点定基调是否向上
-        
+            max_stocks: 最大选股数量，默认20只
+
         Returns:
-            选中的股票代码列表
+            (选中的股票代码列表, 选股结果DataFrame包含short_term_score)
         """
+        # 筛选情绪得分高的股票（过滤掉688开头的科创板股票，优先选择涨停股）
+        # 将code列转换为字符串以进行字符串操作
+        short_term_stocks = data.with_columns([
+            pl.col("code").cast(pl.Utf8).alias("code_str")
+        ]).filter(
+            ((pl.col("factor_limit_up_score") > 0) |
+            (pl.col("factor_pioneer_status") > 0)) &
+            (~pl.col("code_str").str.starts_with("688"))  # 过滤科创板
+        ).drop("code_str")
+
+        # 如果10点定基调向下，进一步筛选最强壮的股
         if not upward_pivot:
-            self.logger.info("10点定基调向下，不进行短线选股")
-            return []
-        
-        # 筛选情绪得分高的股票
-        short_term_stocks = data.filter(
-            (pl.col("factor_limit_up_score") > 0)
-        )
-        
-        # 按情绪得分排序，选择前N只
-        short_term_stocks = short_term_stocks.sort("factor_limit_up_score", descending=True)
-        
-        # 获取股票代码
-        selected_codes = short_term_stocks["code"].unique().to_list()
-        
+            self.logger.info("10点定基调向下，精选最强短线股")
+            short_term_stocks = short_term_stocks.filter(
+                (pl.col("factor_ma5_bias") > 0) &  # 仍在MA5之上
+                (pl.col("factor_v_ratio10") > 1.5)  # 成交量明显放大
+            )
+            # 限制数量更少
+            max_stocks = min(max_stocks, 10)
+
+        # 计算综合得分：涨停优先 + 情绪得分 + 涨幅
+        # 如果is_limit_up列不存在，使用factor_limit_up_score > 10作为涨停判断
+        if "is_limit_up" not in short_term_stocks.columns:
+            short_term_stocks = short_term_stocks.with_columns([
+                (pl.col("factor_limit_up_score") > 10).cast(pl.Int64).alias("is_limit_up")
+            ])
+
+        short_term_stocks = short_term_stocks.with_columns([
+            (
+                pl.col("is_limit_up") * 100 +  # 涨停加100分（最高优先级）
+                pl.col("factor_limit_up_score") * 10 +  # 情绪得分
+                pl.col("factor_ma5_bias").clip(0, 10)  # MA5偏差（限制最大10分）
+            ).alias("short_term_score")
+        ])
+
+        # 按综合得分排序（涨停优先）
+        short_term_stocks = short_term_stocks.sort("short_term_score", descending=True)
+
+        # 获取股票代码（限制数量）
+        selected_codes = short_term_stocks["code"].unique().to_list()[:max_stocks]
+
         self.logger.info(f"短线打板选股: {len(selected_codes)} 只股票")
-        return selected_codes
+        return selected_codes, short_term_stocks
     
     def calculate_position_size(self, total_capital: float) -> Dict[str, float]:
         """
@@ -85,11 +137,7 @@ class FundBehaviorStrategyEngine:
             各轨道的资金分配
         """
         # 从配置中获取仓位比例
-        position_config = config_manager.get('strategy.position', {
-            'trend': 0.5,
-            'short_term': 0.4,
-            'cash': 0.1
-        })
+        position_config = StrategyConfig.get_position_weights()
         
         return {
             "trend": total_capital * position_config.get('trend', 0.5),
@@ -148,10 +196,7 @@ class FundBehaviorStrategyEngine:
             对冲效果（True/False）
         """
         # 从配置中获取阈值
-        hedge_config = config_manager.get('indicators.hedge', {
-            'support_level': 4067,
-            'v_total_threshold': 1800  # 亿（实际数据约1600-1900亿）
-        })
+        hedge_config = StrategyConfig.get_hedge_params()
         
         # 计算市场平均指标（v_total已经是每日市场总成交额，每只股票值相同）
         market_avg = data.group_by("trade_date").agg([
@@ -179,8 +224,7 @@ class FundBehaviorStrategyEngine:
         self,
         indicators: Dict[str, Any],
         v_total: float,
-        current_price: float,
-        config: Dict[str, Any]
+        current_price: float
     ) -> Dict[str, Any]:
         """
         计算防守信号 - 什么情况下绝对不能买
@@ -189,24 +233,24 @@ class FundBehaviorStrategyEngine:
             indicators: 技术指标
             v_total: 成交量
             current_price: 当前价格
-            config: 配置
         
         Returns:
             防守信号字典
         """
         # 获取防守配置
-        defense_params = config.get('indicators', {}).get('defense', {}).get('params', {})
-        defense_config = {
-            'volume_shrink_threshold': defense_params.get('volume_shrink_threshold', 0.6),
-            'support_break_threshold': defense_params.get('support_break_threshold', -0.02),
-            'open_auction_min': defense_params.get('open_auction_min', 500)
-        }
+        defense_config = StrategyConfig.get_defense_params()
         
         # 关键位配置
-        key_levels_params = config.get('factors', {}).get('key_levels', {}).get('params', {})
+        hedge_config = StrategyConfig.get_hedge_params()
+        support_level = hedge_config.get('support_level', 4067)
+        # 确保 support_levels 是列表
+        if isinstance(support_level, int):
+            support_levels = [support_level]
+        else:
+            support_levels = support_level
         key_levels_config = {
-            'support_levels': key_levels_params.get('support_levels', [4067, 4117, 4140]),
-            'resistance_levels': key_levels_params.get('resistance_levels', [4200, 4300])
+            'support_levels': support_levels,
+            'resistance_levels': hedge_config.get('resistance_levels', [4117, 4140])
         }
         
         signals = {
@@ -290,12 +334,16 @@ class FundBehaviorStrategyEngine:
         hedge_effect = self.calculate_hedge_effect(data)
         
         # 选股
-        trend_stocks = self.select_trend_stocks(data)
-        short_term_stocks = self.select_short_term_stocks(data, upward_pivot)
-        
+        trend_stocks, trend_stocks_df = self.select_trend_stocks(data)
+        short_term_stocks, short_term_stocks_df = self.select_short_term_stocks(data, upward_pivot)
+
         # 计算仓位
         position_size = self.calculate_position_size(total_capital)
-        
+
+        # 获取选股详细信息（用于报告展示和数据库保存）
+        trend_stocks_detail = self._get_stocks_detail_from_selection(trend_stocks_df, trend_stocks)
+        short_term_stocks_detail = self._get_stocks_detail_from_selection(short_term_stocks_df, short_term_stocks)
+
         # 计算减仓信号
         exit_signals = {}
         for code in short_term_stocks:
@@ -337,8 +385,7 @@ class FundBehaviorStrategyEngine:
         defense_signals = self._calculate_defense_signals(
             indicators=indicators,
             v_total=v_total_list[-1] if v_total_list else 0.0,
-            current_price=current_price,
-            config=config_manager.config
+            current_price=current_price
         )
 
         result = {
@@ -348,6 +395,8 @@ class FundBehaviorStrategyEngine:
             "is_strong_region": is_strong_region,
             "trend_stocks": trend_stocks,
             "short_term_stocks": short_term_stocks,
+            "trend_stocks_detail": trend_stocks_detail,
+            "short_term_stocks_detail": short_term_stocks_detail,
             "position_size": position_size,
             "exit_signals": exit_signals,
             # 防守信号
@@ -369,3 +418,90 @@ class FundBehaviorStrategyEngine:
         }
 
         return result
+
+    def _get_stocks_detail_from_selection(self, selection_df: pl.DataFrame, stock_codes: List[str]) -> Dict[str, Dict]:
+        """
+        从选股结果DataFrame获取股票详细信息
+
+        Args:
+            selection_df: 选股结果DataFrame（包含composite_score或short_term_score）
+            stock_codes: 股票代码列表
+
+        Returns:
+            股票代码到详细信息的字典
+        """
+        if not stock_codes or selection_df.is_empty():
+            return {}
+
+        # 加载股票名称映射
+        stock_name_map = self._load_stock_name_map()
+
+        # 获取每只股票的最新数据（按trade_date排序取第一条）
+        latest_data = selection_df.sort("trade_date", descending=True).group_by("code").first()
+
+        # 筛选出选中的股票
+        selected_data = latest_data.filter(pl.col("code").is_in(stock_codes))
+
+        # 构建详细信息字典
+        stocks_detail = {}
+        for row in selected_data.to_dicts():
+            code = row.get("code", "")
+            if code:
+                # 根据选股类型确定score字段名
+                if "composite_score" in row:
+                    score = row.get("composite_score", 0.0)
+                elif "short_term_score" in row:
+                    score = row.get("short_term_score", 0.0)
+                else:
+                    score = 0.0
+
+                # 从映射表获取股票名称，如果没有则使用空字符串
+                name = stock_name_map.get(code, "")
+
+                stocks_detail[code] = {
+                    "name": name,
+                    "close": row.get("close", 0.0),
+                    "volume": row.get("volume", 0.0),
+                    "v_ratio10": row.get("factor_v_ratio10", 0.0),
+                    "v_total": row.get("factor_v_total", 0.0),
+                    "cost_peak": row.get("factor_cost_peak", 0.0),
+                    "limit_up_score": row.get("factor_limit_up_score", 0.0),
+                    "pioneer_status": row.get("factor_pioneer_status", 0.0),
+                    "ma5_bias": row.get("factor_ma5_bias", 0.0),
+                    "score": score
+                }
+
+        return stocks_detail
+
+    def _load_stock_name_map(self) -> Dict[str, str]:
+        """
+        加载股票名称映射表
+
+        Returns:
+            股票代码到名称的字典
+        """
+        from pathlib import Path
+
+        stock_list_path = Path(__file__).parent.parent / "data" / "stock_list.parquet"
+        name_map = {}
+
+        if stock_list_path.exists():
+            try:
+                stock_list_df = pl.read_parquet(stock_list_path)
+                # 确保code列是字符串类型
+                if 'code' in stock_list_df.columns and 'name' in stock_list_df.columns:
+                    stock_list_df = stock_list_df.with_columns([
+                        pl.col("code").cast(pl.Utf8).alias("code")
+                    ])
+                    for row in stock_list_df.to_dicts():
+                        code = row.get("code", "")
+                        name = row.get("name", "")
+                        if code:
+                            name_map[code] = name
+                    self.logger.debug(f"已加载 {len(name_map)} 只股票名称映射")
+            except Exception as e:
+                self.logger.warning(f"加载股票名称映射失败: {e}")
+        else:
+            self.logger.warning(f"股票列表文件不存在: {stock_list_path}")
+
+        return name_map

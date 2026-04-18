@@ -5,7 +5,7 @@ from pathlib import Path
 from datetime import datetime
 import json
 
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 import requests
@@ -17,7 +17,7 @@ class NewsCollector:
     """新闻数据采集器"""
 
     def __init__(self):
-        self.project_root = Path("/app")
+        self.project_root = Path(__file__).parent.parent
         self.data_dir = self.project_root / "data"
         self.logger = get_logger(__name__)
         self.session = requests.Session()

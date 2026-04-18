@@ -1,6 +1,5 @@
 """推荐股票跟踪更新 - 21:00执行"""
 import sys
-import subprocess
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -42,45 +41,59 @@ class TrackingUpdater:
             d -= timedelta(days=1)
         return date.today()
 
+    def _update_tracking(self, track_date: date):
+        """执行跟踪更新核心逻辑"""
+        from services.stock_pick_verification_service import StockPickVerificationService
+
+        self.logger.info(f"📅 更新日期: {track_date}")
+
+        service = StockPickVerificationService()
+        stats = service.update_tracking(track_date)
+
+        self.logger.info(f"✅ 更新完成: {stats}")
+        return stats
+
     def run(self) -> bool:
         """执行跟踪更新"""
         self.logger.info("开始更新推荐股票跟踪...")
 
         try:
-            script_path = self.project_root / "scripts" / "update_tracking.py"
-            if script_path.exists():
-                self.logger.info(f"调用跟踪脚本: {script_path}")
-
-                now = datetime.now()
-                cmd_args = [sys.executable, str(script_path)]
-                if now.hour < 15:
-                    track_date = self._get_previous_trading_day()
-                    self.logger.info(f"盘前运行，使用前一交易日: {track_date}")
-                    cmd_args.extend(["--date", str(track_date)])
-
-                result = subprocess.run(
-                    cmd_args,
-                    capture_output=True,
-                    text=True,
-                    timeout=300
-                )
-                if result.returncode == 0:
-                    self.logger.info("跟踪更新成功")
-                else:
-                    self.logger.warning(f"跟踪更新失败: {result.stderr}")
+            now = datetime.now()
+            if now.hour < 15:
+                track_date = self._get_previous_trading_day()
+                self.logger.info(f"盘前运行，使用前一交易日: {track_date}")
             else:
-                self.logger.warning(f"跟踪脚本不存在: {script_path}")
+                track_date = date.today()
+                self.logger.info(f"盘后运行，使用今日: {track_date}")
+
+            self._update_tracking(track_date)
+            self.logger.info("跟踪更新成功")
             return True
 
-        except subprocess.TimeoutExpired:
-            self.logger.error(f"跟踪更新超时: {script_path}")
-            return False
         except Exception as e:
             self.logger.error(f"跟踪更新失败: {e}")
             return False
 
 
-if __name__ == "__main__":
+def main():
+    """命令行入口"""
+    import argparse
+
+    parser = argparse.ArgumentParser(description='更新推荐股票跟踪数据')
+    parser.add_argument('--date', help='跟踪日期 (YYYY-MM-DD)，默认自动判断')
+
+    args = parser.parse_args()
+
     updater = TrackingUpdater()
-    result = updater.run()
-    sys.exit(0 if result else 1)
+
+    if args.date:
+        track_date = date.fromisoformat(args.date)
+        updater.logger.info(f"📅 手动指定日期: {track_date}")
+        updater._update_tracking(track_date)
+    else:
+        result = updater.run()
+        sys.exit(0 if result else 1)
+
+
+if __name__ == "__main__":
+    main()

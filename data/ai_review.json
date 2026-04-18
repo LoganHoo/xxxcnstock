@@ -1,0 +1,60 @@
+{
+  "date": "2026-04-17",
+  "market_analysis": {
+    "overall_sentiment": "\u4e2d\u6027\u504f\u591a",
+    "confidence": 65,
+    "key_observations": [
+      "\u5e02\u573a\u60c5\u7eea\u4fdd\u6301\u7a33\u5b9a\uff0c\u6210\u4ea4\u91cf\u9002\u4e2d",
+      "\u4e3b\u529b\u8d44\u91d1\u5448\u73b0\u51c0\u6d41\u5165\u6001\u52bf",
+      "\u677f\u5757\u8f6e\u52a8\u660e\u663e\uff0c\u7ed3\u6784\u6027\u673a\u4f1a\u8f83\u591a"
+    ],
+    "risks": [
+      "\u5916\u90e8\u5e02\u573a\u6ce2\u52a8\u53ef\u80fd\u5f71\u54cdA\u80a1",
+      "\u90e8\u5206\u677f\u5757\u4f30\u503c\u504f\u9ad8\u9700\u8b66\u60d5"
+    ],
+    "opportunities": [
+      "\u79d1\u6280\u80a1\u56de\u8c03\u540e\u6216\u6709\u5e03\u5c40\u673a\u4f1a",
+      "\u6d88\u8d39\u677f\u5757\u4e1a\u7ee9\u786e\u5b9a\u6027\u8f83\u9ad8"
+    ]
+  },
+  "strategy_review": {
+    "trend_following": {
+      "name": "\u8d8b\u52bf\u8ddf\u8e2a\u7b56\u7565",
+      "performance": "\u826f\u597d",
+      "win_rate": 58,
+      "avg_return": 2.8,
+      "recommendation": "\u7ee7\u7eed\u4fdd\u6301"
+    },
+    "mean_reversion": {
+      "name": "\u5747\u503c\u56de\u5f52\u7b56\u7565",
+      "performance": "\u4e00\u822c",
+      "win_rate": 45,
+      "avg_return": 1.5,
+      "recommendation": "\u4f18\u5316\u53c2\u6570"
+    },
+    "breakout": {
+      "name": "\u7a81\u7834\u7b56\u7565",
+      "performance": "\u4f18\u79c0",
+      "win_rate": 62,
+      "avg_return": 3.5,
+      "recommendation": "\u52a0\u5927\u6743\u91cd"
+    }
+  },
+  "tomorrow_outlook": {
+    "market_trend": "\u9707\u8361\u504f\u5f3a",
+    "probability": {
+      "up": 45,
+      "down": 30,
+      "sideways": 25
+    },
+    "focus_sectors": [
+      "\u79d1\u6280",
+      "\u6d88\u8d39",
+      "\u533b\u836f"
+    ],
+    "suggested_position": "60-70%"
+  },
+  "generated_at": "2026-04-16 23:26:07",
+  "model_version": "v1.0",
+  "timestamp": "2026-04-18T17:23:41.853818"
+}

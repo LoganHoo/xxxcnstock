@@ -1,14 +1,14 @@
 {
-  "date": "2026-04-13",
-  "update_time": "2026-04-13 00:10:06",
+  "date": "2026-04-14",
+  "update_time": "2026-04-14 09:42:30",
   "us_index": {
     "name": "美股指数",
     "data": {
       "nasdaq": {
-        "price": 22902.9,
-        "change": 80.48,
-        "change_pct": 0.35,
-        "previous_close": 22822.42,
+        "price": 23183.74,
+        "change": 280.84,
+        "change_pct": 1.23,
+        "previous_close": 22902.9,
         "source": "yahoo",
         "sources": [
           "yahoo",
@@ -16,20 +16,20 @@
         ]
       },
       "sp500": {
-        "price": 6816.89,
-        "change": -7.77,
-        "change_pct": -0.11,
-        "previous_close": 6824.66,
+        "price": 6886.24,
+        "change": 69.35,
+        "change_pct": 1.02,
+        "previous_close": 6816.89,
         "source": "yahoo",
         "sources": [
           "yahoo"
         ]
       },
       "dow": {
-        "price": 47916.57,
-        "change": -269.23,
-        "change_pct": -0.56,
-        "previous_close": 48185.8,
+        "price": 48218.25,
+        "change": 301.68,
+        "change_pct": 0.63,
+        "previous_close": 47916.57,
         "source": "yahoo",
         "sources": [
           "yahoo",
@@ -43,21 +43,21 @@
     "name": "亚洲股指",
     "data": {
       "hang_seng": {
-        "price": 25891.88,
-        "change": 139.48,
-        "change_pct": 0.54,
+        "price": 25929.4,
+        "change": 268.55,
+        "change_pct": 1.05,
         "source": "sina"
       },
       "hscei": {
-        "price": 8655.31,
-        "change": 43.48,
-        "change_pct": 0.5,
+        "price": 8674.32,
+        "change": 72.26,
+        "change_pct": 0.84,
         "source": "sina"
       },
       "hstech": {
-        "price": 4844.15,
-        "change": 22.48,
-        "change_pct": 0.47,
+        "price": 4888.22,
+        "change": 66.21,
+        "change_pct": 1.37,
         "source": "sina"
       }
     },
@@ -69,41 +69,45 @@
       "gold": {
         "symbol": "GLD",
         "name": "伦敦金(ETF)",
-        "price": 437.13,
-        "change_value": 7.72,
+        "price": 435.36,
+        "change_value": 7.71,
         "change_pct": 1.8,
-        "previous_close": 429.41,
-        "high": 440.35,
-        "low": 436.0,
-        "open": 438.59,
+        "previous_close": 427.65,
+        "high": 436.2,
+        "low": 431.65,
+        "open": 434.77,
         "source": "yahoo"
       },
       "oil": {
         "symbol": "CLUSD",
         "name": "WTI原油",
-        "price": 96.57,
-        "change_value": -16.38,
-        "change_pct": -14.5,
-        "previous_close": 112.95,
-        "high": 100.42,
-        "low": 95.51,
-        "open": 98.23,
+        "price": 96.98,
+        "change_value": 2.57,
+        "change_pct": 2.72,
+        "previous_close": 94.41,
+        "high": 98.0,
+        "low": 95.69,
+        "open": 97.99,
         "source": "yahoo"
       },
       "usd_index": {
         "symbol": "UUP",
         "name": "美元指数(ETF)",
-        "price": 27.44,
-        "change_value": -0.42,
-        "change_pct": -1.51,
-        "previous_close": 27.86,
-        "high": 27.49,
-        "low": 27.42,
-        "open": 27.42,
+        "price": 27.38,
+        "change_value": -0.45,
+        "change_pct": -1.62,
+        "previous_close": 27.83,
+        "high": 27.54,
+        "low": 27.38,
+        "open": 27.54,
         "source": "yahoo"
       }
     },
     "status": "success"
   },
-  "proxies": {}
+  "proxies": {
+    "http": "***",
+    "https": "***",
+    "all": "***"
+  }
 }

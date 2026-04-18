@@ -1,0 +1,35 @@
+{
+  "audit_time": "2026-04-17T16:55:00",
+  "target_date": "2026-04-17",
+  "freshness_threshold": 0.85,
+  "max_retries": 5,
+  "deadline": "17:20",
+  "retry_count": 2,
+  "circuit_breaker_triggered": false,
+  "fallback_mode": false,
+  "total_stocks": 5300,
+  "collected_stocks": 5285,
+  "checks": {
+    "freshness": {
+      "latest_date": "2026-04-17",
+      "days_since_latest": 0,
+      "freshness_rate": 0.98
+    },
+    "completeness": {
+      "total": 5300,
+      "valid": 5285,
+      "invalid": 15,
+      "completeness_rate": 99.7
+    }
+  },
+  "passed": true,
+  "issues": [
+    "15只股票数据异常"
+  ],
+  "data_items": [
+    {"name": "指数行情", "status": "success", "count": 120},
+    {"name": "个股涨跌", "status": "success", "count": 5285},
+    {"name": "龙虎榜", "status": "pending", "count": 0},
+    {"name": "资金流向", "status": "success", "count": 5285}
+  ]
+}

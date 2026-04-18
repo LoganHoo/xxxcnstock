@@ -1,0 +1,186 @@
+"""晨间报告推送 - 08:45执行"""
+import sys
+import os
+import json
+from pathlib import Path
+from datetime import datetime, timedelta
+
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from services.email_sender import EmailService
+from services.notify_service.templates import get_template
+from services.report_db_service import ReportDBService
+from core.paths import ReportPaths
+from core.data_availability import check_before_report
+from core.report_validator import check_report_quality, get_quality_checker
+
+
+class MorningReporter:
+    """晨间报告推送器"""
+
+    def __init__(self):
+        self.logger = self._setup_logger()
+
+    def _setup_logger(self):
+        import logging
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+        return logging.getLogger(__name__)
+
+    def _load_json_file(self, file_path: Path) -> dict:
+        """统一加载JSON文件"""
+        if file_path and file_path.exists():
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError) as e:
+                self.logger.warning(f"加载文件失败 {file_path}: {e}")
+        return None
+
+    def load_foreign_data(self) -> dict:
+        """加载外盘数据"""
+        return self._load_json_file(ReportPaths.foreign_index())
+
+    def load_market_analysis(self) -> dict:
+        """加载大盘分析数据"""
+        file_path = ReportPaths.market_analysis(fallback_to_yesterday=True)
+        return self._load_json_file(file_path) if file_path else None
+
+    def load_daily_picks(self) -> dict:
+        """加载选股数据"""
+        file_path = ReportPaths.daily_picks(fallback_to_yesterday=True)
+        return self._load_json_file(file_path) if file_path else None
+
+    def load_strategy_result(self) -> dict:
+        """加载策略结果"""
+        return self._load_json_file(ReportPaths.strategy_result())
+
+    def load_fund_behavior_result(self) -> dict:
+        """加载资金行为学策略结果"""
+        return self._load_json_file(ReportPaths.fund_behavior_result())
+
+    def generate_report(self) -> str:
+        """生成完整报告"""
+        foreign_data = self.load_foreign_data()
+        market_data = self.load_market_analysis()
+        picks_data = self.load_daily_picks()
+        strategy_data = self.load_strategy_result()
+        fb_data = self.load_fund_behavior_result()
+
+        template = get_template('morning_report')
+        return template.generate(
+            market_data=market_data,
+            picks_data=picks_data,
+            foreign_data=foreign_data,
+            strategy_data=strategy_data,
+            fb_result=fb_data
+        )
+
+    def run(self) -> bool:
+        """执行晨间报告推送"""
+        self.logger.info("开始推送晨间报告...")
+
+        # 数据可用性检查
+        can_generate, missing = check_before_report('morning_report', max_age_hours=24)
+        if not can_generate:
+            self.logger.error("缺少必需数据，无法生成报告:")
+            for item in missing:
+                self.logger.error(f"  - {item}")
+            return False
+
+        # 加载数据
+        foreign_data = self.load_foreign_data()
+        market_data = self.load_market_analysis()
+        picks_data = self.load_daily_picks()
+        strategy_data = self.load_strategy_result()
+        fb_data = self.load_fund_behavior_result()
+
+        # 数据质量检查
+        quality_check = check_report_quality(
+            'morning_report',
+            foreign_data=foreign_data,
+            market_data=market_data,
+            picks_data=picks_data,
+            strategy_data=strategy_data,
+            fund_behavior=fb_data
+        )
+
+        # 记录质量检查结果
+        checker = get_quality_checker()
+        quality_report = checker.generate_quality_report(quality_check)
+        self.logger.info(f"数据质量检查:\n{quality_report}")
+
+        # 如果有严重问题，阻止报告生成
+        if quality_check['critical_issues']:
+            self.logger.error("数据存在严重问题，无法生成报告:")
+            for issue in quality_check['critical_issues']:
+                self.logger.error(f"  - {issue}")
+            return False
+
+        try:
+            content = self.generate_report()
+            
+            # 检查报告内容是否为空
+            if not content or len(content.strip()) == 0:
+                self.logger.error("生成的报告内容为空")
+                return False
+            
+            # 检查报告内容是否包含异常标记
+            if "数据暂不可用" in content or "N/A" in content or "None" in content:
+                self.logger.warning("报告内容包含异常数据标记")
+            
+            self.logger.info(f"报告内容:\n{content}")
+
+            email_service = EmailService()
+
+            recipients_str = os.getenv('NOTIFICATION_EMAILS', '287363@qq.com')
+            recipients = [r.strip() for r in recipients_str.split(',') if r.strip()]
+
+            if not recipients:
+                self.logger.error("未配置收件人")
+                return False
+
+            today = datetime.now().strftime('%Y-%m-%d')
+            subject = f"【晨间参考】A股量化决策 - {today}"
+
+            self.logger.info(f"发送邮件到: {recipients}")
+            self.logger.info(f"主题: {subject}")
+
+            success = email_service.send(
+                to=recipients,
+                subject=subject,
+                content=content
+            )
+
+            if success:
+                self.logger.info("晨间报告推送成功")
+                # 保存到数据库
+                db_service = ReportDBService()
+                db_service.save_report(
+                    report_type='morning',
+                    report_date=today,
+                    content=content
+                )
+                return True
+            else:
+                self.logger.error("邮件发送失败")
+                return False
+
+        except Exception as e:
+            self.logger.error(f"推送失败: {e}")
+            import traceback
+            self.logger.error(traceback.format_exc())
+            return False
+
+
+def main():
+    reporter = MorningReporter()
+    success = reporter.run()
+    sys.exit(0 if success else 1)
+
+
+if __name__ == "__main__":
+    main()

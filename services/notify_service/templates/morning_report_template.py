@@ -26,31 +26,70 @@ class MorningReportTemplate(BaseReportTemplate):
         lines.append("=" * 56)
         lines.append("")
 
-        if foreign_data and self.is_section_enabled('foreign_data'):
-            lines.extend(self._format_foreign_data(foreign_data))
+        # 1. 外盘动态 - 始终显示
+        if self.is_section_enabled('foreign_data'):
+            if foreign_data:
+                lines.extend(self._format_foreign_data(foreign_data))
+            else:
+                lines.extend(self._format_placeholder("1. 外盘动态", "数据暂不可用"))
 
-        if fb_result and self.is_section_enabled('fund_behavior'):
-            lines.extend(self._format_fund_behavior(fb_result))
+        # 2. 资金行为学决策
+        if self.is_section_enabled('fund_behavior'):
+            if fb_result:
+                lines.extend(self._format_fund_behavior(fb_result))
+            else:
+                lines.extend(self._format_placeholder("2. 资金行为学决策", "数据暂不可用"))
 
-        if market_data and self.is_section_enabled('market_levels'):
-            lines.extend(self._format_market_levels(market_data))
+        # 3. 大盘关键位
+        if self.is_section_enabled('market_levels'):
+            if market_data:
+                lines.extend(self._format_market_levels(market_data))
+            else:
+                lines.extend(self._format_placeholder("3. 大盘关键位", "数据暂不可用"))
 
+        # 4-6. 选股相关
         if picks_data:
             if self.is_section_enabled('s_grade'):
-                lines.extend(self._format_s_grade(picks_data))
+                s_lines = self._format_s_grade(picks_data)
+                if s_lines:
+                    lines.extend(s_lines)
+                else:
+                    lines.extend(self._format_placeholder("4. S级打板候选", "今日无S级推荐"))
             if self.is_section_enabled('a_grade'):
-                lines.extend(self._format_a_grade(picks_data))
+                a_lines = self._format_a_grade(picks_data)
+                if a_lines:
+                    lines.extend(a_lines)
+                else:
+                    lines.extend(self._format_placeholder("5. A级波段候选", "今日无A级推荐"))
             if self.is_section_enabled('limit_analysis'):
                 lines.extend(self._format_limit_analysis(picks_data))
+        else:
+            if self.is_section_enabled('s_grade'):
+                lines.extend(self._format_placeholder("4. S级打板候选", "数据暂不可用"))
+            if self.is_section_enabled('a_grade'):
+                lines.extend(self._format_placeholder("5. A级波段候选", "数据暂不可用"))
 
-        if strategy_data and self.is_section_enabled('strategy_summary'):
-            lines.extend(self._format_strategy_summary(strategy_data))
+        # 7. 策略综合
+        if self.is_section_enabled('strategy_summary'):
+            if strategy_data:
+                lines.extend(self._format_strategy_summary(strategy_data))
+            else:
+                lines.extend(self._format_placeholder("6. 策略综合", "数据暂不可用"))
 
         lines.append("=" * 56)
         lines.append("【风险提示】本报告仅供参考，不构成投资建议。")
         lines.append("=" * 56)
 
         return "\n".join(lines)
+
+    def _format_placeholder(self, title: str, message: str) -> List[str]:
+        """格式化占位符章节"""
+        lines = []
+        lines.append(f"【{title}】")
+        lines.append("-" * 56)
+        lines.append(f"  ⚠️ {message}")
+        lines.append("")
+        return lines
 
     def _format_foreign_data(self, foreign_data: Dict) -> List[str]:
         """格式化外盘数据"""

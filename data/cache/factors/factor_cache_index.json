@@ -1,0 +1,128 @@
+{
+  "dd7fff0951efad3bd78598773c96fe2e": {
+    "factor_name": "ma5_bias",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:25.695208",
+    "row_count": 178017
+  },
+  "b419701e3f6cd469731b95cd769db77d": {
+    "factor_name": "cost_peak",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:29.914142",
+    "row_count": 178017
+  },
+  "c11933e67ec66eeac74c57864e23ee63": {
+    "factor_name": "limit_up_score",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:30.014543",
+    "row_count": 178017
+  },
+  "94a84e79bbb3c14fd15743bce19951d4": {
+    "factor_name": "pioneer_status",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:30.029792",
+    "row_count": 178017
+  },
+  "3849e9cf0a53a0da498a96501799bb65": {
+    "factor_name": "v_ratio10",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:30.058495",
+    "row_count": 178017
+  },
+  "70ba9b36abbea5d3874d33cd658b655f": {
+    "factor_name": "v_total",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:30.071481",
+    "row_count": 178017
+  },
+  "a86225c3c1785ddecf33807e1fa048bc": {
+    "factor_name": "market_health",
+    "data_hash": "f1e8236e99cbe3f7",
+    "created_at": "2026-04-15T12:46:30.103012",
+    "row_count": 178017
+  },
+  "ea303013493960669ec7a18d66dd1e73": {
+    "factor_name": "ma5_bias",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:39.544111",
+    "row_count": 178313
+  },
+  "6d22e120099cd3ef62700526e64f7e04": {
+    "factor_name": "cost_peak",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.702777",
+    "row_count": 178313
+  },
+  "ee38f7c820f822964a7a7a0472fcdf7a": {
+    "factor_name": "limit_up_score",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.810586",
+    "row_count": 178313
+  },
+  "267acf2153675695c871da172636565f": {
+    "factor_name": "pioneer_status",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.832192",
+    "row_count": 178313
+  },
+  "e47ea6e08229c7e28912c22431cdabc5": {
+    "factor_name": "v_ratio10",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.960632",
+    "row_count": 178313
+  },
+  "83b2f6f104a6fc40061663a5f9e701ae": {
+    "factor_name": "v_total",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.975608",
+    "row_count": 178313
+  },
+  "4a5ab35fa7a2b76658fde4db335eaca9": {
+    "factor_name": "market_health",
+    "data_hash": "e9ce330322376f8d",
+    "created_at": "2026-04-16T00:55:43.995474",
+    "row_count": 178313
+  },
+  "01761d0b6e1a08799e7647f8c4094de9": {
+    "factor_name": "ma5_bias",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:37:55.969327",
+    "row_count": 183384
+  },
+  "15704e0a1b5d44f5ec8e7aaa3600f7b9": {
+    "factor_name": "cost_peak",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:01.950368",
+    "row_count": 183384
+  },
+  "090afcd69b1e3e1471e3d4be67a325ac": {
+    "factor_name": "limit_up_score",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:02.056451",
+    "row_count": 183384
+  },
+  "eadcce0343d1621edb545e28aed6aa75": {
+    "factor_name": "pioneer_status",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:02.072478",
+    "row_count": 183384
+  },
+  "7e888d7546af4fe4e7a2b6c6b0b8dc8a": {
+    "factor_name": "v_ratio10",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:02.102532",
+    "row_count": 183384
+  },
+  "743dbb5f7dc1e11764550562a86aa99e": {
+    "factor_name": "v_total",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:02.117526",
+    "row_count": 183384
+  },
+  "1da27f4fc87b89803aefcb907b1a4d01": {
+    "factor_name": "market_health",
+    "data_hash": "01483d4fa2e49434",
+    "created_at": "2026-04-17T00:38:02.135642",
+    "row_count": 183384
+  }
+}

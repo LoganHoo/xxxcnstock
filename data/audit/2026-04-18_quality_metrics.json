@@ -1,0 +1,16 @@
+{
+  "collection_rate": 0.0,
+  "completeness_rate": 0.0,
+  "freshness_score": 0,
+  "consistency_score": 100.0,
+  "overall_score": 20.0,
+  "quality_level": "poor",
+  "total_stocks": 0,
+  "collected_stocks": 0,
+  "valid_stocks": 0,
+  "invalid_stocks": 0,
+  "missing_fields_count": 0,
+  "data_freshness_days": 0,
+  "report_date": "2026-04-18",
+  "generated_at": "2026-04-18T19:00:04.800783"
+}

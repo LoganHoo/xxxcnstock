@@ -1,0 +1,424 @@
+{
+  "date": "2026-04-16",
+  "dq_report": {
+    "completeness_rate": 0.9403336960464272,
+    "valid_stocks": 5185,
+    "invalid_stocks": 329,
+    "total_stocks": 5514
+  },
+  "market_review": {
+    "date": "2026-04-16",
+    "rising_count": 3296,
+    "falling_count": 632,
+    "flat_count": 1257,
+    "limit_up_count": 64,
+    "limit_down_count": 0,
+    "turnover": 302113.6,
+    "market_status": "强势上涨"
+  },
+  "picks_review": {
+    "date": "2026-04-16",
+    "s_grade": [
+      {
+        "code": "300088",
+        "name": "长信科技",
+        "price": 7.13,
+        "enhanced_score": 135
+      },
+      {
+        "code": "301248",
+        "name": "杰创智能",
+        "price": 53.17,
+        "enhanced_score": 130
+      },
+      {
+        "code": "688531",
+        "name": "日联科技",
+        "price": 83.75,
+        "enhanced_score": 130
+      },
+      {
+        "code": "000570",
+        "name": "苏常柴Ａ",
+        "price": 6.37,
+        "enhanced_score": 125
+      },
+      {
+        "code": "002585",
+        "name": "双星新材",
+        "price": 7.42,
+        "enhanced_score": 125
+      },
+      {
+        "code": "300857",
+        "name": "协创数据",
+        "price": 271.81,
+        "enhanced_score": 125
+      },
+      {
+        "code": "601588",
+        "name": "北辰实业",
+        "price": 2.28,
+        "enhanced_score": 125
+      },
+      {
+        "code": "603232",
+        "name": "格尔软件",
+        "price": 21.12,
+        "enhanced_score": 125
+      },
+      {
+        "code": "000555",
+        "name": "神州信息",
+        "price": 16.9,
+        "enhanced_score": 120
+      },
+      {
+        "code": "000973",
+        "name": "佛塑科技",
+        "price": 20.28,
+        "enhanced_score": 120
+      },
+      {
+        "code": "002051",
+        "name": "中工国际",
+        "price": 11.9,
+        "enhanced_score": 120
+      },
+      {
+        "code": "002126",
+        "name": "银轮股份",
+        "price": 50.93,
+        "enhanced_score": 120
+      },
+      {
+        "code": "002297",
+        "name": "博云新材",
+        "price": 14.62,
+        "enhanced_score": 120
+      },
+      {
+        "code": "002364",
+        "name": "中恒电气",
+        "price": 43.13,
+        "enhanced_score": 120
+      },
+      {
+        "code": "002647",
+        "name": "*ST仁东",
+        "price": 10.62,
+        "enhanced_score": 120
+      },
+      {
+        "code": "300911",
+        "name": "亿田智能",
+        "price": 33.64,
+        "enhanced_score": 120
+      },
+      {
+        "code": "301128",
+        "name": "强瑞技术",
+        "price": 185.3,
+        "enhanced_score": 120
+      },
+      {
+        "code": "301391",
+        "name": "卡莱特",
+        "price": 86.26,
+        "enhanced_score": 120
+      },
+      {
+        "code": "301557",
+        "name": "常友科技",
+        "price": 111.32,
+        "enhanced_score": 120
+      },
+      {
+        "code": "600605",
+        "name": "汇通能源",
+        "price": 30.81,
+        "enhanced_score": 120
+      },
+      {
+        "code": "603026",
+        "name": "石大胜华",
+        "price": 106.12,
+        "enhanced_score": 120
+      },
+      {
+        "code": "603687",
+        "name": "大胜达",
+        "price": 18.04,
+        "enhanced_score": 120
+      },
+      {
+        "code": "603698",
+        "name": "航天工程",
+        "price": 39.5,
+        "enhanced_score": 120
+      },
+      {
+        "code": "603803",
+        "name": "瑞斯康达",
+        "price": 15.66,
+        "enhanced_score": 120
+      },
+      {
+        "code": "603950",
+        "name": "长源东谷",
+        "price": 59.84,
+        "enhanced_score": 120
+      },
+      {
+        "code": "605289",
+        "name": "罗曼股份",
+        "price": 123.6,
+        "enhanced_score": 120
+      },
+      {
+        "code": "688027",
+        "name": "国盾量子",
+        "price": 595.24,
+        "enhanced_score": 120
+      },
+      {
+        "code": "688227",
+        "name": "品高股份",
+        "price": 70.31,
+        "enhanced_score": 120
+      },
+      {
+        "code": "688603",
+        "name": "天承科技",
+        "price": 92.9,
+        "enhanced_score": 120
+      },
+      {
+        "code": "000919",
+        "name": "金陵药业",
+        "price": 7.88,
+        "enhanced_score": 115
+      }
+    ],
+    "a_grade": [
+      {
+        "code": "000004",
+        "name": "*ST国华",
+        "price": 3.47,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000012",
+        "name": "南  玻Ａ",
+        "price": 4.54,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000042",
+        "name": "中洲控股",
+        "price": 8.9,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000069",
+        "name": "华侨城Ａ",
+        "price": 2.28,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000090",
+        "name": "天健集团",
+        "price": 3.65,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000099",
+        "name": "中信海直",
+        "price": 17.76,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000151",
+        "name": "中成股份",
+        "price": 11.85,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000156",
+        "name": "华数传媒",
+        "price": 7.6,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000157",
+        "name": "中联重科",
+        "price": 8.74,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000166",
+        "name": "申万宏源",
+        "price": 4.78,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000403",
+        "name": "派林生物",
+        "price": 12.83,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000408",
+        "name": "藏格矿业",
+        "price": 85.49,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000409",
+        "name": "云鼎科技",
+        "price": 10.71,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000420",
+        "name": "吉林化纤",
+        "price": 5.04,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000498",
+        "name": "山东路桥",
+        "price": 5.9,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000504",
+        "name": "*ST生物",
+        "price": 10.1,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000519",
+        "name": "中兵红箭",
+        "price": 17.93,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000528",
+        "name": "柳    工",
+        "price": 9.75,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000529",
+        "name": "广弘控股",
+        "price": 5.81,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000530",
+        "name": "冰山冷热",
+        "price": 6.03,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000532",
+        "name": "华金资本",
+        "price": 13.84,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000533",
+        "name": "顺钠股份",
+        "price": 14.74,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000551",
+        "name": "创元科技",
+        "price": 14.33,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000559",
+        "name": "万向钱潮",
+        "price": 16.4,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000560",
+        "name": "我爱我家",
+        "price": 3.01,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000564",
+        "name": "供销大集",
+        "price": 1.88,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000573",
+        "name": "粤宏远Ａ",
+        "price": 4.86,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000612",
+        "name": "焦作万方",
+        "price": 13.54,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000625",
+        "name": "长安汽车",
+        "price": 10.09,
+        "enhanced_score": 95
+      },
+      {
+        "code": "000626",
+        "name": "远大控股",
+        "price": 8.59,
+        "enhanced_score": 95
+      }
+    ]
+  },
+  "quality_metrics": {
+    "overall_score": 85.0,
+    "quality_level": "good",
+    "collection_rate": 94.03336960464273,
+    "completeness_rate": 94.03336960464273,
+    "freshness_score": 90.0,
+    "consistency_score": 95.0,
+    "total_stocks": 5514,
+    "valid_stocks": 5185,
+    "invalid_stocks": 329
+  },
+  "cvd_data": {
+    "signal": "多空平衡",
+    "cumulative": 0,
+    "trend": "neutral"
+  },
+  "key_levels": {
+    "sh_index": 3272.36,
+    "high_60d": 3380.0,
+    "low_60d": 3140.0,
+    "ma5": 3285.5,
+    "ma20": 3250.8
+  },
+  "hot_sectors": [
+    {
+      "name": "房地产",
+      "change": 2.35
+    },
+    {
+      "name": "建筑材料",
+      "change": 1.82
+    },
+    {
+      "name": "银行",
+      "change": 1.15
+    }
+  ],
+  "drawdown_analysis": {}
+}

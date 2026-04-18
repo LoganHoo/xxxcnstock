@@ -1,0 +1,144 @@
+{
+  "version": "4.0",
+  "train_date": "2026-04-17T02:30:33.103803",
+  "train_samples": 1431987,
+  "feature_cols": [
+    "factor_macd",
+    "factor_rsi",
+    "factor_kdj",
+    "factor_bollinger",
+    "factor_atr",
+    "factor_cci",
+    "factor_wr",
+    "factor_dmi",
+    "factor_roc",
+    "factor_mtm",
+    "factor_asi",
+    "factor_emv",
+    "factor_psy",
+    "factor_ma5_bias",
+    "factor_volume_ratio",
+    "factor_turnover",
+    "factor_obv",
+    "factor_vr",
+    "factor_mfi",
+    "factor_vma",
+    "factor_vosc",
+    "factor_wvad",
+    "factor_v_ratio10",
+    "factor_v_total",
+    "factor_limit_up_score",
+    "factor_pioneer_status",
+    "factor_cost_peak",
+    "factor_market_temperature",
+    "factor_market_breadth",
+    "factor_market_sentiment",
+    "factor_market_health",
+    "factor_pb_proxy",
+    "factor_pe_proxy",
+    "factor_ps_proxy",
+    "factor_roe_proxy",
+    "factor_revenue_growth_proxy",
+    "factor_profitability",
+    "factor_sharpe_proxy",
+    "factor_price_position",
+    "factor_momentum_health"
+  ],
+  "feature_importance": [
+    [
+      "factor_market_temperature",
+      0.17008842527866364
+    ],
+    [
+      "factor_v_total",
+      0.1541365534067154
+    ],
+    [
+      "factor_limit_up_score",
+      0.14700020849704742
+    ],
+    [
+      "factor_market_breadth",
+      0.11473100632429123
+    ],
+    [
+      "factor_pioneer_status",
+      0.11015003174543381
+    ],
+    [
+      "factor_revenue_growth_proxy",
+      0.0846063569188118
+    ],
+    [
+      "factor_momentum_health",
+      0.07876463979482651
+    ],
+    [
+      "factor_market_health",
+      0.03606877103447914
+    ],
+    [
+      "factor_sharpe_proxy",
+      0.035557541996240616
+    ],
+    [
+      "factor_ma5_bias",
+      0.01434109266847372
+    ],
+    [
+      "factor_price_position",
+      0.01283984910696745
+    ],
+    [
+      "factor_pe_proxy",
+      0.01257478166371584
+    ],
+    [
+      "factor_pb_proxy",
+      0.008035043254494667
+    ],
+    [
+      "factor_ps_proxy",
+      0.005666904617100954
+    ],
+    [
+      "factor_roe_proxy",
+      0.00452639814466238
+    ],
+    [
+      "factor_v_ratio10",
+      0.0037031297106295824
+    ],
+    [
+      "factor_profitability",
+      0.0030337437056005
+    ],
+    [
+      "factor_cost_peak",
+      0.0026193272788077593
+    ],
+    [
+      "factor_market_sentiment",
+      0.0015561431646347046
+    ],
+    [
+      "factor_macd",
+      0.0
+    ]
+  ],
+  "train_params": {
+    "n_estimators": 300,
+    "max_depth": 6,
+    "learning_rate": 0.03
+  },
+  "cv_scores": [
+    0.09758866162661758,
+    0.15003938709754316,
+    -0.0287121443789379,
+    0.1384439315691146,
+    0.07391332867775662
+  ],
+  "validation_score": 0.07611023526259175,
+  "ic_score": 0.04927709453952076,
+  "ir_score": 0.5508964401749556
+}

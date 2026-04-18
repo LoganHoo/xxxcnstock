@@ -1,0 +1,233 @@
+# 主力行为策略统一配置文件
+# 整合所有配置：策略、因子、过滤器、指标
+
+# ==================== 策略配置 ====================
+strategy:
+  name: "fund_behavior"
+  description: "资金行为学策略 - 基于主力资金流向的选股策略"
+  version: "2.0.0"
+  
+  # 仓位管理
+  position:
+    trend: 0.5        # 波段仓位 50%
+    short_term: 0.4   # 短线仓位 40%
+    cash: 0.1         # 现金 10%
+  
+  # 选股限制
+  stock_selection:
+    trend_stocks_limit: 50      # 波段选股数量
+    short_term_stocks_limit: 20  # 短线选股数量
+    max_hold_days: 5            # 最大持有天数
+  
+  # 四步离场策略时间点
+  exit_time_points:
+    - "09:26"
+    - "10:00"
+    - "14:56"
+
+# ==================== 回测配置 ====================
+backtest:
+  start_date: "2023-01-01"
+  end_date: "2023-12-31"
+  initial_capital: 1000000
+  transaction_cost: 0.0003      # 交易成本 0.03%
+  slippage: 0.001               # 滑点 0.1%
+
+# ==================== 因子配置 ====================
+factors:
+  # 市场类因子
+  limit_up_score:
+    enabled: true
+    category: market
+    description: "涨停家数 - 跌停家数 + 连板高度"
+    weight: 0.15
+  
+  pioneer_status:
+    enabled: true
+    category: market
+    description: "核心领涨个股实时涨跌幅"
+    weight: 0.1
+    params:
+      pioneer_codes:
+        - "300255"
+  
+  v_total:
+    enabled: true
+    category: market
+    description: "全市场实时总成交金额"
+    weight: 0.1
+  
+  cost_peak:
+    enabled: true
+    category: market
+    description: "筹码分布最大密集峰位"
+    weight: 0.15
+    params:
+      window: 20
+      bins: 50
+  
+  market_health:
+    enabled: true
+    category: market
+    description: "大盘荣枯线(MA5/MA10趋势判断)"
+    weight: 0.1
+    params:
+      ma5_threshold: 0.0
+      ma10_threshold: 0.0
+  
+  key_levels:
+    enabled: true
+    category: market
+    description: "关键位价格监测(支撑/阻力)"
+    weight: 0.05
+    params:
+      support_levels:
+        - 4067
+        - 4117
+        - 4140
+      resistance_levels:
+        - 4200
+        - 4300
+  
+  # 技术类因子
+  ma5_bias:
+    enabled: true
+    category: technical
+    description: "(当前价 - 5日均线) / 5日均线"
+    weight: 0.3
+  
+  # 量价类因子
+  v_ratio10:
+    enabled: true
+    category: volume_price
+    description: "早盘09:30-10:00成交量与前一日同期比值"
+    weight: 0.2
+  
+  open_auction_volume:
+    enabled: true
+    category: volume_price
+    description: "09:25集合竞价成交额(开盘金额)"
+    weight: 0.1
+    params:
+      threshold: 800  # 亿元
+
+# ==================== 指标配置 ====================
+indicators:
+  # 10点定基调
+  ten_am_pivot:
+    enabled: true
+    price_threshold: 35.08
+    v_ratio10_threshold: 1.1
+  
+  # 防守信号
+  defense:
+    enabled: true
+    description: "防守信号 - 什么情况下绝对不能买"
+    params:
+      open_auction_min: 500        # 开盘金额最小值(亿元)
+      support_break_threshold: -0.02  # 跌破支撑2%触发防守
+      volume_shrink_threshold: 0.6    # 成交量萎缩60%触发防守
+  
+  # 对冲参数
+  hedge:
+    enabled: true
+    support_level: 4067
+    resistance_levels:
+      - 4117
+      - 4140
+    v_total_threshold: 1800  # 亿
+  
+  # 市场情绪
+  market_sentiment:
+    enabled: true
+    thresholds:
+      sentiment_temperature_strong: 50
+      sentiment_temperature_overheat: 80
+      strong_v_total: 1800
+      oscillating_v_total_min: 1200
+      oscillating_v_total_max: 2000
+      cost_peak_support: 0.995
+
+# ==================== 过滤器配置 ====================
+filters:
+  # 基础过滤
+  st_filter:
+    enabled: true
+    description: "排除ST股和退市风险股"
+    priority: 1
+  
+  delisting_filter:
+    enabled: true
+    description: "排除已退市股票"
+    priority: 2
+  
+  suspension_filter:
+    enabled: true
+    description: "排除停牌状态的股票"
+    priority: 3
+  
+  data_freshness_filter:
+    enabled: true
+    description: "排除数据过旧的股票（已退市/长期停牌）"
+    priority: 4
+    params:
+      max_data_age_days: 30
+  
+  # 流动性过滤
+  volume_filter:
+    enabled: true
+    description: "排除流动性不足的股票"
+    priority: 5
+    params:
+      min_volume: 5000000  # 最小日成交量（元）
+  
+  # 价格过滤
+  price_range_filter:
+    enabled: true
+    description: "排除价格不在合理范围内的股票"
+    priority: 6
+    params:
+      min_price: 2.0
+      max_price: 300.0
+  
+  # 代码过滤
+  code_filter:
+    enabled: true
+    description: "排除特定板块股票"
+    priority: 7
+    params:
+      exclude_prefixes:
+        - "688"  # 科创板
+        - "8"    # 北交所
+        - "4"    # 新三板
+  
+  # 技术过滤（可选）
+  trend_filter:
+    enabled: false
+    description: "排除下跌趋势股票"
+    priority: 8
+    params:
+      ma_short: 5
+      ma_long: 20
+
+# ==================== 选股评分权重 ====================
+scoring:
+  trend:
+    factor_ma5_bias: 0.3
+    ma5_slope: 0.2
+    factor_v_ratio10: 0.2
+    factor_limit_up_score: 0.15
+    factor_cost_peak: 0.15
+  
+  short_term:
+    is_limit_up: 100      # 涨停最高优先级
+    factor_limit_up_score: 10
+    factor_ma5_bias: 10
+
+# ==================== 日志配置 ====================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/fund_behavior.log"
+  max_size: "10MB"
+  backup_count: 5

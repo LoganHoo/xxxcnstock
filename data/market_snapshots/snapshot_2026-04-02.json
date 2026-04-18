@@ -1,0 +1,62 @@
+{
+  "date": "2026-04-02",
+  "dq_report": {
+    "completeness_rate": 0.9387014871236852,
+    "valid_stocks": 5176,
+    "invalid_stocks": 338,
+    "total_stocks": 5514
+  },
+  "market_review": {
+    "date": "2026-04-02",
+    "rising_count": 783,
+    "falling_count": 3785,
+    "flat_count": 608,
+    "limit_up_count": 20,
+    "limit_down_count": 5,
+    "turnover": 223600.67,
+    "market_status": "弱势下跌"
+  },
+  "picks_review": {
+    "date": "2026-04-02",
+    "s_grade": [],
+    "a_grade": []
+  },
+  "quality_metrics": {
+    "overall_score": 85.0,
+    "quality_level": "good",
+    "collection_rate": 93.87014871236852,
+    "completeness_rate": 93.87014871236852,
+    "freshness_score": 90.0,
+    "consistency_score": 95.0,
+    "total_stocks": 5514,
+    "valid_stocks": 5176,
+    "invalid_stocks": 338
+  },
+  "cvd_data": {
+    "signal": "多空平衡",
+    "cumulative": 0,
+    "trend": "neutral"
+  },
+  "key_levels": {
+    "sh_index": 3272.36,
+    "high_60d": 3380.0,
+    "low_60d": 3140.0,
+    "ma5": 3285.5,
+    "ma20": 3250.8
+  },
+  "hot_sectors": [
+    {
+      "name": "房地产",
+      "change": 2.35
+    },
+    {
+      "name": "建筑材料",
+      "change": 1.82
+    },
+    {
+      "name": "银行",
+      "change": 1.15
+    }
+  ],
+  "drawdown_analysis": {}
+}

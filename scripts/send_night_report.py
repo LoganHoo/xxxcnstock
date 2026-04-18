@@ -15,6 +15,8 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailSender, EmailAPISender
+from core.report_validator import check_report_quality, get_quality_checker
+from core.paths import ReportPaths, DATA_DIR, REPORTS_DIR
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,8 +29,8 @@ class NightReportGenerator:
     """晚间报告生成器"""
 
     def __init__(self):
-        self.data_dir = project_root / "data"
-        self.report_dir = project_root / "reports"
+        self.data_dir = DATA_DIR
+        self.report_dir = REPORTS_DIR
         self.news_dir = self.data_dir / "news"
         self.today = datetime.now().strftime('%Y-%m-%d')
         self.today_report = None
@@ -61,7 +63,7 @@ class NightReportGenerator:
     def load_market_review(self) -> Optional[Dict]:
         """加载复盘数据"""
         try:
-            review_file = self.data_dir / "market_review.json"
+            review_file = ReportPaths.market_review()
             if review_file.exists():
                 with open(review_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
@@ -325,8 +327,34 @@ def main():
     news = generator.load_macro_news()
     review = generator.load_market_review()
 
+    # 数据质量检查
+    quality_check = check_report_quality(
+        'night_report',
+        picks=picks,
+        news=news,
+        review=review
+    )
+
+    checker = get_quality_checker()
+    quality_report = checker.generate_quality_report(quality_check)
+    logger.info(f"数据质量检查:\n{quality_report}")
+
+    # 如果有严重问题，记录但不阻止
+    if quality_check['critical_issues']:
+        logger.warning("数据存在严重问题，但继续生成报告:")
+        for issue in quality_check['critical_issues']:
+            logger.warning(f"  - {issue}")
+
     text_report = generator.generate_supplement_content(picks, news, review)
     html_report = generator.generate_html_report(picks, news, review)
+
+    # 检查报告内容
+    if not text_report or len(text_report.strip()) == 0:
+        logger.error("生成的报告内容为空")
+        return 1
+
+    if "数据暂不可用" in text_report or "N/A" in text_report:
+        logger.warning("报告内容包含异常数据标记")
 
     logger.info("\n晚间补充报告内容:")
     logger.info(text_report)

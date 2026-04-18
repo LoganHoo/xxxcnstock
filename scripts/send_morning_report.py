@@ -13,41 +13,35 @@ sys.path.insert(0, str(project_root))
 
 from services.email_sender import EmailService
 from services.notify_service.templates import get_template
+from core.report_validator import check_report_quality, get_quality_checker
+from core.paths import ReportPaths
 
 
 def get_yesterday_picks_report():
     """获取昨日推荐报告"""
-    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-    report_file = project_root / 'reports' / f'daily_picks_{yesterday}.json'
-
-    if not report_file.exists():
-        return None
-
-    with open(report_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    file_path = ReportPaths.daily_picks(fallback_to_yesterday=True)
+    if file_path and file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
 
 
 def get_market_analysis_report():
     """获取大盘分析报告"""
-    today = datetime.now().strftime('%Y%m%d')
-    report_file = project_root / 'reports' / f'market_analysis_{today}.json'
-
-    if not report_file.exists():
-        return None
-
-    with open(report_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    file_path = ReportPaths.market_analysis(fallback_to_yesterday=True)
+    if file_path and file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
 
 
 def get_foreign_index_data():
     """获取外盘指数数据"""
-    foreign_file = project_root / 'data' / 'foreign_index.json'
-
-    if not foreign_file.exists():
-        return None
-
-    with open(foreign_file, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    file_path = ReportPaths.foreign_index()
+    if file_path and file_path.exists():
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return None
 
 
 def main():
@@ -65,12 +59,40 @@ def main():
         print('没有可发送的报告')
         return
 
+    # 数据质量检查
+    quality_check = check_report_quality(
+        'morning_report_legacy',
+        picks_data=picks_data,
+        market_data=market_data,
+        foreign_data=foreign_data
+    )
+
+    checker = get_quality_checker()
+    quality_report = checker.generate_quality_report(quality_check)
+    print("数据质量检查:")
+    print(quality_report)
+
+    # 如果有严重问题，阻止报告生成
+    if quality_check['critical_issues']:
+        print("数据存在严重问题，无法生成报告:")
+        for issue in quality_check['critical_issues']:
+            print(f"  - {issue}")
+        return
+
     template = get_template('morning_report')
     content = template.generate(
         market_data=market_data,
         picks_data=picks_data,
         foreign_data=foreign_data
     )
+
+    # 检查报告内容
+    if not content or len(content.strip()) == 0:
+        print("生成的报告内容为空")
+        return
+
+    if "数据暂不可用" in content or "N/A" in content:
+        print("报告内容包含异常数据标记")
 
     print(content)
     print()

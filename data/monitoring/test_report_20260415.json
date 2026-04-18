@@ -1,0 +1,19 @@
+{
+  "report_type": "test_report",
+  "status": "success",
+  "start_time": "2026-04-15T22:04:51.921010",
+  "end_time": "2026-04-15T22:04:51.921033",
+  "duration_seconds": 2.3e-05,
+  "missing_required": [],
+  "missing_optional": [],
+  "error_message": "",
+  "stack_trace": "",
+  "output_files": [
+    "test.txt"
+  ],
+  "email_sent": true,
+  "db_saved": false,
+  "metadata": {
+    "test": true
+  }
+}

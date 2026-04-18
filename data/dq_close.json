@@ -1,10 +1,10 @@
 {
-  "date": "2026-03-31",
+  "date": "2026-04-17",
   "completeness": {
     "total_stocks": 5394,
-    "valid_stocks": 5076,
-    "invalid_stocks": 318,
-    "completeness_rate": 0.9410456062291435,
+    "valid_stocks": 5073,
+    "invalid_stocks": 321,
+    "completeness_rate": 0.9404894327030033,
     "missing_stocks": [
       "300630",
       "000013",
@@ -14,6 +14,7 @@
       "000787",
       "600709",
       "000542",
+      "000552",
       "600069",
       "600898",
       "600277",
@@ -54,17 +55,17 @@
       "600891",
       "600306",
       "600553",
-      "300325",
-      "000660"
+      "300325"
     ]
   },
   "validity": {
-    "valid_count": 5076,
-    "invalid_count": 318
+    "valid_count": 5073,
+    "invalid_count": 321
   },
   "freshness": {
-    "latest_update": "2026-03-31"
+    "latest_update": "2026-04-16"
   },
   "passed": true,
-  "generated_at": "2026-03-31 20:58:51"
+  "generated_at": "2026-04-16 23:22:57",
+  "timestamp": "2026-04-18T17:23:28.493481"
 }

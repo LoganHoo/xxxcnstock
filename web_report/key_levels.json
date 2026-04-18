@@ -1,0 +1,30 @@
+{
+  "sh": {
+    "name": "上证指数",
+    "current": 4026.63,
+    "resistance": 4141.65,
+    "support": 3919.28,
+    "ma20": 3998.77,
+    "ma60": 4070.84,
+    "volume": 23968,
+    "volume_change": 2337,
+    "up_count": 3723,
+    "down_count": 1594
+  },
+  "cy": {
+    "name": "创业板指",
+    "current": 3172.65,
+    "resistance": 3426.61,
+    "support": 3111.88,
+    "ma20": 3280.83,
+    "ma60": 3296.55
+  },
+  "hs300": {
+    "name": "沪深300",
+    "current": 4478.91,
+    "resistance": 4720.86,
+    "support": 4394.29,
+    "ma20": 4574.34,
+    "ma60": 4664.18
+  }
+}

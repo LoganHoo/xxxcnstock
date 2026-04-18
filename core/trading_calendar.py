@@ -132,6 +132,28 @@ class TradingCalendar:
         return current_date.strftime('%Y-%m-%d')
 
 
+def get_recent_trade_dates(days: int = 5) -> List[str]:
+    """
+    获取最近N个交易日日期
+    
+    Args:
+        days: 获取天数，默认5天
+        
+    Returns:
+        List[str]: 最近交易日日期列表 (YYYY-MM-DD格式)
+    """
+    calendar = TradingCalendar()
+    dates = []
+    date = datetime.now()
+    
+    while len(dates) < days:
+        if calendar.is_trading_day(date):
+            dates.append(date.strftime('%Y-%m-%d'))
+        date = date - timedelta(days=1)
+    
+    return dates
+
+
 def check_market_status() -> dict:
     """
     检查市场状态

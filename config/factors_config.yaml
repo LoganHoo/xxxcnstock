@@ -1,0 +1,288 @@
+# 因子配置管理文件
+# 定义所有可用因子及其参数
+
+# ==================== 技术面因子 ====================
+technical_factors:
+  ma5_bias:
+    name: "MA5乖离率"
+    category: "technical"
+    description: "(当前价 - 5日均线) / 5日均线，衡量短线超买超卖"
+    enabled: true
+    params:
+      window: 5
+    optimization_range:
+      window: [3, 5, 10, 20]
+    
+  ma5_slope:
+    name: "MA5斜率"
+    category: "technical"
+    description: "MA5斜率，衡量趋势方向"
+    enabled: true
+    params:
+      window: 5
+    optimization_range:
+      window: [3, 5, 10, 20]
+  
+  ma_trend:
+    name: "均线趋势"
+    category: "technical"
+    description: "多均线趋势判断"
+    enabled: true
+    params:
+      short_period: 5
+      long_period: 20
+    optimization_range:
+      short_period: [3, 5, 10]
+      long_period: [20, 30, 60]
+  
+  rsi:
+    name: "RSI相对强弱"
+    category: "technical"
+    description: "RSI相对强弱指标"
+    enabled: true
+    params:
+      period: 14
+      overbought: 70
+      oversold: 30
+    optimization_range:
+      period: [7, 14, 21]
+  
+  macd:
+    name: "MACD"
+    category: "technical"
+    description: "MACD指标"
+    enabled: true
+    params:
+      fast: 12
+      slow: 26
+      signal: 9
+  
+  kdj:
+    name: "KDJ随机指标"
+    category: "technical"
+    description: "KDJ随机指标"
+    enabled: true
+    params:
+      n: 9
+      m1: 3
+      m2: 3
+  
+  bollinger:
+    name: "布林带"
+    category: "technical"
+    description: "布林带位置"
+    enabled: true
+    params:
+      period: 20
+      std_dev: 2
+  
+  atr:
+    name: "ATR真实波幅"
+    category: "technical"
+    description: "平均真实波幅，衡量波动率"
+    enabled: true
+    params:
+      period: 14
+  
+  cci:
+    name: "CCI顺势指标"
+    category: "technical"
+    description: "CCI顺势指标"
+    enabled: true
+    params:
+      period: 14
+  
+  dmi:
+    name: "DMI趋向指标"
+    category: "technical"
+    description: "DMI趋向指标，包含ADX"
+    enabled: true
+    params:
+      period: 14
+
+# ==================== 量价因子 ====================
+volume_price_factors:
+  v_ratio10:
+    name: "10点量比"
+    category: "volume_price"
+    description: "10点成交量/5日均量，衡量早盘量能"
+    enabled: true
+    params:
+      compare_time: "10:00"
+    optimization_range:
+      compare_time: ["09:45", "10:00", "10:30"]
+  
+  volume_ratio:
+    name: "量比"
+    category: "volume_price"
+    description: "当日成交量/5日均量"
+    enabled: true
+    params:
+      period: 5
+  
+  turnover:
+    name: "换手率"
+    category: "volume_price"
+    description: "成交量/流通股本"
+    enabled: true
+    params:
+      period: 1
+  
+  obv:
+    name: "OBV能量潮"
+    category: "volume_price"
+    description: "OBV能量潮指标"
+    enabled: true
+  
+  mfi:
+    name: "MFI资金流量"
+    category: "volume_price"
+    description: "资金流量指标"
+    enabled: true
+    params:
+      period: 14
+  
+  vma:
+    name: "VMA量均线"
+    category: "volume_price"
+    description: "成交量均线"
+    enabled: true
+    params:
+      period: 5
+
+# ==================== 市场情绪因子 ====================
+market_factors:
+  limit_up_score:
+    name: "涨停情绪得分"
+    category: "market"
+    description: "涨停家数 - 跌停家数 + 连板高度"
+    enabled: true
+  
+  pioneer_status:
+    name: "先锋股状态"
+    category: "market"
+    description: "先锋股涨停状态"
+    enabled: true
+    params:
+      pioneer_codes:
+        - "300255"
+  
+  market_sentiment:
+    name: "市场情绪"
+    category: "market"
+    description: "市场情绪温度"
+    enabled: true
+  
+  market_temperature:
+    name: "市场温度"
+    category: "market"
+    description: "市场温度指标"
+    enabled: true
+  
+  market_breadth:
+    name: "市场广度"
+    category: "market"
+    description: "涨跌家数比"
+    enabled: true
+
+# ==================== 筹码分布因子 ====================
+cost_factors:
+  cost_peak:
+    name: "筹码峰位"
+    category: "cost"
+    description: "筹码分布最大密集峰位"
+    enabled: true
+    params:
+      window: 20
+      bins: 50
+    optimization_range:
+      window: [10, 20, 30, 60]
+      bins: [30, 50, 100]
+  
+  mainforce_resonance:
+    name: "主力痕迹共振"
+    category: "cost"
+    description: "主力资金共振信号"
+    enabled: true
+    params:
+      volume_threshold: 2.0
+      price_threshold: 0.05
+
+# ==================== 因子组合配置 ====================
+factor_combinations:
+  # 主力行为策略组合
+  fund_behavior_trend:
+    name: "波段趋势组合"
+    description: "用于波段选股的因子组合"
+    factors:
+      - name: ma5_bias
+        weight: 0.30
+      - name: ma5_slope
+        weight: 0.20
+      - name: v_ratio10
+        weight: 0.20
+      - name: limit_up_score
+        weight: 0.15
+      - name: cost_peak
+        weight: 0.15
+  
+  fund_behavior_short:
+    name: "短线打板组合"
+    description: "用于短线选股的因子组合"
+    factors:
+      - name: is_limit_up
+        weight: 100.0
+      - name: limit_up_score
+        weight: 10.0
+      - name: pioneer_status
+        weight: 8.0
+      - name: ma5_bias
+        weight: 5.0
+      - name: v_ratio10
+        weight: 5.0
+  
+  # 技术面组合
+  technical_combo:
+    name: "技术面综合"
+    description: "纯技术面因子组合"
+    factors:
+      - name: rsi
+        weight: 0.25
+      - name: macd
+        weight: 0.25
+      - name: kdj
+        weight: 0.20
+      - name: bollinger
+        weight: 0.15
+      - name: atr
+        weight: 0.15
+  
+  # 量价组合
+  volume_price_combo:
+    name: "量价配合"
+    description: "量价关系因子组合"
+    factors:
+      - name: v_ratio10
+        weight: 0.30
+      - name: volume_ratio
+        weight: 0.25
+      - name: turnover
+        weight: 0.25
+      - name: obv
+        weight: 0.20
+
+# ==================== 因子有效性阈值 ====================
+factor_validation:
+  ic:
+    min_ic_mean: 0.02
+    min_ic_ir: 0.30
+    min_ic_positive_ratio: 0.55
+  return:
+    min_long_short_return: 0.05
+    min_long_short_sharpe: 0.50
+  stability:
+    max_turnover: 0.80
+    max_drawdown: -0.20
+  significance:
+    max_p_value: 0.05
+    min_t_statistic: 2.0

@@ -1,0 +1,6 @@
+{
+  "commission_rate": 0.0003,
+  "stamp_duty_rate": 0.001,
+  "slippage_rate": 0.001,
+  "min_commission": 5.0
+}

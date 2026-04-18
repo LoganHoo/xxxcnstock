@@ -1,0 +1,19 @@
+{
+  "report_type": "test_integration",
+  "status": "success",
+  "start_time": "2026-04-15T22:06:39.614463",
+  "end_time": "2026-04-15T22:06:39.614529",
+  "duration_seconds": 6.6e-05,
+  "missing_required": [],
+  "missing_optional": [],
+  "error_message": "",
+  "stack_trace": "",
+  "output_files": [
+    "test.txt"
+  ],
+  "email_sent": true,
+  "db_saved": true,
+  "metadata": {
+    "test": true
+  }
+}

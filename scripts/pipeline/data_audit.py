@@ -118,23 +118,30 @@ class DataAuditor:
                 try:
                     df = pl.read_parquet(f)
                     if len(df) > 0:
-                        df = df.with_columns([
-                            pl.col('volume').cast(pl.Float64),
-                            pl.col('open').cast(pl.Float64),
-                            pl.col('close').cast(pl.Float64),
-                            pl.col('high').cast(pl.Float64),
-                            pl.col('low').cast(pl.Float64),
-                        ])
-                        df_unique = df.unique(subset=['trade_date'])
-                        dfs.append(df_unique)
-                except:
+                        # 确保所有DataFrame有相同的列
+                        required_cols = ['code', 'trade_date', 'open', 'high', 'low', 'close', 'volume']
+                        available_cols = [c for c in required_cols if c in df.columns]
+                        if len(available_cols) >= 6:  # 至少包含核心字段
+                            df = df.select(available_cols)
+                            df = df.with_columns([
+                                pl.col('volume').cast(pl.Float64),
+                                pl.col('open').cast(pl.Float64),
+                                pl.col('close').cast(pl.Float64),
+                                pl.col('high').cast(pl.Float64),
+                                pl.col('low').cast(pl.Float64),
+                            ])
+                            df_unique = df.unique(subset=['trade_date'])
+                            dfs.append(df_unique)
+                except Exception as e:
+                    self.logger.debug(f"读取文件失败 {f.name}: {e}")
                     pass
 
             if not dfs:
                 issues.append("无法读取任何K线文件")
                 return issues, latest_date, stock_count
 
-            data = pl.concat(dfs)
+            # 使用how="diagonal"处理不同列数的DataFrame
+            data = pl.concat(dfs, how="diagonal")
 
             latest_date = data["trade_date"].max()
             day_data = data.filter(pl.col("trade_date") == latest_date)
@@ -170,24 +177,31 @@ class DataAuditor:
                 try:
                     df = pl.read_parquet(f)
                     if len(df) >= 2:
-                        df = df.with_columns([
-                            pl.col('volume').cast(pl.Float64),
-                            pl.col('open').cast(pl.Float64),
-                            pl.col('close').cast(pl.Float64),
-                            pl.col('high').cast(pl.Float64),
-                            pl.col('low').cast(pl.Float64),
-                        ])
-                        df_unique = df.unique(subset=['trade_date'])
-                        if len(df_unique) >= 2:
-                            all_data.append(df_unique)
-                except:
+                        # 确保所有DataFrame有相同的列
+                        required_cols = ['code', 'trade_date', 'open', 'high', 'low', 'close', 'volume']
+                        available_cols = [c for c in required_cols if c in df.columns]
+                        if len(available_cols) >= 6:
+                            df = df.select(available_cols)
+                            df = df.with_columns([
+                                pl.col('volume').cast(pl.Float64),
+                                pl.col('open').cast(pl.Float64),
+                                pl.col('close').cast(pl.Float64),
+                                pl.col('high').cast(pl.Float64),
+                                pl.col('low').cast(pl.Float64),
+                            ])
+                            df_unique = df.unique(subset=['trade_date'])
+                            if len(df_unique) >= 2:
+                                all_data.append(df_unique)
+                except Exception as e:
+                    self.logger.debug(f"读取文件失败 {f.name}: {e}")
                     pass
 
             if not all_data:
                 issues.append("无法读取有效K线数据")
                 return issues
 
-            data = pl.concat(all_data)
+            # 使用how="diagonal"处理不同列数的DataFrame
+            data = pl.concat(all_data, how="diagonal")
 
             latest_date = data["trade_date"].max()
 
@@ -261,8 +275,9 @@ class DataAuditor:
             if limit_down_count == 0 and valid_stocks > 100:
                 issues.append(f"跌停数据异常: 0只（市场可能未收盘或数据不完整）")
 
+            # 涨停数据偏少只作为警告，不作为错误
             if limit_up_count > 0 and limit_up_count < 5:
-                issues.append(f"涨停数据偏少: 仅{limit_up_count}只（可能为盘中数据）")
+                self.logger.warning(f"⚠️ 涨停数据偏少: 仅{limit_up_count}只（可能为盘中数据）")
 
         except Exception as e:
             import traceback

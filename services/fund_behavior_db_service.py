@@ -176,36 +176,69 @@ class FundBehaviorDBService:
         Base.metadata.create_all(self.engine)
 
     def save_daily_report(self, report_date: str, result: Dict) -> bool:
-        """保存每日报告"""
+        """保存每日报告 - 使用INSERT...ON DUPLICATE KEY UPDATE避免重复键错误"""
         try:
+            import pymysql
+            from pymysql.cursors import DictCursor
+            from sqlalchemy import text
+
+            position = result.get('position_size', {})
+            trend_stocks = result.get('trend_stocks', [])
+            short_stocks = result.get('short_term_stocks', [])
+
+            report_date_obj = datetime.strptime(report_date, '%Y-%m-%d').date()
+
             with self.Session() as session:
-                position = result.get('position_size', {})
-                trend_stocks = result.get('trend_stocks', [])
-                short_stocks = result.get('short_term_stocks', [])
+                # 先检查是否存在
+                existing = session.query(FundBehaviorDaily).filter(
+                    FundBehaviorDaily.report_date == report_date_obj
+                ).first()
 
-                report = FundBehaviorDaily(
-                    report_date=datetime.strptime(report_date, '%Y-%m-%d').date(),
-                    market_state=result.get('market_state', ['N/A'])[0] if result.get('market_state') else 'N/A',
-                    market_tone='强势做多' if (result.get('is_strong_region') and result.get('upward_pivot')) else '震荡防守',
-                    v_total=result.get('v_total', 0),
-                    sentiment_temperature=result.get('sentiment_temperature', 0),
-                    delta_temperature=result.get('delta_temperature', 0),
-                    cost_peak=result.get('cost_peak', 0),
-                    current_price=result.get('current_price', 0),
-                    upward_pivot=1 if result.get('upward_pivot') else 0,
-                    hedge_effect=1 if result.get('hedge_effect') else 0,
-                    trend_position=position.get('trend', 0),
-                    short_position=position.get('short_term', 0),
-                    cash_position=position.get('cash', 0),
-                    total_position=sum(position.values()) if position else 0,
-                    trend_stock_count=len(trend_stocks),
-                    short_stock_count=len(short_stocks),
-                    json_data=json.dumps(result, ensure_ascii=False)
-                )
+                if existing:
+                    # 更新现有记录
+                    existing.market_state = result.get('market_state', ['N/A'])[0] if result.get('market_state') else 'N/A'
+                    existing.market_tone = '强势做多' if (result.get('is_strong_region') and result.get('upward_pivot')) else '震荡防守'
+                    existing.v_total = result.get('v_total', 0)
+                    existing.sentiment_temperature = result.get('sentiment_temperature', 0)
+                    existing.delta_temperature = result.get('delta_temperature', 0)
+                    existing.cost_peak = result.get('cost_peak', 0)
+                    existing.current_price = result.get('current_price', 0)
+                    existing.upward_pivot = 1 if result.get('upward_pivot') else 0
+                    existing.hedge_effect = 1 if result.get('hedge_effect') else 0
+                    existing.trend_position = position.get('trend', 0)
+                    existing.short_position = position.get('short_term', 0)
+                    existing.cash_position = position.get('cash', 0)
+                    existing.total_position = sum(position.values()) if position else 0
+                    existing.trend_stock_count = len(trend_stocks)
+                    existing.short_stock_count = len(short_stocks)
+                    existing.json_data = json.dumps(result, ensure_ascii=False)
+                    existing.created_at = datetime.now()
+                    print(f"✅ 日报已更新: {report_date}")
+                else:
+                    # 插入新记录
+                    report = FundBehaviorDaily(
+                        report_date=report_date_obj,
+                        market_state=result.get('market_state', ['N/A'])[0] if result.get('market_state') else 'N/A',
+                        market_tone='强势做多' if (result.get('is_strong_region') and result.get('upward_pivot')) else '震荡防守',
+                        v_total=result.get('v_total', 0),
+                        sentiment_temperature=result.get('sentiment_temperature', 0),
+                        delta_temperature=result.get('delta_temperature', 0),
+                        cost_peak=result.get('cost_peak', 0),
+                        current_price=result.get('current_price', 0),
+                        upward_pivot=1 if result.get('upward_pivot') else 0,
+                        hedge_effect=1 if result.get('hedge_effect') else 0,
+                        trend_position=position.get('trend', 0),
+                        short_position=position.get('short_term', 0),
+                        cash_position=position.get('cash', 0),
+                        total_position=sum(position.values()) if position else 0,
+                        trend_stock_count=len(trend_stocks),
+                        short_stock_count=len(short_stocks),
+                        json_data=json.dumps(result, ensure_ascii=False)
+                    )
+                    session.add(report)
+                    print(f"✅ 日报已保存: {report_date}")
 
-                session.merge(report)
                 session.commit()
-                print(f"✅ 日报已保存: {report_date}")
                 return True
         except Exception as e:
             print(f"❌ 保存日报失败: {e}")
