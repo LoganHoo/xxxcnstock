@@ -1,0 +1,105 @@
+{
+  "name": "xcnstock.technical_features",
+  "platform": "parquet",
+  "env": "PROD",
+  "description": "技术指标特征数据，包含MACD、KDJ、RSI、均线等技术指标",
+  "schema_fields": [
+    {
+      "name": "code",
+      "type": "string",
+      "description": "股票代码",
+      "nullable": false
+    },
+    {
+      "name": "trade_date",
+      "type": "date",
+      "description": "交易日期",
+      "nullable": false
+    },
+    {
+      "name": "ma5",
+      "type": "float",
+      "description": "5日均线",
+      "nullable": true
+    },
+    {
+      "name": "ma10",
+      "type": "float",
+      "description": "10日均线",
+      "nullable": true
+    },
+    {
+      "name": "ma20",
+      "type": "float",
+      "description": "20日均线",
+      "nullable": true
+    },
+    {
+      "name": "macd_dif",
+      "type": "float",
+      "description": "MACD DIF",
+      "nullable": true
+    },
+    {
+      "name": "macd_dea",
+      "type": "float",
+      "description": "MACD DEA",
+      "nullable": true
+    },
+    {
+      "name": "macd_hist",
+      "type": "float",
+      "description": "MACD柱状图",
+      "nullable": true
+    },
+    {
+      "name": "rsi6",
+      "type": "float",
+      "description": "RSI6",
+      "nullable": true
+    },
+    {
+      "name": "rsi12",
+      "type": "float",
+      "description": "RSI12",
+      "nullable": true
+    },
+    {
+      "name": "kdj_k",
+      "type": "float",
+      "description": "KDJ K值",
+      "nullable": true
+    },
+    {
+      "name": "kdj_d",
+      "type": "float",
+      "description": "KDJ D值",
+      "nullable": true
+    },
+    {
+      "name": "kdj_j",
+      "type": "float",
+      "description": "KDJ J值",
+      "nullable": true
+    }
+  ],
+  "properties": {
+    "indicators": "MACD, KDJ, RSI, MA, BOLL",
+    "storage_format": "parquet",
+    "update_frequency": "daily"
+  },
+  "tags": [
+    "technical",
+    "features",
+    "macd",
+    "kdj",
+    "rsi",
+    "indicators"
+  ],
+  "owners": [
+    "data_team"
+  ],
+  "created_at": "2026-04-19T14:11:18.438607",
+  "updated_at": "2026-04-19T14:11:18.438610",
+  "emitted_at": "2026-04-19T14:11:18.439107"
+}

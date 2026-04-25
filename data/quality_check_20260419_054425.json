@@ -1,0 +1,35 @@
+{
+  "check_time": "2026-04-19T05:44:24.928746",
+  "freshness": [
+    {
+      "data_source": "kline",
+      "latest_date": "2026-04-17",
+      "days_behind": 2,
+      "status": "stale",
+      "is_fresh": true
+    }
+  ],
+  "completeness": {
+    "stock_list_exists": true,
+    "kline_count": 6439,
+    "expected_kline_count": 5000,
+    "completeness_rate": 1.0
+  },
+  "quality": {
+    "sample_size": 20,
+    "passed": 0,
+    "failed": 20,
+    "avg_success_rate": 0.9541666666666666
+  },
+  "alerts": [
+    {
+      "level": "warning",
+      "title": "数据新鲜度警告",
+      "message": "K线数据已滞后 2 天",
+      "timestamp": "2026-04-19T05:44:25.007935",
+      "details": {
+        "latest_date": "2026-04-17"
+      }
+    }
+  ]
+}

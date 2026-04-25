@@ -1,0 +1,20 @@
+{
+  "date": "2026-04-19",
+  "timestamp": "2026-04-20T12:32:21.311035",
+  "results": {
+    "financial": {
+      "collection_type": "financial",
+      "status": "success",
+      "start_time": "2026-04-20T12:32:18.994767",
+      "end_time": "2026-04-20T12:32:21.310923",
+      "duration_seconds": 2.316156,
+      "records_collected": 3,
+      "records_updated": 3,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "codes_processed": 3
+      }
+    }
+  }
+}

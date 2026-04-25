@@ -25,6 +25,11 @@ REPORTS_DATA_DIR = DATA_DIR / "reports"
 REPORTS_HTML_DIR = REPORTS_DATA_DIR / "html"
 
 
+def get_data_path() -> Path:
+    """获取数据目录路径"""
+    return DATA_DIR
+
+
 class ReportPaths:
     """报告相关文件路径"""
     

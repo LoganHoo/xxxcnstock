@@ -25,6 +25,7 @@ import asyncio
 # 微服务内部导入
 from .unified_fetcher import UnifiedFetcher, get_unified_fetcher
 from core.logger import setup_logger
+from core.delisting_guard import get_delisting_guard
 
 logger = setup_logger("kline_fetcher", log_file="system/kline_fetcher.log")
 
@@ -33,16 +34,16 @@ logger = setup_logger("kline_fetcher", log_file="system/kline_fetcher.log")
 class Config:
     """配置类"""
     # 进程配置
-    max_workers: int = min(4, cpu_count())
-    batch_size: int = 50
+    max_workers: int = min(2, cpu_count())  # 降低并发数
+    batch_size: int = 20  # 减小批次大小
     
     # 重试配置
     max_retries: int = 3
-    retry_base_delay: float = 1.0
-    retry_max_delay: float = 30.0
+    retry_base_delay: float = 2.0  # 增加基础延迟
+    retry_max_delay: float = 60.0
     
-    # 请求频率控制
-    request_delay: float = 0.01
+    # 请求频率控制 - 降低频率避免限流
+    request_delay: float = 0.5  # 从0.01增加到0.5秒
     
     # 数据配置
     kline_days: int = 365 * 3
@@ -51,6 +52,10 @@ class Config:
     # 数据质量阈值
     max_pe: float = 1000.0
     max_pb: float = 100.0
+    
+    # 分批采集配置
+    batch_pause_seconds: float = 5.0  # 批次间暂停时间
+    stocks_per_batch: int = 100  # 每批处理的股票数量
 
 
 config = Config()
@@ -82,29 +87,44 @@ def retry_on_error(max_retries: int = None, base_delay: float = None):
 
 
 def validate_kline_data(df: pd.DataFrame, code: str) -> Tuple[bool, str]:
-    """验证K线数据完整性"""
+    """
+    验证K线数据完整性
+    
+    集成 Great Expectations 验证器进行详细数据质量检查
+    """
+    # 1. 基础检查
     if len(df) < config.min_kline_rows:
         return False, f"数据行数不足: {len(df)} < {config.min_kline_rows}"
     
-    required_cols = ['trade_date', 'open', 'high', 'low', 'close', 'volume']
-    missing_cols = [col for col in required_cols if col not in df.columns]
-    if missing_cols:
-        return False, f"缺少字段: {missing_cols}"
-    
-    if (df['close'] <= 0).any():
-        return False, "存在无效收盘价"
-    
-    # 检查OHLC逻辑
-    invalid_ohlc = (
-        (df['high'] < df['low']) |
-        (df['high'] < df['open']) |
-        (df['high'] < df['close']) |
-        (df['low'] > df['open']) |
-        (df['low'] > df['close'])
-    )
-    if invalid_ohlc.any():
-        n_invalid = invalid_ohlc.sum()
-        logger.warning(f"{code} 存在{n_invalid}条OHLC逻辑异常数据")
+    # 2. 使用 gx_validator 进行详细验证
+    try:
+        from services.data_service.quality.gx_validator import KlineDataQualitySuite
+        validator = KlineDataQualitySuite.create_validator()
+        result = validator.validate(df, suite_name=f"kline_{code}")
+        
+        if not result.success:
+            failed = result.failed_expectations
+            failed_types = [f"{e.expectation_type}({e.column}): {e.unexpected_percent:.1f}%" 
+                           for e in failed[:3]]  # 只显示前3个
+            logger.warning(f"{code} 验证警告: 成功率 {result.success_rate:.1%}, "
+                          f"失败项: {failed_types}")
+            
+            # 如果成功率太低，认为验证失败
+            if result.success_rate < 0.95:
+                return False, f"数据质量不达标: 成功率 {result.success_rate:.1%}"
+        
+        logger.info(f"{code} 验证通过: 成功率 {result.success_rate:.1%}")
+        
+    except Exception as e:
+        logger.warning(f"{code} 详细验证失败，使用基础验证: {e}")
+        # 降级到基础验证
+        required_cols = ['trade_date', 'open', 'high', 'low', 'close', 'volume']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            return False, f"缺少字段: {missing_cols}"
+        
+        if (df['close'] <= 0).any():
+            return False, "存在无效收盘价"
     
     return True, "OK"
 
@@ -130,6 +150,7 @@ def get_incremental_date_range(code: str, days: int, data_dir: Path) -> Tuple[st
     
     Returns:
         (start_date, end_date, is_incremental)
+        当 start_date > end_date 时表示数据已是最新，无需更新
     """
     end_date = datetime.now().strftime('%Y-%m-%d')
     kline_file = data_dir / f"{code}.parquet"
@@ -142,8 +163,10 @@ def get_incremental_date_range(code: str, days: int, data_dir: Path) -> Tuple[st
                 last_date = datetime.strptime(last_date, '%Y-%m-%d')
                 start_date = (last_date + timedelta(days=1)).strftime('%Y-%m-%d')
                 
-                if start_date > end_date:
-                    return start_date, end_date, True  # 已是最新
+                # 如果开始日期大于结束日期，说明数据已是最新
+                if start_date >= end_date:
+                    logger.info(f"{code} 数据已是最新，最后日期: {last_date.strftime('%Y-%m-%d')}，跳过更新")
+                    return start_date, end_date, True  # 已是最新，无需更新
                 return start_date, end_date, True
         except Exception as e:
             logger.warning(f"读取{code}历史数据失败: {e}")
@@ -244,7 +267,8 @@ def fetch_kline_batch(args):
 
 # ==================== 主控函数 ====================
 
-def fetch_kline_data_parallel(codes: List[str], kline_dir: Path, days: int = None) -> Dict:
+def fetch_kline_data_parallel(codes: List[str], kline_dir: Path, days: int = None, 
+                               filter_delisted: bool = True) -> Dict:
     """
     并行获取K线历史行情数据
     
@@ -252,10 +276,20 @@ def fetch_kline_data_parallel(codes: List[str], kline_dir: Path, days: int = Non
         codes: 股票代码列表
         kline_dir: K线数据保存目录
         days: 获取天数
+        filter_delisted: 是否过滤退市股票，默认为True
     Returns:
         统计结果字典
     """
     days = days or config.kline_days
+    
+    # 过滤退市股票
+    if filter_delisted:
+        delisting_guard = get_delisting_guard()
+        original_count = len(codes)
+        codes = [code for code in codes if not delisting_guard.is_delisted_by_code(code)]
+        filtered_count = original_count - len(codes)
+        if filtered_count > 0:
+            logger.info(f"已过滤 {filtered_count} 只退市股票，剩余 {len(codes)} 只")
     
     logger.info(f"并行获取K线数据 (最近{days}天, 进程数: {config.max_workers})")
     

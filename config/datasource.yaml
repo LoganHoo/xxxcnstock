@@ -1,0 +1,115 @@
+# 数据源配置
+# 主备数据源自动故障转移配置
+
+# ==================== 数据源优先级配置 ====================
+datasource:
+  # 主数据源 - Baostock优先（数据完整性好）
+  primary:
+    name: "baostock"
+    enabled: true
+    priority: 1
+    description: "BaoStock - 主要数据源，提供历史K线、基本面数据，数据完整性好"
+    config:
+      # BaoStock 无需额外配置，自动登录
+      timeout: 30
+      retry_times: 3
+  
+  # 备用数据源列表（按优先级排序）
+  backups:
+    - name: "tencent"
+      enabled: true
+      priority: 1
+      description: "腾讯财经(QQ) - 备用数据源1，提供实时行情、K线数据，速度快"
+      config:
+        timeout: 10
+        retry_times: 2
+        base_url: "https://qt.gtimg.cn"
+        kline_url: "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get"
+    
+    # AKShare 暂时禁用作为K线数据源（网络不稳定）
+    # 仅用于获取股票列表
+    - name: "akshare"
+      enabled: false
+      priority: 2
+      description: "AKShare - 备用数据源2，提供股票列表、实时行情、K线数据（当前禁用）"
+      config:
+        timeout: 30
+        retry_times: 2
+        # AKShare 使用东方财富数据
+        data_source: "em"  # em = 东方财富
+
+# ==================== 故障转移配置 ====================
+failover:
+  # 健康检查间隔（秒）
+  health_check_interval: 60
+  
+  # 连续失败次数阈值，超过则切换数据源
+  failure_threshold: 3
+  
+  # 自动切回主源
+  auto_recover: true
+  
+  # 主源恢复后等待时间（秒）再切回
+  recover_delay: 300
+  
+  # 所有数据源失败时的重试间隔（秒）
+  retry_interval: 10
+
+# ==================== 数据获取策略 ====================
+fetch_strategy:
+  # K线数据获取策略
+  kline:
+    # 优先使用主源
+    prefer_primary: true
+    # 主源失败时自动切换备源
+    auto_failover: true
+    # 数据合并策略：append(追加) / replace(替换) / merge(合并去重)
+    merge_strategy: "merge"
+  
+  # 实时行情获取策略
+  realtime:
+    # 实时行情优先使用更快的备源
+    prefer_primary: false
+    # 备用源优先级：tencent > akshare
+    backup_priority: ["tencent", "akshare"]
+  
+  # 股票列表获取策略
+  stock_list:
+    # 股票列表优先使用主源
+    prefer_primary: true
+    # 备源：akshare提供更完整的列表
+    backup_priority: ["akshare", "tencent"]
+
+# ==================== 数据质量配置 ====================
+quality:
+  # 数据验证级别
+  validation_level: "strict"  # strict / normal / loose
+  
+  # 最小数据行数要求
+  min_kline_rows: 50
+  
+  # 数据完整性检查
+  integrity_check: true
+  
+  # 异常数据处理
+  abnormal_data_handling: "warn"  # warn / ignore / error
+
+# ==================== 性能配置 ====================
+performance:
+  # 并发请求数
+  max_workers: 4
+  
+  # 请求间隔（秒）
+  request_delay: 0.01
+  
+  # 批量大小
+  batch_size: 50
+  
+  # 连接池大小
+  connection_pool_size: 10
+  
+  # 缓存配置
+  cache:
+    enabled: true
+    ttl: 300  # 缓存时间（秒）
+    max_size: 1000  # 最大缓存条目数

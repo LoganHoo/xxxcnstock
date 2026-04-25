@@ -1,0 +1,22 @@
+{
+  "collection_time": "2026-04-25T00:14:28.881643",
+  "statistics": {
+    "start_time": "2026-04-25T00:04:29.423605",
+    "end_time": "2026-04-25T00:14:28.881642",
+    "duration_seconds": 599.458037,
+    "total_stocks": 4472,
+    "success_count": 4377,
+    "failed_count": 95,
+    "skipped_count": 0,
+    "validation_passed": 100,
+    "validation_failed": 0,
+    "success_rate": 0.9787567084078712,
+    "errors": []
+  },
+  "quality_summary": {
+    "total_files": 100,
+    "passed_files": 100,
+    "failed_files": 0,
+    "overall_success_rate": 1.0
+  }
+}

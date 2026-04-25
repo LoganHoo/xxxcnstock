@@ -1,0 +1,30 @@
+id: xcnstock_debug
+namespace: xcnstock
+
+description: |
+  调试工作流 - 检查容器环境和数据状态
+  
+  ⚠️ 已废弃: 请使用 xcnstock_monitoring_unified.yml 或 xcnstock_morning_report.yml 的 debug_mode 参数
+
+labels:
+  status: deprecated
+  deprecated_reason: "功能已合并到统一监控工作流和晨会报告的调试模式"
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+
+tasks:
+  - id: debug_check
+    type: io.kestra.plugin.scripts.python.Script
+    description: 运行调试检查
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.debug_check import main
+      main()
+    timeout: PT5M

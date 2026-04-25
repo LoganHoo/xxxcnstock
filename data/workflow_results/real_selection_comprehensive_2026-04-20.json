@@ -1,0 +1,55 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "success",
+  "start_time": "2026-04-20T12:32:37.968363",
+  "end_time": "2026-04-20T12:32:38.286146",
+  "duration_seconds": 0.317783,
+  "total_stocks": 7,
+  "selected_stocks": 2,
+  "filtered_out": 5,
+  "top_stocks": [
+    {
+      "code": "000002",
+      "name": "",
+      "total_score": 48.19,
+      "financial_score": 41.27,
+      "market_score": 52.55,
+      "announcement_score": 50.0,
+      "technical_score": 53.18,
+      "roe": null,
+      "gross_margin": null,
+      "revenue_growth": null,
+      "debt_ratio": null,
+      "main_force_flow": null,
+      "dragon_tiger_count": 0,
+      "price_change_5d": null,
+      "price_change_20d": null,
+      "volume_ratio": null,
+      "filter_reason": null
+    },
+    {
+      "code": "000002",
+      "name": "",
+      "total_score": 48.19,
+      "financial_score": 41.27,
+      "market_score": 52.55,
+      "announcement_score": 50.0,
+      "technical_score": 53.18,
+      "roe": null,
+      "gross_margin": null,
+      "revenue_growth": null,
+      "debt_ratio": null,
+      "main_force_flow": null,
+      "dragon_tiger_count": 0,
+      "price_change_5d": null,
+      "price_change_20d": null,
+      "volume_ratio": null,
+      "filter_reason": null
+    }
+  ],
+  "filters_applied": [
+    "财务评分 >= 40",
+    "技术评分 >= 30"
+  ],
+  "errors": []
+}

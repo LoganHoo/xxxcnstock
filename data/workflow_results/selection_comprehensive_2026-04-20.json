@@ -1,0 +1,468 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "success",
+  "start_time": "2026-04-20T01:45:15.434366",
+  "end_time": "2026-04-20T01:45:15.559420",
+  "duration_seconds": 0.125054,
+  "total_stocks": 5419,
+  "selected_stocks": 5419,
+  "top_stocks": [
+    {
+      "rank": 1,
+      "code": "000001",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 2,
+      "code": "002588",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 3,
+      "code": "002596",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 4,
+      "code": "002595",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 5,
+      "code": "002594",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 6,
+      "code": "002593",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 7,
+      "code": "002592",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 8,
+      "code": "002591",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 9,
+      "code": "002590",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 10,
+      "code": "002589",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 11,
+      "code": "002587",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 12,
+      "code": "002624",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 13,
+      "code": "002586",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 14,
+      "code": "002585",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 15,
+      "code": "002584",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 16,
+      "code": "002583",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 17,
+      "code": "002582",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 18,
+      "code": "002581",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 19,
+      "code": "002580",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 20,
+      "code": "002579",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 21,
+      "code": "002597",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 22,
+      "code": "002598",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 23,
+      "code": "002599",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 24,
+      "code": "002600",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 25,
+      "code": "002622",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 26,
+      "code": "002620",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 27,
+      "code": "002617",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 28,
+      "code": "002616",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 29,
+      "code": "002615",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 30,
+      "code": "002614",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 31,
+      "code": "002613",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 32,
+      "code": "002612",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 33,
+      "code": "002611",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 34,
+      "code": "002609",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 35,
+      "code": "002608",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 36,
+      "code": "002607",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 37,
+      "code": "002606",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 38,
+      "code": "002605",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 39,
+      "code": "002603",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 40,
+      "code": "002602",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 41,
+      "code": "002601",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 42,
+      "code": "002578",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 43,
+      "code": "002577",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 44,
+      "code": "002576",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 45,
+      "code": "002555",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 46,
+      "code": "002553",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 47,
+      "code": "002552",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 48,
+      "code": "002551",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 49,
+      "code": "002550",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 50,
+      "code": "002549",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    }
+  ],
+  "filters_applied": [
+    "ROE >= 10%",
+    "资产负债率 <= 60%",
+    "主力净流入 >= 0",
+    "近期无重大负面公告"
+  ],
+  "errors": []
+}

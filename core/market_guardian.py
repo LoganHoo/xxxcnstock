@@ -223,6 +223,56 @@ def is_intraday() -> bool:
     return MarketGuardian.is_intraday()
 
 
+def is_trading_time() -> bool:
+    """
+    判断当前是否在交易时段 (9:30-11:30, 13:00-15:00)
+
+    Returns:
+        bool: 是否在交易时段
+    """
+    now = datetime.now()
+
+    # 检查是否是交易日
+    if not MarketGuardian.is_trading_day():
+        return False
+
+    # 检查交易时间
+    current_minutes = MarketGuardian.get_current_time_minutes()
+
+    # 上午 9:30-11:30
+    morning_start = 9 * 60 + 30
+    morning_end = 11 * 60 + 30
+
+    # 下午 13:00-15:00
+    afternoon_start = 13 * 60
+    afternoon_end = 15 * 60
+
+    is_morning = morning_start <= current_minutes <= morning_end
+    is_afternoon = afternoon_start <= current_minutes <= afternoon_end
+
+    return is_morning or is_afternoon
+
+
+def is_market_closed() -> bool:
+    """
+    判断市场是否已收盘
+
+    Returns:
+        bool: 如果市场已收盘返回True，否则返回False
+    """
+    # 如果不是交易日，视为已收盘
+    if not MarketGuardian.is_trading_day():
+        return True
+
+    # 检查当前时间
+    current_minutes = MarketGuardian.get_current_time_minutes()
+
+    # 收盘时间 15:00 之后视为已收盘
+    market_close = 15 * 60  # 15:00
+
+    return current_minutes >= market_close
+
+
 if __name__ == "__main__":
     # 测试
     print("=" * 70)

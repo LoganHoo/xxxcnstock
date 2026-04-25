@@ -62,7 +62,7 @@ def test_turnover_handles_zero_amount_without_infinite_values(volume_price_data)
 def test_v_ratio10_handles_zero_previous_volume_without_infinite_values(volume_price_data):
     factor = FactorRegistry.get("v_ratio10")()
     zero_previous_data = volume_price_data.with_columns(
-        pl.when(pl.arange(0, pl.len()) == 0)
+        pl.when(pl.arange(0, pl.count()) == 0)
         .then(0)
         .otherwise(pl.col("volume"))
         .alias("volume")

@@ -1,0 +1,149 @@
+id: xcnstock_post_market_data
+namespace: xcnstock
+
+description: |
+  XCNStock 盘后数据层工作流
+  负责数据采集、验证、补采
+  被 post_market_pipeline 调用
+
+labels:
+  env: production
+  project: xcnstock
+  type: post_market_data
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: trade_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 交易日期
+
+tasks:
+  - id: data_fetch
+    type: io.kestra.plugin.scripts.python.Script
+    description: 基础数据采集
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow requests -q
+    script: |
+      import sys, os, subprocess, logging
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_fetch")
+      logger.info("=" * 60)
+      logger.info("阶段1: 基础数据采集")
+      logger.info("=" * 60)
+      result = subprocess.run(
+          ["python3", "scripts/pipeline/data_collect.py"],
+          capture_output=True, text=True, timeout=3600
+      )
+      logger.info(result.stdout)
+      if result.returncode != 0:
+          raise Exception(f"数据采集失败: {result.stderr}")
+    timeout: PT60M
+
+  - id: update_index_data
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新大盘指数数据
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys, os, subprocess, logging
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.index_data")
+      logger.info("阶段2: 更新大盘指数数据")
+      result = subprocess.run(
+          ["python3", "scripts/pipeline/fetch_index.py"],
+          capture_output=True, text=True, timeout=600
+      )
+      logger.info(result.stdout)
+    timeout: PT10M
+
+  - id: dragon_tiger_fetch
+    type: io.kestra.plugin.scripts.python.Script
+    description: 龙虎榜数据采集
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys, os, subprocess, logging
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.dragon_tiger")
+      logger.info("阶段3: 龙虎榜数据采集")
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/fetch_dragon_tiger.py", "--incremental", "--max-wait", "3600"],
+              capture_output=True, text=True, timeout=3600
+          )
+          logger.info(result.stdout)
+      except Exception as e:
+          logger.warning(f"龙虎榜采集失败（可选）: {e}")
+    timeout: PT60M
+    allowFailure: true
+
+  - id: data_audit
+    type: io.kestra.plugin.scripts.python.Script
+    description: 智能数据审计
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys, os, subprocess, logging, time
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_audit")
+      logger.info("阶段4: 智能数据审计")
+      max_retries = 5
+      for attempt in range(max_retries):
+          try:
+              result = subprocess.run(
+                  ["python3", "scripts/pipeline/smart_data_audit.py", "--threshold", "0.85"],
+                  capture_output=True, text=True, timeout=1800
+              )
+              if result.returncode == 0:
+                  logger.info("✅ 数据审计通过")
+                  break
+              logger.warning(f"审计未通过，重试 {attempt+1}/{max_retries}")
+              if attempt < max_retries - 1:
+                  time.sleep(60)
+          except Exception as e:
+              logger.error(f"审计异常: {e}")
+              if attempt < max_retries - 1:
+                  time.sleep(60)
+    timeout: PT30M
+    retry:
+      type: constant
+      interval: PT1M
+      maxAttempt: 3
+
+  - id: notify_data_complete
+    type: io.kestra.core.tasks.flows.Subflow
+    description: 通知数据层完成
+    flowId: xcnstock_notification
+    namespace: xcnstock
+    inputs:
+      workflow_name: "xcnstock_post_market_data"
+      status: "success"
+      message: "盘后数据层执行完成"
+    allowFailure: true

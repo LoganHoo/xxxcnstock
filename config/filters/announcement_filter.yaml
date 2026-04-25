@@ -1,0 +1,112 @@
+# 公告事件选股过滤器配置
+# 基于公司公告、重大事项、业绩预告等进行选股
+
+filters:
+  # ===== 业绩预告过滤 =====
+
+  # 业绩预告过滤器 - 筛选预增/扭亏股票
+  performance_forecast_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    forecast_types:
+      - "预增"
+      - "扭亏"
+    min_change_range: 20.0   # 最小变动幅度(%)
+    lookback_days: 7         # 回溯天数
+    description: "业绩预告过滤器 - 筛选预增/扭亏股票"
+    risk_level: "medium"
+    category: "announcement"
+    presets:
+      all_positive:
+        forecast_types:
+          - "预增"
+          - "扭亏"
+          - "略增"
+      high_growth:
+        min_change_range: 50.0
+      default:
+        forecast_types:
+          - "预增"
+          - "扭亏"
+        min_change_range: 20.0
+
+  # ===== 重大事项过滤 =====
+
+  # 重大事项过滤器 - 筛选并购重组/股权激励股票
+  major_event_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    event_types:
+      - "并购重组"
+      - "股权激励"
+      - "重大合同"
+    lookback_days: 3
+    importance: "high"  # high/normal/all
+    description: "重大事项过滤器 - 筛选并购重组/股权激励股票"
+    risk_level: "high"
+    category: "announcement"
+    presets:
+      mna_only:
+        event_types:
+          - "并购重组"
+      default:
+        event_types:
+          - "并购重组"
+          - "股权激励"
+          - "重大合同"
+
+  # ===== 股权变动过滤 =====
+
+  # 股权变动过滤器 - 筛选增持/回购股票
+  equity_change_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    change_types:
+      - "增持"
+    min_change_ratio: 0.5    # 最小变动比例(%)
+    lookback_days: 7
+    description: "股权变动过滤器 - 筛选增持/回购股票"
+    risk_level: "medium"
+    category: "announcement"
+
+  # ===== 复牌股票过滤 =====
+
+  # 复牌股票过滤器 - 排除停牌股票
+  trading_resume_filter:
+    enabled: false  # 默认禁用
+    lookback_days: 1
+    include_expected: true   # 包含预计复牌
+    description: "复牌股票过滤器 - 排除停牌股票"
+    risk_level: "low"
+    category: "announcement"
+
+  # ===== 公告综合过滤 =====
+
+  # 公告综合过滤器
+  announcement_composite_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    lookback_days: 7
+    require_performance: true    # 需要业绩预告
+    require_major_event: false   # 需要重大事项
+    require_equity_change: false # 需要股权变动
+    description: "公告综合过滤器 - 业绩预告/重大事项/股权变动"
+    risk_level: "medium"
+    category: "announcement"
+    presets:
+      performance_only:
+        require_performance: true
+        require_major_event: false
+        require_equity_change: false
+      major_event_only:
+        require_performance: false
+        require_major_event: true
+        require_equity_change: false
+      all_events:
+        require_performance: true
+        require_major_event: true
+        require_equity_change: true
+
+# 过滤器执行顺序
+filter_order:
+  - trading_resume_filter           # 1. 排除停牌股票
+  - performance_forecast_filter     # 2. 业绩预告筛选
+  - major_event_filter              # 3. 重大事项筛选
+  - equity_change_filter            # 4. 股权变动筛选
+  - announcement_composite_filter   # 5. 公告综合筛选

@@ -1,0 +1,74 @@
+{
+  "validated_at": "2026-04-25T01:15:48.925889",
+  "summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0,
+    "success_rate": 100.0
+  },
+  "results": [
+    {
+      "step": "数据新鲜度",
+      "passed": true,
+      "details": {
+        "total_files": 5019,
+        "sample_size": 100,
+        "latest_count": 100,
+        "freshness_rate": 100.0,
+        "target_date": "2026-04-24"
+      }
+    },
+    {
+      "step": "数据完整性",
+      "passed": true,
+      "details": {
+        "checked": 50,
+        "valid": 50,
+        "invalid": 0,
+        "errors": []
+      }
+    },
+    {
+      "step": "因子计算",
+      "passed": true,
+      "details": {
+        "indicators_tested": [
+          "EMA",
+          "MACD",
+          "RSI"
+        ],
+        "total": 3,
+        "passed": 3
+      }
+    },
+    {
+      "step": "选股策略",
+      "passed": true,
+      "details": {
+        "configs": {
+          "existing": [
+            "config/strategies/champion.yaml",
+            "config/factors_config.yaml",
+            "config/filters_config.yaml"
+          ],
+          "missing": []
+        },
+        "scripts": {
+          "existing": []
+        }
+      }
+    },
+    {
+      "step": "报告生成",
+      "passed": true,
+      "details": {
+        "report_dirs": [
+          "data/reports",
+          "data/test_reports"
+        ],
+        "test_report_generated": true,
+        "test_report_path": "data/test_reports/workflow_validation_test.json"
+      }
+    }
+  ]
+}

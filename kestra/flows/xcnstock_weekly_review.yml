@@ -1,0 +1,120 @@
+id: xcnstock_weekly_review
+namespace: xcnstock
+
+description: |
+  XCNStock 周度复盘报告
+  每周日晚上执行，生成周度市场复盘和选股回顾
+
+labels:
+  env: production
+  project: xcnstock
+  type: weekly_report
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: review_week
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 复盘周日期 (周日，YYYY-MM-DD)
+
+  - id: include_backtest
+    type: BOOLEAN
+    defaults: true
+    description: 包含回测分析
+
+tasks:
+  # ========== 阶段1: 周度市场数据汇总 ==========
+  - id: weekly_market_summary
+    type: io.kestra.plugin.scripts.python.Script
+    description: 汇总周度市场数据
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.daily_review import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.weekly_market")
+      
+      logger.info("开始周度市场数据汇总...")
+      try:
+          main()
+          logger.info("周度市场数据汇总完成")
+      except Exception as e:
+          logger.error(f"周度市场数据汇总失败: {e}")
+          raise
+    timeout: PT15M
+
+  # ========== 阶段2: 选股策略回顾 ==========
+  - id: strategy_review
+    type: io.kestra.plugin.scripts.python.Script
+    description: 回顾本周选股策略表现
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.strategy_review import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.strategy_review")
+      
+      logger.info("开始选股策略回顾...")
+      try:
+          main()
+          logger.info("选股策略回顾完成")
+      except Exception as e:
+          logger.error(f"选股策略回顾失败: {e}")
+          raise
+    timeout: PT10M
+
+  # ========== 阶段3: 生成周度报告 ==========
+  - id: generate_weekly_report
+    type: io.kestra.plugin.scripts.python.Script
+    description: 生成周度复盘报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.generate_weekly_report import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.weekly_report")
+      
+      logger.info("开始生成周度报告...")
+      try:
+          main()
+          logger.info("周度报告生成完成")
+      except Exception as e:
+          logger.error(f"周度报告生成失败: {e}")
+          raise
+    timeout: PT10M
+
+  # ========== 阶段4: 发送通知 ==========
+  - id: send_weekly_notification
+    type: io.kestra.plugin.core.log.Log
+    description: 发送周度报告完成通知
+    message: "✅ XCNStock 周度复盘报告完成 - 复盘周: {{ inputs.review_week }}"
+
+triggers:
+  # 定时触发：每周日晚上8点
+  - id: weekly_review_trigger
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 20 * * 0"
+    timezone: Asia/Shanghai

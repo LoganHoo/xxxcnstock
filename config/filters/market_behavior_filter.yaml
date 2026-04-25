@@ -1,0 +1,66 @@
+# 市场行为选股过滤器配置
+# 基于龙虎榜、资金流向、北向资金等市场行为数据进行选股
+
+filters:
+  # ===== 龙虎榜过滤 =====
+
+  # 龙虎榜过滤器 - 筛选机构买入股票
+  dragon_tiger_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    min_institution_net: 500  # 机构净买入(万元)
+    lookback_days: 1  # 回溯天数
+    description: "龙虎榜过滤器 - 筛选机构净买入股票"
+    risk_level: "medium"
+    category: "market_behavior"
+    presets:
+      large_institution:
+        min_institution_net: 1000
+      default:
+        min_institution_net: 500
+
+  # ===== 资金流向过滤 =====
+
+  # 资金流向过滤器 - 筛选主力净流入股票
+  money_flow_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    min_main_net: 1000      # 主力净流入(万元)
+    min_main_ratio: 5.0     # 主力净流入占比(%)
+    description: "资金流向过滤器 - 筛选主力净流入股票"
+    risk_level: "medium"
+    category: "market_behavior"
+
+  # ===== 北向资金过滤 =====
+
+  # 北向资金过滤器 - 筛选北向持股股票
+  northbound_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    min_hold_ratio: 1.0     # 最低持股比例(%)
+    min_increase: 0         # 最低增持比例(%)
+    description: "北向资金过滤器 - 筛选北向持股股票"
+    risk_level: "low"
+    category: "market_behavior"
+    presets:
+      heavy_hold:
+        min_hold_ratio: 5.0
+      default:
+        min_hold_ratio: 1.0
+
+  # ===== 主力资金综合过滤 =====
+
+  # 主力资金综合过滤器
+  main_force_filter:
+    enabled: false  # 默认禁用，需要实时数据
+    min_institution_net: 500
+    min_main_net: 1000
+    min_main_ratio: 5.0
+    require_northbound: false  # 是否要求北向持股
+    description: "主力资金综合过滤器 - 龙虎榜/资金流向/北向资金"
+    risk_level: "high"
+    category: "market_behavior"
+
+# 过滤器执行顺序
+filter_order:
+  - dragon_tiger_filter     # 1. 龙虎榜筛选
+  - money_flow_filter       # 2. 资金流向筛选
+  - northbound_filter       # 3. 北向资金筛选
+  - main_force_filter       # 4. 主力资金综合筛选

@@ -1,0 +1,612 @@
+id: xcnstock_post_market_pipeline
+namespace: xcnstock
+
+description: |
+  XCNStock 盘后流水线 - 承接 cron_tasks.yaml 中 post_market_afternoon 组任务
+  
+  功能：
+  1. 基础数据采集 (16:00) - 采集A股所有行情数据
+  2. 更新大盘指数数据 (16:05)
+  3. 龙虎榜数据采集 (16:32) - 延迟发布的龙虎榜数据
+  4. 智能数据审计 (16:50) - 验证数据新鲜度、完整性、质量
+  5. 断点续传 (16:30/17:35) - 补充未完成的数据
+  6. CVD指标计算 (17:15)
+  7. 当日复盘分析 (17:30) - 大盘数据、涨跌停家数、板块强度
+  8. 选股复盘 (17:45) - 验证昨日推荐表现
+  9. 回撤分析 (17:50) - 分析昨日选股回撤情况
+  10. 每日选股复盘 (18:10) - 更新多周期表现
+  11. 推送完整复盘报告 (18:00)
+  12. 推送精简复盘快报 (19:00)
+  13. 更新推荐股票跟踪 (19:30)
+  14. 盘后监控摘要 (18:05)
+  
+  调度：交易日 16:00
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: trade_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 交易日期
+
+tasks:
+  # ========== 阶段1: 基础数据采集 (16:00) ==========
+  - id: data_fetch
+    type: io.kestra.plugin.scripts.python.Script
+    description: 采集A股所有行情数据（日线）
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_fetch")
+      
+      logger.info("=" * 60)
+      logger.info("阶段1: 基础数据采集")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/data_collect.py"],
+              capture_output=True,
+              text=True,
+              timeout=3600
+          )
+          logger.info(f"数据采集完成:\n{result.stdout}")
+          if result.returncode != 0:
+              logger.error(f"数据采集失败: {result.stderr}")
+              raise Exception(f"数据采集失败: {result.stderr}")
+      except Exception as e:
+          logger.error(f"数据采集异常: {e}")
+          raise
+    timeout: PT60M
+
+  # ========== 阶段2: 更新大盘指数数据 (16:05) ==========
+  - id: update_index_data
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新上证、深证、创业板等指数
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.index_data")
+      
+      logger.info("=" * 60)
+      logger.info("阶段2: 更新大盘指数数据")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/fetch_index.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"大盘指数更新完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"大盘指数更新失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段3: 龙虎榜数据采集 (16:32) ==========
+  - id: dragon_tiger_fetch
+    type: io.kestra.plugin.scripts.python.Script
+    description: 采集延迟发布的龙虎榜数据
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.dragon_tiger")
+      
+      logger.info("=" * 60)
+      logger.info("阶段3: 龙虎榜数据采集")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/fetch_dragon_tiger.py", "--incremental", "--max-wait", "3600"],
+              capture_output=True,
+              text=True,
+              timeout=3600
+          )
+          logger.info(f"龙虎榜数据采集完成:\n{result.stdout}")
+      except Exception as e:
+          logger.warning(f"龙虎榜数据采集失败（可选数据）: {e}")
+          # 非阻塞，继续执行
+    timeout: PT60M
+
+  # ========== 阶段4: 智能数据审计 (16:50) ==========
+  - id: data_audit_unified
+    type: io.kestra.plugin.scripts.python.Script
+    description: 智能数据审计 - 验证数据新鲜度、完整性、质量
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_audit")
+      
+      logger.info("=" * 60)
+      logger.info("阶段4: 智能数据审计")
+      logger.info("=" * 60)
+      
+      # 带熔断机制的数据审计，最多5次重试
+      max_retries = 5
+      audit_passed = False
+      
+      for attempt in range(max_retries):
+          try:
+              logger.info(f"数据审计尝试 {attempt + 1}/{max_retries}")
+              result = subprocess.run(
+                  ["python3", "scripts/pipeline/smart_data_audit.py", "--threshold", "0.85", "--max-retries", "1"],
+                  capture_output=True,
+                  text=True,
+                  timeout=1800
+              )
+              logger.info(f"审计结果:\n{result.stdout}")
+              
+              if result.returncode == 0:
+                  audit_passed = True
+                  logger.info("✅ 数据审计通过")
+                  break
+              else:
+                  logger.warning(f"审计未通过: {result.stderr}")
+                  if attempt < max_retries - 1:
+                      logger.info("等待60秒后重试...")
+                      import time
+                      time.sleep(60)
+          except Exception as e:
+              logger.error(f"审计异常: {e}")
+              if attempt < max_retries - 1:
+                  time.sleep(60)
+      
+      if not audit_passed:
+          logger.error("❌ 数据审计最终未通过，需要触发补采")
+          # 设置标志位，触发后续补采任务
+          import json
+          print(f"::{{outputs.need_backfill}}::true")
+      else:
+          print(f"::{{outputs.need_backfill}}::false")
+    timeout: PT30M
+    retry:
+      type: constant
+      interval: PT1M
+      maxAttempt: 5
+
+  # ========== 阶段5: 条件断点续传 ==========
+  - id: data_fetch_retry
+    type: io.kestra.plugin.scripts.python.Script
+    description: 断点续传 - 仅在审计失败时执行
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_retry")
+      
+      # 检查是否需要补采
+      need_backfill = "{{ outputs.data_audit_unified.need_backfill }}" == "true"
+      
+      if not need_backfill:
+          logger.info("✅ 数据审计已通过，跳过补采")
+          sys.exit(0)
+      
+      logger.info("=" * 60)
+      logger.info("阶段5: 断点续传检查 (审计失败触发)")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/data_collect.py", "--retry"],
+              capture_output=True,
+              text=True,
+              timeout=3600
+          )
+          logger.info(f"断点续传完成:\n{result.stdout}")
+      except Exception as e:
+          logger.warning(f"断点续传失败: {e}")
+    timeout: PT60M
+
+  # ========== 阶段6: CVD指标计算 (17:15) ==========
+  - id: calculate_cvd
+    type: io.kestra.plugin.scripts.python.Script
+    description: 计算60日累积成交量差指标
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.cvd")
+      
+      logger.info("=" * 60)
+      logger.info("阶段6: CVD指标计算")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/calculate_cvd.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"CVD计算完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"CVD计算失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段7: 当日复盘分析 (17:30) ==========
+  - id: market_review
+    type: io.kestra.plugin.scripts.python.Script
+    description: 当日复盘分析 - 大盘数据、涨跌停家数、板块强度
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.market_review")
+      
+      logger.info("=" * 60)
+      logger.info("阶段7: 当日复盘分析")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/daily_review.py"],
+              capture_output=True,
+              text=True,
+              timeout=900
+          )
+          logger.info(f"复盘分析完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"复盘分析失败: {e}")
+    timeout: PT15M
+
+  # ========== 阶段8: 选股复盘 (17:45) ==========
+  - id: picks_review
+    type: io.kestra.plugin.scripts.python.Script
+    description: 验证昨日推荐股票表现
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.picks_review")
+      
+      logger.info("=" * 60)
+      logger.info("阶段8: 选股复盘")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/stock_pick.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"选股复盘完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"选股复盘失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段9: 回撤分析 (17:50) ==========
+  - id: drawdown_analysis
+    type: io.kestra.plugin.scripts.python.Script
+    description: 分析昨日选股回撤情况，识别因子失效
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.drawdown")
+      
+      logger.info("=" * 60)
+      logger.info("阶段9: 回撤分析")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/drawdown_analyzer.py"],
+              capture_output=True,
+              text=True,
+              timeout=300
+          )
+          logger.info(f"回撤分析完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"回撤分析失败: {e}")
+    timeout: PT5M
+
+  # ========== 阶段10: 每日选股复盘 (18:10) ==========
+  - id: daily_selection_review
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新昨日选股次日表现，批量更新历史多周期表现
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.selection_review")
+      
+      logger.info("=" * 60)
+      logger.info("阶段10: 每日选股复盘")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/daily_stock_selection_review.py", "--all"],
+              capture_output=True,
+              text=True,
+              timeout=1800
+          )
+          logger.info(f"选股复盘更新完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"选股复盘更新失败: {e}")
+    timeout: PT30M
+
+  # ========== 阶段11: 推送完整复盘报告 (18:00) ==========
+  - id: review_report
+    type: io.kestra.plugin.scripts.python.Script
+    description: 推送完整复盘报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.review_report")
+      
+      logger.info("=" * 60)
+      logger.info("阶段11: 推送完整复盘报告")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/send_review_report.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"复盘报告推送完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"复盘报告推送失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段12: 推送精简复盘快报 (19:00) ==========
+  - id: review_brief
+    type: io.kestra.plugin.scripts.python.Script
+    description: 推送精简复盘快报
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.review_brief")
+      
+      logger.info("=" * 60)
+      logger.info("阶段12: 推送精简复盘快报")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/morning_push.py"],
+              capture_output=True,
+              text=True,
+              timeout=300
+          )
+          logger.info(f"复盘快报推送完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"复盘快报推送失败: {e}")
+    timeout: PT5M
+
+  # ========== 阶段13: 更新推荐股票跟踪 (19:30) ==========
+  - id: update_tracking
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新推荐股票跟踪数据
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.update_tracking")
+      
+      logger.info("=" * 60)
+      logger.info("阶段13: 更新推荐股票跟踪")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/update_tracking.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"跟踪更新完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"跟踪更新失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段14: 盘后监控摘要 (18:05) ==========
+  - id: evening_monitoring_summary
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送盘后任务监控摘要
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.evening_monitoring")
+      
+      logger.info("=" * 60)
+      logger.info("阶段14: 盘后监控摘要")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/monitoring_dashboard.py", "--email"],
+              capture_output=True,
+              text=True,
+              timeout=60
+          )
+          logger.info(f"盘后监控摘要发送完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"盘后监控摘要发送失败: {e}")
+    timeout: PT1M
+
+triggers:
+  - id: post_market_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 16 * * 1-5"
+    timezone: Asia/Shanghai
+    disabled: false
+
+pluginDefaults:
+  - type: io.kestra.plugin.scripts.python.Script
+    values:
+      runner: PROCESS

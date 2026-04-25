@@ -1,0 +1,18 @@
+{
+  "dataflows": [
+    {
+      "name": "stock_list_to_kline",
+      "source": "stock_list",
+      "target": "kline_*",
+      "type": "DERIVED",
+      "description": "\u80a1\u7968\u5217\u8868\u751f\u6210K\u7ebf\u6570\u636e"
+    },
+    {
+      "name": "kline_to_selection",
+      "source": "kline_*",
+      "target": "real_selection_*",
+      "type": "TRANSFORMED",
+      "description": "K\u7ebf\u6570\u636e\u9009\u80a1\u5206\u6790"
+    }
+  ]
+}

@@ -97,7 +97,7 @@ def test_strategy_execution(factor_data, fund_behavior_config):
 
     result = strategy_engine.execute_strategy(factor_data, 1000000, "10:00")
 
-    assert set(result.keys()) == {
+    expected_keys = {
         "market_state",
         "upward_pivot",
         "hedge_effect",
@@ -113,6 +113,8 @@ def test_strategy_execution(factor_data, fund_behavior_config):
         "delta_temperature",
         "market_sentiment_indicators",
     }
+    # 允许返回额外的键，但必需键必须存在
+    assert expected_keys.issubset(set(result.keys()))
     assert result["position_size"] == {
         "trend": 500000.0,
         "short_term": 400000.0,

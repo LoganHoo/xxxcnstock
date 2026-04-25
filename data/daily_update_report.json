@@ -1,0 +1,15 @@
+{
+  "target_date": "2026-04-24",
+  "update_time": "2026-04-25T00:26:37.704315",
+  "stock_list": {
+    "total": 5122
+  },
+  "collection": {
+    "up_to_date": 10,
+    "collected": 0,
+    "delisted": 0,
+    "success": 0,
+    "failed": 0,
+    "total_rows": 0
+  }
+}

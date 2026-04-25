@@ -1,0 +1,483 @@
+id: xcnstock_data_pipeline
+namespace: xcnstock
+
+description: |
+  XCNStock 量化交易系统数据流水线
+  包含数据采集、质检、复盘分析、选股评分等完整流程
+  
+  使用方式:
+    - 默认模式: 采集今天数据
+    - 补采模式: 指定 --start-date 和 --end-date 补采历史数据
+
+labels:
+  env: production
+  project: xcnstock
+  type: data_pipeline
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: run_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 执行日期 (YYYY-MM-DD)，用于报告生成
+
+  - id: start_date
+    type: STRING
+    defaults: ""
+    description: 补采开始日期 (YYYY-MM-DD)，留空则采集今天
+
+  - id: end_date
+    type: STRING
+    defaults: ""
+    description: 补采结束日期 (YYYY-MM-DD)，与start_date配合使用
+
+  - id: skip_validation
+    type: BOOLEAN
+    defaults: false
+    description: 跳过数据验证
+
+  - id: skip_if_fresh
+    type: BOOLEAN
+    defaults: true
+    description: 数据新鲜时跳过执行（智能检查）
+
+  - id: force_full
+    type: BOOLEAN
+    defaults: false
+    description: 强制执行完整流程（忽略智能检查）
+
+tasks:
+  # ========== 阶段0: 智能数据健康检查 ==========
+  - id: smart_health_check
+    type: io.kestra.plugin.scripts.python.Script
+    description: 智能检查数据健康状态，决定是否需要采集
+    runner: PROCESS
+    beforeCommands:
+      - pip install pyarrow -q
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      SKIP_IF_FRESH: "{{ inputs.skip_if_fresh }}"
+      FORCE_FULL: "{{ inputs.force_full }}"
+    script: |
+      import sys
+      import os
+      import json
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from datetime import datetime, timedelta
+      from pathlib import Path
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.smart_check")
+      
+      skip_if_fresh = "{{ inputs.skip_if_fresh }}".lower() == "true"
+      force_full = "{{ inputs.force_full }}".lower() == "true"
+      
+      # force_full 模式跳过检查
+      if force_full:
+          logger.info("强制全量模式，跳过数据健康检查")
+          result = {
+              "needs_collection": True,
+              "skip_reason": "force_full",
+              "message": "强制执行完整流程"
+          }
+          print(json.dumps(result))
+          exit(0)
+      
+      # 补采模式不跳过
+      start_date = "{{ inputs.start_date }}"
+      end_date = "{{ inputs.end_date }}"
+      if start_date and end_date:
+          logger.info("补采模式，不跳过数据检查")
+          result = {
+              "needs_collection": True,
+              "skip_reason": "backfill",
+              "message": f"补采区间: {start_date} 至 {end_date}"
+          }
+          print(json.dumps(result))
+          exit(0)
+      
+      logger.info("开始数据健康检查...")
+      
+      try:
+          import pyarrow.parquet as pq
+          
+          kline_dir = Path("{{ vars.project_root }}") / "data" / "kline"
+          files = list(kline_dir.glob("*.parquet"))
+          
+          if not files:
+              logger.warning("没有找到数据文件，需要采集")
+              result = {
+                  "needs_collection": True,
+                  "skip_reason": "no_data",
+                  "message": "没有找到数据文件"
+              }
+              print(json.dumps(result))
+              exit(0)
+          
+          # 采样检查
+          sample_files = files[:100]
+          latest_dates = []
+          
+          for f in sample_files:
+              try:
+                  table = pq.read_table(f)
+                  date_col = None
+                  if 'trade_date' in table.column_names:
+                      date_col = 'trade_date'
+                  elif 'date' in table.column_names:
+                      date_col = 'date'
+                  
+                  if date_col:
+                      dates = table.column(date_col).to_pylist()
+                      if dates:
+                          latest_dates.append(str(max(dates)))
+              except Exception as e:
+                  logger.warning(f"读取 {f.name} 失败: {e}")
+          
+          if not latest_dates:
+              logger.warning("无法读取数据文件日期，需要采集")
+              result = {
+                  "needs_collection": True,
+                  "skip_reason": "cannot_read",
+                  "message": "无法读取数据文件日期"
+              }
+              print(json.dumps(result))
+              exit(0)
+          
+          latest_date = max(latest_dates)
+          logger.info(f"数据最新日期: {latest_date}")
+          
+      except ImportError:
+          logger.warning("pyarrow 未安装，使用文件修改时间估算")
+          
+          kline_dir = Path("{{ vars.project_root }}") / "data" / "kline"
+          files = list(kline_dir.glob("*.parquet"))
+          
+          if not files:
+              result = {
+                  "needs_collection": True,
+                  "skip_reason": "no_data",
+                  "message": "没有找到数据文件"
+              }
+              print(json.dumps(result))
+              exit(0)
+          
+          latest_mtime = max(f.stat().st_mtime for f in files)
+          latest_date = datetime.fromtimestamp(latest_mtime).strftime('%Y-%m-%d')
+          logger.info(f"基于文件修改时间估算最新日期: {latest_date}")
+      
+      # 智能判断"今天"
+      now = datetime.now()
+      current_minutes = now.hour * 60 + now.minute
+      market_close_minutes = 15 * 60 + 30  # 15:30
+      
+      if current_minutes < market_close_minutes and now.weekday() < 5:
+          # 还未到收盘后，今天数据可能不可用
+          effective_today = now - timedelta(days=1)
+          while effective_today.weekday() >= 5:
+              effective_today -= timedelta(days=1)
+          today = effective_today.strftime('%Y-%m-%d')
+          logger.info(f"当前时间 {now.strftime('%H:%M')} 早于 15:30，使用上一个交易日: {today}")
+      else:
+          today = now.strftime('%Y-%m-%d')
+          logger.info(f"今天: {today}")
+      
+      # 判断数据是否新鲜
+      if latest_date >= today:
+          logger.info(f"数据已最新 ({latest_date} >= {today})")
+          if skip_if_fresh:
+              result = {
+                  "needs_collection": False,
+                  "skip_reason": "fresh",
+                  "latest_date": latest_date,
+                  "today": today,
+                  "message": "数据已最新，跳过采集"
+              }
+          else:
+              result = {
+                  "needs_collection": True,
+                  "skip_reason": "forced",
+                  "latest_date": latest_date,
+                  "today": today,
+                  "message": "数据已最新，但强制继续"
+              }
+      else:
+          logger.info(f"数据需要更新 ({latest_date} < {today})")
+          result = {
+              "needs_collection": True,
+              "skip_reason": "outdated",
+              "latest_date": latest_date,
+              "today": today,
+              "message": f"数据需要更新: {latest_date} -> {today}"
+          }
+      
+      print(json.dumps(result))
+      
+    timeout: PT5M
+
+  # ========== 阶段1: 数据采集（条件执行） ==========
+  - id: data_collection
+    type: io.kestra.plugin.scripts.python.Script
+    description: |
+      采集A股所有行情数据（日线）
+      支持单日期采集或区间补采
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.data_collect import main as collect_main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_collection")
+      
+      # 构建命令行参数
+      start_date = "{{ inputs.start_date }}"
+      end_date = "{{ inputs.end_date }}"
+      
+      if start_date and end_date:
+          # 区间补采模式
+          sys.argv = [
+              'data_collect.py',
+              '--start-date', start_date,
+              '--end-date', end_date
+          ]
+          logger.info(f"开始补采区间数据: {start_date} 至 {end_date}")
+      else:
+          # 单日期采集模式（默认今天）
+          target_date = "{{ inputs.run_date }}"
+          sys.argv = [
+              'data_collect.py',
+              '--date', target_date
+          ]
+          logger.info(f"开始采集 {target_date} 的数据")
+      
+      try:
+          result = collect_main()
+          if result == 0:
+              logger.info("数据采集完成")
+          else:
+              logger.error("数据采集失败")
+              raise Exception("数据采集失败")
+      except Exception as e:
+          logger.error(f"数据采集异常: {e}")
+          raise
+    timeout: PT2H
+
+  # ========== 阶段2: 数据质检 ==========
+  - id: data_quality_check
+    type: io.kestra.plugin.scripts.python.Script
+    description: 验证数据新鲜度、完整性、质量
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.smart_data_audit import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_quality")
+      
+      logger.info("开始数据质检...")
+      try:
+          main()
+          logger.info("数据质检通过")
+      except Exception as e:
+          logger.error(f"数据质检失败: {e}")
+          raise
+    timeout: PT30M
+
+  # ========== 阶段3: CVD指标计算 ==========
+  - id: calculate_cvd
+    type: io.kestra.plugin.scripts.python.Script
+    description: 计算60日累积成交量差指标
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.cvd_calculator import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.cvd")
+      
+      logger.info("开始计算CVD指标...")
+      try:
+          main()
+          logger.info("CVD指标计算完成")
+      except Exception as e:
+          logger.error(f"CVD计算失败: {e}")
+          raise
+    timeout: PT30M
+
+  # ========== 阶段4: 市场复盘 ==========
+  - id: market_review
+    type: io.kestra.plugin.scripts.python.Script
+    description: 生成市场复盘报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.market_review import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.review")
+      
+      logger.info("开始市场复盘...")
+      try:
+          main()
+          logger.info("市场复盘完成")
+      except Exception as e:
+          logger.error(f"市场复盘失败: {e}")
+          raise
+    timeout: PT20M
+
+  # ========== 阶段5: 选股评分 ==========
+  - id: stock_selection
+    type: io.kestra.plugin.scripts.python.Script
+    description: 执行选股策略评分
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.stock_selection import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.selection")
+      
+      logger.info("开始选股评分...")
+      try:
+          main()
+          logger.info("选股评分完成")
+      except Exception as e:
+          logger.error(f"选股评分失败: {e}")
+          raise
+    timeout: PT30M
+
+  # ========== 阶段6: 发送邮件通知 ==========
+  - id: send_email_notification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送执行完成邮件通知
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      # 从 .env 文件加载环境变量
+      from dotenv import load_dotenv
+      env_path = os.path.join("{{ vars.project_root }}", ".env")
+      if os.path.exists(env_path):
+          load_dotenv(env_path)
+      
+      from scripts.pipeline.send_workflow_notification import main as send_notification
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.email")
+      
+      # 构建命令行参数
+      start_date = "{{ inputs.start_date }}"
+      end_date = "{{ inputs.end_date }}"
+      
+      if start_date and end_date:
+          date_info = f"补采区间: {start_date} 至 {end_date}"
+      else:
+          date_info = "{{ inputs.run_date }}"
+      
+      sys.argv = [
+          'send_workflow_notification.py',
+          '--workflow', 'xcnstock_data_pipeline',
+          '--execution-id', '{{ execution.id }}',
+          '--status', 'SUCCESS',
+          '--date', date_info
+      ]
+      
+      logger.info("发送邮件通知...")
+      try:
+          result = send_notification()
+          if result == 0:
+              logger.info("邮件通知发送成功")
+          else:
+              logger.warning("邮件通知发送失败")
+      except Exception as e:
+          logger.error(f"邮件通知异常: {e}")
+    timeout: PT5M
+
+triggers:
+  # 定时触发：工作日收盘后
+  - id: daily_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 16 * * 1-5"
+    timezone: Asia/Shanghai
+
+  # 手动触发
+  - id: manual_trigger
+    type: io.kestra.core.models.triggers.types.Webhook
+    key: xcnstock_pipeline_manual
+
+errors:
+  # 失败时发送邮件通知
+  - id: send_error_email
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送失败邮件通知
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      # 从 .env 文件加载环境变量
+      from dotenv import load_dotenv
+      env_path = os.path.join("{{ vars.project_root }}", ".env")
+      if os.path.exists(env_path):
+          load_dotenv(env_path)
+      
+      from scripts.pipeline.send_workflow_notification import main as send_notification
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.email")
+      
+      sys.argv = [
+          'send_workflow_notification.py',
+          '--workflow', 'xcnstock_data_pipeline',
+          '--execution-id', '{{ execution.id }}',
+          '--status', 'FAILED',
+          '--date', '{{ inputs.run_date }}'
+      ]
+      
+      logger.info("发送失败邮件通知...")
+      try:
+          send_notification()
+      except Exception as e:
+          logger.error(f"邮件通知异常: {e}")
+    timeout: PT5M

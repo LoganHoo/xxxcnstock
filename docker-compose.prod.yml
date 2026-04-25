@@ -1,0 +1,136 @@
+version: '3.8'
+
+services:
+  # 量化交易主应用
+  quant-trading:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: quant-trading
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=mysql://user:password@mysql:3306/quant_trading
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./reports:/app/reports
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - quant-network
+
+  # Web监控面板
+  web-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: quant-dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - API_URL=http://quant-trading:5000
+    depends_on:
+      - quant-trading
+    networks:
+      - quant-network
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: quant-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - quant-network
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: quant-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=quant_trading
+      - MYSQL_USER=quant_user
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - quant-network
+
+  # 定时任务调度器
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: quant-scheduler
+    restart: unless-stopped
+    environment:
+      - API_URL=http://quant-trading:5000
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - quant-trading
+      - redis
+    networks:
+      - quant-network
+
+  # 数据收集服务
+  data-collector:
+    build:
+      context: .
+      dockerfile: Dockerfile.collector
+    container_name: quant-collector
+    restart: unless-stopped
+    environment:
+      - TUSHARE_TOKEN=${TUSHARE_TOKEN}
+      - BAOSTOCK_USER=${BAOSTOCK_USER}
+      - BAOSTOCK_PASSWORD=${BAOSTOCK_PASSWORD}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - quant-network
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: quant-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - quant-trading
+      - web-dashboard
+    networks:
+      - quant-network
+
+volumes:
+  redis-data:
+  mysql-data:
+
+networks:
+  quant-network:
+    driver: bridge

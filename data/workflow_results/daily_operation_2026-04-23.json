@@ -1,0 +1,46 @@
+{
+  "date": "2026-04-23",
+  "generated_at": "2026-04-23T20:10:28.823237",
+  "overall_status": "success",
+  "tasks_completed": 1,
+  "tasks_failed": 0,
+  "tasks_skipped": 0,
+  "results": {
+    "health_check": {
+      "task_name": "health_check",
+      "status": "success",
+      "start_time": "2026-04-23T20:10:28.733366",
+      "end_time": "2026-04-23T20:10:28.822403",
+      "duration_seconds": 0.089037,
+      "details": {
+        "checks": {
+          "disk_space": {
+            "status": "ok",
+            "free_gb": 716.13,
+            "total_gb": 1907.5,
+            "usage_percent": 62.46
+          },
+          "data_files": {
+            "status": "ok",
+            "parquet_files": 11662
+          },
+          "memory": {
+            "status": "ok",
+            "used_percent": 82.6,
+            "available_gb": 2.79
+          }
+        }
+      },
+      "errors": []
+    }
+  },
+  "summary": {
+    "total_tasks": 1,
+    "tasks_completed": 1,
+    "tasks_failed": 0,
+    "tasks_skipped": 0,
+    "total_duration": 0.089923,
+    "data_quality_score": 0,
+    "system_health": "success"
+  }
+}

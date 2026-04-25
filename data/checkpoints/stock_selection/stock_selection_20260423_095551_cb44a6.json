@@ -1,0 +1,14 @@
+{
+  "workflow_id": "stock_selection_20260423_095551_cb44a6",
+  "step_name": "merge_data",
+  "step_index": 0,
+  "completed_items": [
+    "merge_data"
+  ],
+  "failed_items": [],
+  "metadata": {
+    "date": "2026-04-23",
+    "total_stocks": 4447
+  },
+  "timestamp": "2026-04-23T09:55:51.752085"
+}

@@ -1,0 +1,451 @@
+id: xcnstock_data_collection_unified
+namespace: xcnstock
+
+description: |
+  XCNStock 统一数据采集工作流
+  
+  整合功能：
+  1. 标准数据采集（原 data_collection）
+  2. 每日数据更新（原 daily_update）
+  3. GE验证采集（原 data_collection_with_ge）
+  
+  使用方式：
+  - 标准模式 (mode=standard): 采集当日数据，不更新股票列表
+  - 每日模式 (mode=daily): 更新股票列表后采集，等同于 daily_update
+  - GE模式 (mode=ge): 采集并执行GE验证，等同于 data_collection_with_ge
+  
+  调度建议：
+  - 每日 16:00: mode=daily
+  - 每日 16:30: mode=ge
+
+labels:
+  env: production
+  project: xcnstock
+  type: data_collection_unified
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: mode
+    type: STRING
+    defaults: "standard"
+    description: |
+      执行模式:
+      - standard: 标准采集（不更新股票列表）
+      - daily: 每日更新（更新股票列表后采集）
+      - ge: GE验证采集（采集后执行GE验证）
+  
+  - id: target_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 目标日期 (YYYY-MM-DD)
+  
+  - id: start_date
+    type: STRING
+    defaults: ""
+    description: 补采开始日期（留空则采集当日）
+  
+  - id: end_date
+    type: STRING
+    defaults: ""
+    description: 补采结束日期
+  
+  - id: enable_ge_validation
+    type: BOOLEAN
+    defaults: false
+    description: 启用GE数据验证（mode=ge时自动启用）
+  
+  - id: update_stock_list
+    type: BOOLEAN
+    defaults: false
+    description: 更新股票列表（mode=daily时自动启用）
+  
+  - id: retry_failed
+    type: BOOLEAN
+    defaults: true
+    description: 重试失败的股票
+  
+  - id: force_full
+    type: BOOLEAN
+    defaults: false
+    description: 强制全量采集（忽略已有数据）
+
+tasks:
+  # ========== 阶段0: 获取分布式锁 ==========
+  - id: acquire_distributed_lock
+    type: io.kestra.plugin.scripts.python.Script
+    description: 获取分布式锁，确保双调度器互斥执行
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+      REDIS_HOST: "{{ vars.redis_host ?? 'redis' }}"
+      REDIS_PORT: "{{ vars.redis_port ?? '6379' }}"
+    beforeCommands:
+      - pip install redis -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from datetime import datetime
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.lock")
+      
+      logger.info("=" * 60)
+      logger.info("阶段0: 获取分布式锁")
+      logger.info("=" * 60)
+      
+      from core.distributed_lock import DistributedLock
+      import redis
+      
+      try:
+          redis_client = redis.Redis(
+              host=os.getenv('REDIS_HOST', 'redis'),
+              port=int(os.getenv('REDIS_PORT', 6379)),
+              decode_responses=True,
+              socket_connect_timeout=5
+          )
+          
+          lock = DistributedLock(
+              redis_client=redis_client,
+              lock_key="data_collection",
+              ttl_seconds=7200,
+              auto_renew=True
+          )
+          
+          acquired = lock.acquire(blocking=False)
+          
+          if not acquired:
+              logger.warning("❌ 无法获取分布式锁，APScheduler 可能正在运行")
+              lock_info = {
+                  "acquired": False,
+                  "timestamp": datetime.now().isoformat(),
+                  "message": "Lock held by another scheduler"
+              }
+          else:
+              logger.info("✅ 成功获取分布式锁")
+              lock_info = {
+                  "acquired": True,
+                  "lock_value": lock.lock_value,
+                  "timestamp": datetime.now().isoformat(),
+                  "message": "Lock acquired successfully"
+              }
+              import atexit
+              atexit.register(lock.release)
+          
+          print(json.dumps(lock_info))
+          
+          if not acquired:
+              raise Exception("无法获取分布式锁，任务被跳过")
+              
+      except redis.ConnectionError as e:
+          logger.error(f"Redis 连接失败: {e}")
+          logger.warning("⚠️ Redis 不可用，以降级模式继续执行")
+          lock_info = {
+              "acquired": True,
+              "degraded": True,
+              "timestamp": datetime.now().isoformat(),
+              "message": "Redis unavailable, running in degraded mode"
+          }
+          print(json.dumps(lock_info))
+      except Exception as e:
+          logger.error(f"获取锁异常: {e}")
+          raise
+    timeout: PT1M
+
+  # ========== 阶段1: 更新股票列表（条件执行） ==========
+  - id: update_stock_list
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新股票列表（获取最新上市/退市信息）
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import asyncio
+      import logging
+      from datetime import datetime
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.stock_list")
+      
+      logger.info("=" * 60)
+      logger.info("阶段1: 更新股票列表")
+      logger.info("=" * 60)
+      
+      from scripts.pipeline.daily_data_update import update_stock_list
+      
+      try:
+          result = asyncio.run(update_stock_list())
+          logger.info(f"股票列表更新完成: {result}")
+      except Exception as e:
+          logger.error(f"股票列表更新失败: {e}")
+          raise
+    timeout: PT10M
+    # 条件执行：mode=daily 或 update_stock_list=true
+    # 注意：Kestra 的条件执行需要使用 If 任务或子流程，这里先保留任务，在脚本中判断
+
+  # ========== 阶段2: 数据采集 ==========
+  - id: collect_kline_data
+    type: io.kestra.plugin.scripts.python.Script
+    description: |
+      采集K线数据
+      - 标准模式: 采集 target_date 当日数据
+      - 补采模式: 采集 start_date 到 end_date 区间数据
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+      MODE: "{{ inputs.mode }}"
+      UPDATE_STOCK_LIST: "{{ inputs.mode == 'daily' or inputs.update_stock_list }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow numpy -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      from datetime import datetime
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.collect")
+      
+      mode = "{{ inputs.mode }}"
+      target_date = "{{ inputs.target_date }}"
+      start_date = "{{ inputs.start_date }}"
+      end_date = "{{ inputs.end_date }}"
+      force_full = "{{ inputs.force_full }}".lower() == "true"
+      update_stock_list = "{{ inputs.mode == 'daily' or inputs.update_stock_list }}".lower() == "true"
+      
+      logger.info("=" * 60)
+      logger.info(f"阶段2: 数据采集 [模式={mode}]")
+      logger.info("=" * 60)
+      logger.info(f"目标日期: {target_date}")
+      logger.info(f"补采区间: {start_date} ~ {end_date}" if start_date and end_date else "单日采集模式")
+      logger.info(f"更新股票列表: {update_stock_list}")
+      logger.info(f"强制全量: {force_full}")
+      
+      # 根据模式选择采集脚本
+      if mode == "ge":
+          logger.info("使用GE验证采集模式")
+          from scripts.pipeline.data_collect_with_validation import main as collect_main
+          import asyncio
+          result = asyncio.run(collect_main())
+      else:
+          logger.info("使用标准采集模式")
+          from scripts.pipeline.data_collect import main as collect_main
+          
+          # 构建命令行参数
+          if start_date and end_date:
+              sys.argv = ['data_collect.py', '--start-date', start_date, '--end-date', end_date]
+              if force_full:
+                  sys.argv.append('--force-full')
+          else:
+              sys.argv = ['data_collect.py', '--date', target_date]
+              if force_full:
+                  sys.argv.append('--force-full')
+          
+          result = collect_main()
+      
+      if result != 0:
+          raise Exception(f"数据采集失败，返回码: {result}")
+      
+      logger.info("数据采集完成")
+    timeout: PT2H
+    retry:
+      type: constant
+      interval: PT5M
+      maxAttempt: "{{ inputs.retry_failed ? 2 : 0 }}"
+
+  # ========== 阶段3: 生成报告 ==========
+  - id: generate_report
+    type: io.kestra.plugin.scripts.python.Script
+    description: 生成采集报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import json
+      from datetime import datetime
+      from pathlib import Path
+      
+      mode = "{{ inputs.mode }}"
+      
+      # 尝试读取不同模式的报告
+      report_files = {
+          'ge': 'data/collection_validation_report.json',
+          'daily': 'data/daily_update_report.json',
+          'standard': 'data/collection_report.json'
+      }
+      
+      report_file = report_files.get(mode, 'data/collection_report.json')
+      report_path = Path(report_file)
+      
+      if report_path.exists():
+          with open(report_path, 'r') as f:
+              report = json.load(f)
+          print(f"报告已生成: {report_file}")
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+      else:
+          print(f"报告文件不存在: {report_file}")
+          # 生成简单报告
+          report = {
+              "mode": mode,
+              "target_date": "{{ inputs.target_date }}",
+              "timestamp": datetime.now().isoformat(),
+              "status": "completed"
+          }
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+    timeout: PT1M
+
+  # ========== 阶段4: 发送通知 ==========
+  - id: send_notification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送采集完成通知
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.send_workflow_notification import send_notification
+      import json
+      from pathlib import Path
+      
+      mode = "{{ inputs.mode }}"
+      target_date = "{{ inputs.target_date }}"
+      
+      # 读取报告
+      report_files = {
+          'ge': 'data/collection_validation_report.json',
+          'daily': 'data/daily_update_report.json',
+          'standard': 'data/collection_report.json'
+      }
+      
+      report_file = report_files.get(mode, 'data/collection_report.json')
+      
+      try:
+          with open(f'/projects/xxxcnstock/{report_file}', 'r') as f:
+              report = json.load(f)
+          
+          mode_names = {
+              'standard': '标准数据采集',
+              'daily': '每日数据更新',
+              'ge': 'GE验证采集'
+          }
+          
+          message = f"{mode_names.get(mode, '数据采集')}完成\n\n"
+          message += f"目标日期: {target_date}\n"
+          message += f"执行模式: {mode}\n\n"
+          
+          if mode == 'ge':
+              summary = report.get('summary', {})
+              message += "采集统计:\n"
+              message += f"- 总股票: {summary.get('total', 0)} 只\n"
+              message += f"- 成功: {summary.get('success', 0)} 只\n"
+              message += f"- 验证通过: {summary.get('validation_passed', 0)} 只\n"
+              message += f"- 成功率: {summary.get('success_rate', 0):.1%}"
+          elif mode == 'daily':
+              summary = report.get('collection', {})
+              message += "采集统计:\n"
+              message += f"- 已最新: {summary.get('up_to_date', 0)} 只\n"
+              message += f"- 已采集: {summary.get('collected', 0)} 只\n"
+              message += f"- 退市/停牌: {summary.get('delisted', 0)} 只\n"
+              message += f"- 成功: {summary.get('success', 0)}\n"
+              message += f"- 失败: {summary.get('failed', 0)}"
+          else:
+              message += f"报告: {report}"
+              
+      except Exception as e:
+          message = f"数据采集完成（模式: {mode}），但读取报告失败: {e}"
+      
+      send_notification(
+          "xcnstock_data_collection_unified",
+          "SUCCESS",
+          message
+      )
+      
+      print("通知已发送")
+    timeout: PT1M
+
+# ========== 错误处理 ==========
+errors:
+  - id: send_error_notification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送错误通知
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.send_workflow_notification import send_notification
+      
+      mode = "{{ inputs.mode }}"
+      mode_names = {
+          'standard': '标准数据采集',
+          'daily': '每日数据更新',
+          'ge': 'GE验证采集'
+      }
+      
+      send_notification(
+          "xcnstock_data_collection_unified",
+          "FAILED",
+          f"{mode_names.get(mode, '数据采集')}失败，请检查日志"
+      )
+      
+      print("错误通知已发送")
+    timeout: PT1M
+
+# ========== 调度配置 ==========
+triggers:
+  # 每天 16:00: 标准数据采集
+  - id: daily_standard_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 16 * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      mode: "standard"
+      target_date: "{{ trigger.date }}"
+  
+  # 每天 16:30: 每日数据更新（含股票列表更新）
+  - id: daily_update_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "30 16 * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      mode: "daily"
+      target_date: "{{ trigger.date }}"
+  
+  # 每天 17:00: GE验证采集
+  - id: daily_ge_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 17 * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      mode: "ge"
+      target_date: "{{ trigger.date }}"

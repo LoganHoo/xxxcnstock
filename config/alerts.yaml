@@ -1,0 +1,271 @@
+# 告警规则配置
+# 定义流水线监控的告警规则和通知方式
+
+# 全局配置
+global:
+  # 告警评估间隔（秒）
+  evaluation_interval: 60
+  # 告警抑制时间（分钟）
+  inhibit_duration: 30
+  # 聚合窗口（分钟）
+  aggregation_window: 5
+
+# 告警规则组
+rule_groups:
+  - name: data_collection
+    interval: 60
+    rules:
+      # 数据采集超时告警
+      - alert: DataCollectionTimeout
+        expr: xcnstock_task_duration_seconds{task="data_collection"} > 600
+        for: 5m
+        labels:
+          severity: critical
+          team: data
+        annotations:
+          summary: "数据采集超时"
+          description: "数据采集任务执行时间超过10分钟，当前值: {{ $value }}秒"
+          runbook_url: "https://wiki.xcnstock.com/runbooks/data-collection-timeout"
+
+      # 数据采集失败告警
+      - alert: DataCollectionFailure
+        expr: xcnstock_task_success_rate{task="data_collection"} < 0.95
+        for: 3m
+        labels:
+          severity: critical
+          team: data
+        annotations:
+          summary: "数据采集失败率过高"
+          description: "数据采集任务成功率低于95%，当前值: {{ $value | humanizePercentage }}"
+
+      # 数据缺失告警
+      - alert: DataMissing
+        expr: xcnstock_data_missing_stocks > 100
+        for: 10m
+        labels:
+          severity: warning
+          team: data
+        annotations:
+          summary: "数据缺失股票数量过多"
+          description: "超过100只股票数据缺失，当前值: {{ $value }}"
+
+  - name: factor_calculation
+    interval: 60
+    rules:
+      # 因子计算超时告警
+      - alert: FactorCalculationTimeout
+        expr: xcnstock_task_duration_seconds{task="factor_calculation"} > 180
+        for: 5m
+        labels:
+          severity: warning
+          team: quant
+        annotations:
+          summary: "因子计算超时"
+          description: "因子计算任务执行时间超过3分钟，当前值: {{ $value }}秒"
+
+      # 因子计算失败告警
+      - alert: FactorCalculationFailure
+        expr: xcnstock_task_success_rate{task="factor_calculation"} < 0.95
+        for: 3m
+        labels:
+          severity: warning
+          team: quant
+        annotations:
+          summary: "因子计算失败率过高"
+          description: "因子计算任务成功率低于95%，当前值: {{ $value | humanizePercentage }}"
+
+  - name: cache
+    interval: 60
+    rules:
+      # 缓存命中率低告警
+      - alert: CacheHitRatioLow
+        expr: xcnstock_cache_hit_ratio < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "缓存命中率过低"
+          description: "缓存命中率低于80%，当前值: {{ $value | humanizePercentage }}"
+
+      # Redis 连接失败告警
+      - alert: RedisConnectionFailure
+        expr: xcnstock_redis_connected == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "Redis 连接失败"
+          description: "无法连接到 Redis 服务器，缓存降级到内存模式"
+
+  - name: scheduler
+    interval: 60
+    rules:
+      # 调度器锁冲突告警
+      - alert: SchedulerLockConflict
+        expr: xcnstock_scheduler_lock_conflicts > 5
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "调度器锁冲突频繁"
+          description: "调度器锁冲突次数超过5次，当前值: {{ $value }}"
+
+      # 调度器任务堆积告警
+      - alert: SchedulerTaskBacklog
+        expr: xcnstock_scheduler_pending_tasks > 10
+        for: 10m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "调度器任务堆积"
+          description: "待处理任务超过10个，当前值: {{ $value }}"
+
+  - name: system
+    interval: 60
+    rules:
+      # 内存使用率告警
+      - alert: HighMemoryUsage
+        expr: xcnstock_memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infra
+        annotations:
+          summary: "内存使用率过高"
+          description: "内存使用率超过85%，当前值: {{ $value }}%"
+
+      # 磁盘使用率告警
+      - alert: HighDiskUsage
+        expr: xcnstock_disk_usage_percent > 90
+        for: 5m
+        labels:
+          severity: critical
+          team: infra
+        annotations:
+          summary: "磁盘使用率过高"
+          description: "磁盘使用率超过90%，当前值: {{ $value }}%"
+
+      # API 响应时间过长告警
+      - alert: APIResponseSlow
+        expr: xcnstock_api_response_time_seconds > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: dev
+        annotations:
+          summary: "API 响应时间过长"
+          description: "API 平均响应时间超过2秒，当前值: {{ $value }}秒"
+
+# 告警抑制规则
+inhibit_rules:
+  # 高级别告警抑制低级别告警
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal:
+      - task
+      - team
+
+  # 数据采集失败抑制数据缺失告警
+  - source_match:
+      alertname: DataCollectionFailure
+    target_match:
+      alertname: DataMissing
+
+# 告警路由配置
+routing:
+  # 默认路由
+  default:
+    receiver: default
+    group_by:
+      - alertname
+      - severity
+    group_wait: 30s
+    group_interval: 5m
+    repeat_interval: 4h
+
+  # 按严重级别路由
+  routes:
+    - match:
+        severity: critical
+      receiver: critical_team
+      continue: true
+    - match:
+        severity: warning
+      receiver: warning_team
+      continue: true
+    - match:
+        team: data
+      receiver: data_team
+    - match:
+        team: quant
+      receiver: quant_team
+    - match:
+        team: infra
+      receiver: infra_team
+
+# 通知接收器配置
+receivers:
+  - name: default
+    webhook_configs:
+      - url: http://localhost:5002/webhook/default
+        send_resolved: true
+
+  - name: critical_team
+    webhook_configs:
+      - url: http://localhost:5002/webhook/critical
+        send_resolved: true
+    slack_configs:
+      - api_url: ${SLACK_WEBHOOK_URL}
+        channel: '#alerts-critical'
+        title: 'XCNStock 严重告警'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+
+  - name: warning_team
+    webhook_configs:
+      - url: http://localhost:5002/webhook/warning
+        send_resolved: true
+    email_configs:
+      - to: 'alerts@xcnstock.com'
+        from: 'monitoring@xcnstock.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: 'monitoring@xcnstock.com'
+        auth_password: ${EMAIL_PASSWORD}
+
+  - name: data_team
+    webhook_configs:
+      - url: http://localhost:5002/webhook/data-team
+        send_resolved: true
+
+  - name: quant_team
+    webhook_configs:
+      - url: http://localhost:5002/webhook/quant-team
+        send_resolved: true
+
+  - name: infra_team
+    webhook_configs:
+      - url: http://localhost:5002/webhook/infra-team
+        send_resolved: true
+    pagerduty_configs:
+      - service_key: ${PAGERDUTY_KEY}
+        severity: '{{ .GroupLabels.severity }}'
+
+# 模板配置
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# 时间窗口配置（用于告警静默）
+silences:
+  # 维护窗口
+  - matchers:
+      - name: maintenance
+        value: "true"
+    starts_at: "2026-04-26 02:00:00"
+    ends_at: "2026-04-26 04:00:00"
+    created_by: "admin"
+    comment: "定期维护窗口"

@@ -1,0 +1,157 @@
+# XCNStock Scheduler Docker Compose
+# 任务调度器Docker部署配置
+#
+# 使用方法:
+#   1. 构建镜像: docker-compose -f docker-compose.scheduler.yml build
+#   2. 启动服务: docker-compose -f docker-compose.scheduler.yml up -d
+#   3. 查看日志: docker-compose -f docker-compose.scheduler.yml logs -f
+#   4. 停止服务: docker-compose -f docker-compose.scheduler.yml down
+#
+# 数据持久化:
+#   - 数据目录: ./data -> /app/data
+#   - 日志目录: ./logs -> /app/logs
+#   - 配置文件: ./config -> /app/config
+
+version: '3.8'
+
+services:
+  # 任务调度器主服务
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    image: xcnstock/scheduler:latest
+    container_name: xcnstock-scheduler
+    restart: unless-stopped
+    
+    # 环境变量
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONPATH=/app
+      - SCHEDULER_CONFIG_PATH=/app/config/cron_tasks.yaml
+      - SCHEDULER_STATE_PATH=/app/data/scheduler_state.json
+      - LOG_LEVEL=INFO
+      # 可选: Redis配置（用于分布式锁）
+      # - REDIS_HOST=redis
+      # - REDIS_PORT=6379
+      # - REDIS_DB=0
+      # - REDIS_PASSWORD=
+    
+    # 数据卷挂载
+    volumes:
+      # 数据持久化
+      - ./data:/app/data
+      # 日志持久化
+      - ./logs:/app/logs
+      # 配置文件（只读）
+      - ./config:/app/config:ro
+      # 脚本文件（开发模式可挂载）
+      - ./scripts:/app/scripts:ro
+      # 核心代码（开发模式可挂载）
+      - ./core:/app/core:ro
+      - ./services:/app/services:ro
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.path.insert(0, '/app'); from scripts.enhanced_scheduler import EnhancedScheduler; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    # 日志配置
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+        labels: "service_name,environment"
+    
+    # 资源限制
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # 网络配置
+    networks:
+      - xcnstock-network
+
+  # 可选: Redis服务（用于分布式锁和状态共享）
+  # 如需多实例部署，建议启用Redis
+  redis:
+    image: redis:7-alpine
+    container_name: xcnstock-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks:
+      - xcnstock-network
+    profiles:
+      - with-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # 可选: 监控面板（查看任务状态）
+  scheduler-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    image: xcnstock/scheduler:latest
+    container_name: xcnstock-scheduler-monitor
+    restart: unless-stopped
+    command: python -c "
+      import time
+      import json
+      from pathlib import Path
+      from datetime import datetime
+      
+      state_file = Path('/app/data/scheduler_state.json')
+      while True:
+          print(f'=== {datetime.now().strftime(\"%Y-%m-%d %H:%M:%S\")} ===')
+          if state_file.exists():
+              try:
+                  with open(state_file) as f:
+                      states = json.load(f)
+                  for name, state in states.items():
+                      status = state.get('status', 'unknown')
+                      last_run = state.get('last_run', 'never')
+                      print(f'{name}: {status} (last: {last_run})')
+              except Exception as e:
+                  print(f'Error reading state: {e}')
+          else:
+              print('No state file found')
+          print()
+          time.sleep(60)
+    "
+    volumes:
+      - ./data:/app/data:ro
+    depends_on:
+      - scheduler
+    networks:
+      - xcnstock-network
+    profiles:
+      - with-monitor
+
+# 数据卷定义
+volumes:
+  redis-data:
+    driver: local
+
+# 网络定义
+networks:
+  xcnstock-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

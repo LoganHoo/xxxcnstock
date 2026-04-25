@@ -1,0 +1,271 @@
+id: xcnstock_monitoring_unified
+namespace: xcnstock
+
+description: |
+  XCNStock 统一监控维护工作流
+  
+  整合功能：
+  1. 数据新鲜度检查（原 data_inspection）
+  2. 数据完整性检查（原 data_inspection）
+  3. 缓存清理（原 system_monitor）
+  4. 生成监控面板（原 system_monitor）
+  
+  调度：
+  - 每天 03:00: 执行完整维护（缓存清理 + 数据检查）
+  - 每 10 分钟: 生成监控面板
+  - 每天 08:00: 数据质量巡检
+
+labels:
+  env: production
+  project: xcnstock
+  type: monitoring_unified
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: check_type
+    type: STRING
+    defaults: "full"
+    description: |
+      检查类型:
+      - full: 完整检查（所有项目）
+      - data: 仅数据检查
+      - system: 仅系统维护
+      - dashboard: 仅生成监控面板
+
+tasks:
+  # ========== 阶段1: 数据新鲜度检查 ==========
+  - id: check_data_freshness
+    type: io.kestra.plugin.scripts.python.Script
+    description: 检查 K 线数据新鲜度
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      check_type = "{{ inputs.check_type }}"
+      if check_type == "dashboard":
+          print("跳过数据检查（dashboard模式）")
+          exit(0)
+      
+      from scripts.pipeline.check_data_freshness import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_freshness")
+      
+      logger.info("=" * 60)
+      logger.info("阶段1: 数据新鲜度检查")
+      logger.info("=" * 60)
+      
+      try:
+          main()
+          logger.info("数据新鲜度检查完成")
+      except Exception as e:
+          logger.error(f"数据新鲜度检查失败: {e}")
+          # 不阻塞其他检查
+    timeout: PT10M
+    allowFailure: true
+
+  # ========== 阶段2: 数据完整性检查 ==========
+  - id: check_data_completeness
+    type: io.kestra.plugin.scripts.python.Script
+    description: 检查数据完整性
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      check_type = "{{ inputs.check_type }}"
+      if check_type == "dashboard":
+          print("跳过数据检查（dashboard模式）")
+          exit(0)
+      
+      from scripts.pipeline.check_data_completeness import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.data_completeness")
+      
+      logger.info("=" * 60)
+      logger.info("阶段2: 数据完整性检查")
+      logger.info("=" * 60)
+      
+      try:
+          main()
+          logger.info("数据完整性检查完成")
+      except Exception as e:
+          logger.error(f"数据完整性检查失败: {e}")
+    timeout: PT15M
+    allowFailure: true
+
+  # ========== 阶段3: 缓存清理 ==========
+  - id: cache_cleanup
+    type: io.kestra.plugin.scripts.python.Script
+    description: 清理损坏的缓存和过期checkpoint
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      check_type = "{{ inputs.check_type }}"
+      if check_type in ["data", "dashboard"]:
+          print("跳过缓存清理（非system模式）")
+          exit(0)
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.cache_cleanup")
+      
+      logger.info("=" * 60)
+      logger.info("阶段3: 缓存清理")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/cache_monitor.py"],
+              capture_output=True,
+              text=True,
+              timeout=300
+          )
+          logger.info(f"缓存清理完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"缓存清理失败: {e}")
+    timeout: PT10M
+    allowFailure: true
+
+  # ========== 阶段4: 生成监控面板 ==========
+  - id: generate_dashboard
+    type: io.kestra.plugin.scripts.python.Script
+    description: 生成任务监控面板HTML
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.dashboard")
+      
+      logger.info("=" * 60)
+      logger.info("阶段4: 生成监控面板")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/monitoring_dashboard.py"],
+              capture_output=True,
+              text=True,
+              timeout=60
+          )
+          logger.info(f"监控面板生成完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"监控面板生成失败: {e}")
+    timeout: PT5M
+    allowFailure: true
+
+  # ========== 阶段5: 生成巡检报告 ==========
+  - id: generate_inspection_report
+    type: io.kestra.plugin.scripts.python.Script
+    description: 生成数据巡检报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      check_type = "{{ inputs.check_type }}"
+      if check_type == "dashboard":
+          print("跳过巡检报告（dashboard模式）")
+          exit(0)
+      
+      from scripts.pipeline.generate_inspection_report import main
+      import logging
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.inspection_report")
+      
+      logger.info("=" * 60)
+      logger.info("阶段5: 生成巡检报告")
+      logger.info("=" * 60)
+      
+      try:
+          main()
+          logger.info("巡检报告生成完成")
+      except Exception as e:
+          logger.error(f"巡检报告生成失败: {e}")
+    timeout: PT5M
+    allowFailure: true
+
+  # ========== 阶段6: 发送完成通知 ==========
+  - id: send_completion_notification
+    type: io.kestra.plugin.core.log.Log
+    description: 发送监控完成通知
+    message: |
+      ✅ XCNStock 统一监控维护完成
+      - 检查类型: {{ inputs.check_type }}
+      - 执行时间: {{ execution.startDate }}
+
+triggers:
+  # 每天 03:00: 执行完整维护
+  - id: daily_maintenance_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 3 * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      check_type: "full"
+  
+  # 每 10 分钟: 生成监控面板
+  - id: dashboard_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "*/10 * * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      check_type: "dashboard"
+  
+  # 每天 08:00: 数据质量巡检
+  - id: data_inspection_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 8 * * *"
+    timezone: Asia/Shanghai
+    inputs:
+      check_type: "data"
+
+pluginDefaults:
+  - type: io.kestra.plugin.scripts.python.Script
+    values:
+      runner: PROCESS

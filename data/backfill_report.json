@@ -1,0 +1,17 @@
+{
+  "target_date": "2026-04-24",
+  "analysis_time": "2026-04-25T00:21:28.356789",
+  "summary": {
+    "total_stocks": 5336,
+    "up_to_date": 5022,
+    "backfilled": 25,
+    "delisted": 0,
+    "suspended": 289
+  },
+  "backfill_results": {
+    "success": 4,
+    "skipped": 0,
+    "failed": 1,
+    "total_rows": 1815,
+    "results": [
+      

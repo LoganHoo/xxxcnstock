@@ -1,0 +1,515 @@
+[
+  {
+    "timestamp": "2026-04-20T03:35:48.480343",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_kline,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000001,PROD)",
+    "code": "000001",
+    "data_type": "kline",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.499555",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000001,PROD)",
+    "code": "000001",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514872",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000001,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000001",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514878",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000002,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000002",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514880",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000003,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000003",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514882",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000004,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000004",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514884",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000005,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000005",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514886",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000006,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000006",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514888",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000007,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000007",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514893",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000008,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000008",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514895",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000009,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000009",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T03:35:48.514897",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000010,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000010",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T12:32:18.994812",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000001,PROD)",
+    "code": "000001",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-20T12:32:21.226833",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000002,PROD)",
+    "code": "000002",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-20T12:32:21.242975",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000003,PROD)",
+    "code": "000003",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-20T12:32:38.287336",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000002,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000002",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-20T12:32:38.287343",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000002,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260420,PROD)",
+    "code": "000002",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416962",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_300067,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "300067",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416968",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000638,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "000638",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416970",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_301022,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "301022",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416972",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_000552,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "000552",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416974",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002281,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002281",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416977",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002980,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002980",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416979",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_605222,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "605222",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416984",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_300502,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "300502",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416987",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_603052,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "603052",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416994",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_300900,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "300900",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416996",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002428,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002428",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.416998",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_301086,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "301086",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417000",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002008,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002008",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417002",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002565,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002565",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417004",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002342,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002342",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417006",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_603738,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "603738",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417008",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_002361,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "002361",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417010",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_001389,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "001389",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417012",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_003018,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "003018",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-22T00:02:29.417014",
+    "type": "selection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,kline_300179,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,selection_comprehensive_20260422,PROD)",
+    "code": "300179",
+    "strategy_type": "comprehensive",
+    "lineage_type": "TRANSFORMED"
+  },
+  {
+    "timestamp": "2026-04-23T20:04:53.559236",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_603618,PROD)",
+    "code": "603618",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:26.366132",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_600595,PROD)",
+    "code": "600595",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:26.491793",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_300625,PROD)",
+    "code": "300625",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:26.552602",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000887,PROD)",
+    "code": "000887",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:26.714742",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_301329,PROD)",
+    "code": "301329",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:26.880596",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_003013,PROD)",
+    "code": "003013",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:27.010784",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_301050,PROD)",
+    "code": "301050",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:27.089903",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_600163,PROD)",
+    "code": "600163",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:27.167345",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_688613,PROD)",
+    "code": "688613",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:05:27.229281",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_300316,PROD)",
+    "code": "300316",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:32.579312",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_603618,PROD)",
+    "code": "603618",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:32.914118",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_600595,PROD)",
+    "code": "600595",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.098505",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_300625,PROD)",
+    "code": "300625",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.194062",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_000887,PROD)",
+    "code": "000887",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.223327",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_301329,PROD)",
+    "code": "301329",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.305149",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_003013,PROD)",
+    "code": "003013",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.334781",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_301050,PROD)",
+    "code": "301050",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:33.727436",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_600163,PROD)",
+    "code": "600163",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:37.027155",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_688613,PROD)",
+    "code": "688613",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  },
+  {
+    "timestamp": "2026-04-23T20:09:37.099753",
+    "type": "collection",
+    "source": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,source_financial,PROD)",
+    "target": "urn:li:dataset:(urn:li:dataPlatform:xcnstock,financial_300316,PROD)",
+    "code": "300316",
+    "data_type": "financial",
+    "lineage_type": "COPIED"
+  }
+]

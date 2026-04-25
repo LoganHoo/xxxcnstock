@@ -1,0 +1,107 @@
+# 财务指标选股过滤器配置
+# 基于三大财务报表的财务指标进行选股
+
+filters:
+  # ===== 盈利能力过滤 =====
+
+  # ROE过滤器 - 筛选高ROE股票
+  roe_filter:
+    enabled: true
+    min_roe: 15.0  # 最低ROE 15%
+    max_roe: 100.0  # 最高ROE 100%
+    description: "ROE过滤器 - 筛选高ROE股票(>=15%)"
+    risk_level: "low"
+    category: "financial"
+    presets:
+      conservative:
+        min_roe: 20.0
+      aggressive:
+        min_roe: 10.0
+      default:
+        min_roe: 15.0
+
+  # 盈利能力综合过滤器
+  profitability_filter:
+    enabled: false  # 默认禁用，需要更多数据字段
+    min_roe: 10.0
+    min_gross_margin: 20.0  # 最低毛利率
+    min_net_margin: 5.0     # 最低净利率
+    description: "盈利能力综合过滤器 - ROE/毛利率/净利率"
+    risk_level: "medium"
+    category: "financial"
+    presets:
+      strict:
+        min_roe: 15.0
+        min_gross_margin: 30.0
+        min_net_margin: 10.0
+      default:
+        min_roe: 10.0
+        min_gross_margin: 20.0
+        min_net_margin: 5.0
+
+  # ===== 偿债能力过滤 =====
+
+  # 偿债能力过滤器
+  solvency_filter:
+    enabled: false  # 默认禁用
+    max_debt_to_asset: 70.0  # 最高资产负债率
+    min_current_ratio: 1.0   # 最低流动比率
+    description: "偿债能力过滤器 - 资产负债率/流动比率"
+    risk_level: "low"
+    category: "financial"
+
+  # ===== 成长能力过滤 =====
+
+  # 成长能力过滤器
+  growth_filter:
+    enabled: false  # 默认禁用
+    min_revenue_growth: 10.0  # 最低营收增长率
+    min_profit_growth: 10.0   # 最低净利润增长率
+    description: "成长能力过滤器 - 营收增长/净利润增长"
+    risk_level: "medium"
+    category: "financial"
+    presets:
+      high_growth:
+        min_revenue_growth: 20.0
+        min_profit_growth: 20.0
+      default:
+        min_revenue_growth: 10.0
+        min_profit_growth: 10.0
+
+  # ===== 现金流过滤 =====
+
+  # 现金流过滤器
+  cashflow_filter:
+    enabled: false  # 默认禁用
+    min_ocf_to_profit: 0.5  # 经营现金流/净利润 >= 0.5
+    description: "现金流过滤器 - 经营现金流质量"
+    risk_level: "low"
+    category: "financial"
+
+  # ===== 财务综合评分过滤 =====
+
+  # 财务综合评分过滤器
+  financial_composite_filter:
+    enabled: false  # 默认禁用
+    min_score: 60.0  # 最低综合评分
+    top_n: null      # 只保留前N名 (null表示不限制)
+    description: "财务综合评分过滤器 - 综合盈利能力/偿债能力/成长能力/现金流"
+    risk_level: "medium"
+    category: "financial"
+    presets:
+      top_50:
+        top_n: 50
+        min_score: 0
+      high_quality:
+        min_score: 70.0
+      default:
+        min_score: 60.0
+
+# 过滤器执行顺序
+filter_order:
+  - roe_filter              # 1. 先筛选高ROE股票
+  - solvency_filter         # 2. 排除高负债股票
+  - profitability_filter    # 3. 综合盈利能力筛选
+  - growth_filter           # 4. 成长能力筛选
+  - cashflow_filter         # 5. 现金流质量筛选
+  - financial_composite_filter  # 6. 综合评分筛选

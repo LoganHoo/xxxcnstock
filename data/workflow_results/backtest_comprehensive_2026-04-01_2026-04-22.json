@@ -1,0 +1,209 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "success",
+  "start_time": "2026-04-23T20:10:12.584970",
+  "end_date": "2026-04-22",
+  "duration_seconds": 0.450726,
+  "params": {
+    "start_date": "2026-04-01",
+    "end_date": "2026-04-22",
+    "initial_capital": 1000000.0,
+    "rebalance_frequency": "weekly",
+    "position_sizing": "equal_weight"
+  },
+  "performance": {
+    "total_return": -0.00024,
+    "annualized_return": -0.0037733167540333623,
+    "max_drawdown": 0,
+    "sharpe_ratio": 0,
+    "volatility": 0.0,
+    "win_rate": 0.0,
+    "profit_loss_ratio": 0
+  },
+  "trading_stats": {
+    "total_trades": 8,
+    "winning_trades": 4,
+    "losing_trades": 4
+  },
+  "daily_returns": [
+    {
+      "date": "2026-04-01",
+      "total_value": 999760.0,
+      "daily_return": 0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-02",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-03",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-06",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-07",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-08",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-09",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-10",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-13",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-14",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-15",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-16",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-17",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-20",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-21",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    },
+    {
+      "date": "2026-04-22",
+      "total_value": 999760.0,
+      "daily_return": 0.0,
+      "cash": 199760.0
+    }
+  ],
+  "trades": [
+    {
+      "date": "2026-04-01",
+      "code": "603618",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 20000,
+      "amount": 200000.0,
+      "commission": 59.99999999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-01",
+      "code": "688213",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 20000,
+      "amount": 200000.0,
+      "commission": 59.99999999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-01",
+      "code": "603687",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 20000,
+      "amount": 200000.0,
+      "commission": 59.99999999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-01",
+      "code": "603587",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 20000,
+      "amount": 200000.0,
+      "commission": 59.99999999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-01",
+      "code": "601881",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 20000,
+      "amount": 200000.0,
+      "commission": 59.99999999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-08",
+      "code": "601881",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 19995,
+      "amount": 199950.0,
+      "commission": 59.98499999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-15",
+      "code": "601881",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 19995,
+      "amount": 199950.0,
+      "commission": 59.98499999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-22",
+      "code": "601881",
+      "action": "buy",
+      "price": 10.0,
+      "shares": 19995,
+      "amount": 199950.0,
+      "commission": 59.98499999999999,
+      "reason": "rebalance"
+    }
+  ],
+  "errors": []
+}

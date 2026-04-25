@@ -1,0 +1,54 @@
+{
+  "date": "2026-04-20",
+  "timestamp": "2026-04-20T01:36:38.054158",
+  "results": {
+    "financial": {
+      "collection_type": "financial",
+      "status": "success",
+      "start_time": "2026-04-20T01:36:32.195970",
+      "end_time": "2026-04-20T01:36:38.050759",
+      "duration_seconds": 5.854789,
+      "records_collected": 0,
+      "records_updated": 0,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "codes_processed": 0,
+        "quality_score": 0,
+        "quality_passed": false
+      }
+    },
+    "market_behavior": {
+      "collection_type": "market_behavior",
+      "status": "success",
+      "start_time": "2026-04-20T01:36:38.051130",
+      "end_time": "2026-04-20T01:36:38.051515",
+      "duration_seconds": 0.000385,
+      "records_collected": 0,
+      "records_updated": 0,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "date": "2026-04-20",
+        "quality_score": 100,
+        "quality_passed": false
+      }
+    },
+    "announcement": {
+      "collection_type": "announcement",
+      "status": "success",
+      "start_time": "2026-04-20T01:36:38.051690",
+      "end_time": "2026-04-20T01:36:38.051993",
+      "duration_seconds": 0.000303,
+      "records_collected": 0,
+      "records_updated": 0,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "date": "2026-04-20",
+        "quality_score": 0,
+        "quality_passed": false
+      }
+    }
+  }
+}

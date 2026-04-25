@@ -1,0 +1,152 @@
+id: xcnstock_evening_pipeline
+namespace: xcnstock
+
+description: |
+  XCNStock 晚间流水线 - 承接 cron_tasks.yaml 中 post_market_evening 组任务
+  
+  功能：
+  1. 预计算技术指标 (20:00)
+  2. 人工数据验证 (20:30) - 随机抽检+第三方验证
+  3. 晚间综合预测 (20:35) - 结合消息面的选股推荐
+  
+  调度：交易日 20:00
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: trade_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 交易日期
+
+tasks:
+  # ========== 阶段1: 预计算技术指标 (20:00) ==========
+  - id: precompute
+    type: io.kestra.plugin.scripts.python.Script
+    description: 计算技术指标评分
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install polars pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.precompute")
+      
+      logger.info("=" * 60)
+      logger.info("阶段1: 预计算技术指标")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/precompute.py"],
+              capture_output=True,
+              text=True,
+              timeout=1200
+          )
+          logger.info(f"预计算完成:\n{result.stdout}")
+          if result.returncode != 0:
+              logger.error(f"预计算失败: {result.stderr}")
+      except Exception as e:
+          logger.error(f"预计算异常: {e}")
+    timeout: PT20M
+
+  # ========== 阶段2: 人工数据验证 (20:30) ==========
+  - id: manual_verification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 随机抽检3股+第三方验证1股，生成HTML报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.manual_verification")
+      
+      logger.info("=" * 60)
+      logger.info("阶段2: 人工数据验证")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/manual_verification.py"],
+              capture_output=True,
+              text=True,
+              timeout=600
+          )
+          logger.info(f"人工验证完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"人工验证失败: {e}")
+    timeout: PT10M
+
+  # ========== 阶段3: 晚间综合预测 (20:35) ==========
+  - id: night_analysis
+    type: io.kestra.plugin.scripts.python.Script
+    description: 结合消息面的选股推荐
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+      PICK_TYPE: "night"
+    beforeCommands:
+      - pip install polars pandas pyarrow requests -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.night_analysis")
+      
+      logger.info("=" * 60)
+      logger.info("阶段3: 晚间综合预测")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/night_picks.py"],
+              capture_output=True,
+              text=True,
+              timeout=900
+          )
+          logger.info(f"晚间预测完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"晚间预测失败: {e}")
+    timeout: PT15M
+
+triggers:
+  - id: evening_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "0 20 * * 1-5"
+    timezone: Asia/Shanghai
+    disabled: false
+
+pluginDefaults:
+  - type: io.kestra.plugin.scripts.python.Script
+    values:
+      runner: PROCESS

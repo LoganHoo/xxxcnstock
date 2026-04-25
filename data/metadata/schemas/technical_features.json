@@ -1,0 +1,122 @@
+{
+  "dataset_name": "technical_features",
+  "versions": [
+    {
+      "version": 1,
+      "fields": [
+        {
+          "name": "code",
+          "type": "string",
+          "description": "股票代码",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "trade_date",
+          "type": "date",
+          "description": "交易日期",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "ma5",
+          "type": "float",
+          "description": "5日均线",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "ma10",
+          "type": "float",
+          "description": "10日均线",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "ma20",
+          "type": "float",
+          "description": "20日均线",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "macd_dif",
+          "type": "float",
+          "description": "MACD DIF",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "macd_dea",
+          "type": "float",
+          "description": "MACD DEA",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "macd_hist",
+          "type": "float",
+          "description": "MACD柱状图",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "rsi6",
+          "type": "float",
+          "description": "RSI6",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "rsi12",
+          "type": "float",
+          "description": "RSI12",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "kdj_k",
+          "type": "float",
+          "description": "KDJ K值",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "kdj_d",
+          "type": "float",
+          "description": "KDJ D值",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        },
+        {
+          "name": "kdj_j",
+          "type": "float",
+          "description": "KDJ J值",
+          "nullable": true,
+          "default_value": null,
+          "tags": []
+        }
+      ],
+      "created_at": "2026-04-19T13:52:30.528007",
+      "created_by": "system",
+      "change_log": "初始化技术指标Schema"
+    }
+  ],
+  "updated_at": "2026-04-19T13:52:30.528111"
+}

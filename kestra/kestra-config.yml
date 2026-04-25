@@ -1,0 +1,31 @@
+datasources:
+  mysql:
+    url: jdbc:mysql://49.233.10.199:3306/kestra?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=UTF-8&connectTimeout=30000&socketTimeout=60000&zeroDateTimeBehavior=convertToNull
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: nextai
+    password: "100200"
+    dialect: MYSQL
+
+kestra:
+  server:
+    basic-auth:
+      enabled: true
+      username: "admin@kestra.io"
+      password: Kestra123
+  repository:
+    type: mysql
+  storage:
+    type: local
+    local:
+      base-path: "/app/storage"
+  queue:
+    type: mysql
+  tasks:
+    tmp-dir:
+      path: "/tmp/kestra-wd/tmp"
+  url: "http://localhost:8080/"
+  plugins:
+    configurations:
+      - type: io.kestra.plugin.scripts.runner.docker.Docker
+        values:
+          volume-enabled: true

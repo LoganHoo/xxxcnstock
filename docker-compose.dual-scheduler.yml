@@ -1,0 +1,155 @@
+# XCNStock 双调度器主备架构 Docker Compose
+# Kestra (主) + APScheduler (备)
+# 优先级策略: Kestra > APScheduler
+# 1. Kestra健康时，始终是主调度器
+# 2. Kestra宕机时，APScheduler接管
+# 3. Kestra恢复后，自动切回Kestra
+
+version: '3.8'
+
+services:
+  # Redis - 状态同步
+  redis:
+    image: redis:7-alpine
+    container_name: xcnstock-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+      - xcnstock-network
+
+  # Kestra - 主调度器
+  kestra:
+    image: kestra/kestra:latest
+    container_name: xcnstock-kestra
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://kestra-db:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: k3str4
+        kestra:
+          server:
+            base-path: "/"
+          repository:
+            type: postgres
+          queue:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: "/app/storage"
+    volumes:
+      - kestra-data:/app/storage
+      - ./kestra/flows:/app/flows:ro
+    depends_on:
+      kestra-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - xcnstock-network
+
+  # Kestra数据库
+  kestra-db:
+    image: postgres:15-alpine
+    container_name: xcnstock-kestra-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: k3str4
+      POSTGRES_DB: kestra
+    volumes:
+      - kestra-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kestra"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - xcnstock-network
+
+  # Kestra健康适配器
+  kestra-health-adapter:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: xcnstock-kestra-adapter
+    restart: unless-stopped
+    command: python3 scripts/kestra_health_adapter.py --interval 30
+    volumes:
+      - .:/app
+      - /app/logs
+    depends_on:
+      - redis
+      - kestra
+    networks:
+      - xcnstock-network
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # APScheduler - 备调度器
+  # 优先级策略: 只有Kestra宕机时才接管
+  apscheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: xcnstock-apscheduler
+    restart: unless-stopped
+    command: python3 scripts/dual_scheduler_manager.py --type apscheduler
+    volumes:
+      - .:/app
+      - /app/logs
+      - /app/data
+    depends_on:
+      redis:
+        condition: service_healthy
+      kestra:
+        condition: service_started
+    networks:
+      - xcnstock-network
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SCHEDULER_TYPE=apscheduler
+      - PRIMARY_SCHEDULER=kestra
+
+  # 双调度器监控面板
+  scheduler-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.scheduler
+    container_name: xcnstock-scheduler-monitor
+    restart: unless-stopped
+    command: python3 scripts/scheduler_monitor.py
+    ports:
+      - "8083:8083"
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+    networks:
+      - xcnstock-network
+    environment:
+      - PYTHONUNBUFFERED=1
+
+volumes:
+  redis-data:
+  kestra-data:
+  kestra-db-data:
+
+networks:
+  xcnstock-network:
+    driver: bridge

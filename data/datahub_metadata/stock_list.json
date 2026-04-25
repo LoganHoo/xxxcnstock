@@ -1,0 +1,33 @@
+{
+  "name": "stock_list",
+  "platform": "xcnstock",
+  "description": "A\u80a1\u80a1\u7968\u57fa\u7840\u5217\u8868",
+  "schema": {
+    "fields": [
+      {
+        "fieldPath": "code",
+        "type": "STRING",
+        "description": "\u5b57\u6bb5: code"
+      },
+      {
+        "fieldPath": "tradeStatus",
+        "type": "STRING",
+        "description": "\u5b57\u6bb5: tradeStatus"
+      },
+      {
+        "fieldPath": "code_name",
+        "type": "STRING",
+        "description": "\u5b57\u6bb5: code_name"
+      }
+    ]
+  },
+  "properties": {
+    "record_count": 5419,
+    "last_updated": "2026-04-20T03:34:19.533349",
+    "columns": [
+      "code",
+      "tradeStatus",
+      "code_name"
+    ]
+  }
+}

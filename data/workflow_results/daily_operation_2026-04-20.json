@@ -1,0 +1,44 @@
+{
+  "date": "2026-04-20",
+  "generated_at": "2026-04-20T02:53:10.253040",
+  "overall_status": "failed",
+  "tasks_completed": 0,
+  "tasks_failed": 1,
+  "tasks_skipped": 0,
+  "results": {
+    "quality_check": {
+      "task_name": "quality_check",
+      "status": "failed",
+      "start_time": "2026-04-20T02:53:10.253022",
+      "end_time": "2026-04-20T02:53:10.253030",
+      "duration_seconds": 8e-06,
+      "details": {
+        "quality_results": {
+          "kline": {
+            "error": "'DataQualityMonitor' object has no attribute 'run_quality_check'"
+          },
+          "financial": {
+            "error": "'DataQualityMonitor' object has no attribute 'run_quality_check'"
+          },
+          "market_behavior": {
+            "error": "'DataQualityMonitor' object has no attribute 'run_quality_check'"
+          },
+          "announcement": {
+            "error": "'DataQualityMonitor' object has no attribute 'run_quality_check'"
+          }
+        },
+        "average_score": 0
+      },
+      "errors": []
+    }
+  },
+  "summary": {
+    "total_tasks": 1,
+    "tasks_completed": 0,
+    "tasks_failed": 1,
+    "tasks_skipped": 0,
+    "total_duration": 0.000122,
+    "data_quality_score": 0,
+    "system_health": "unknown"
+  }
+}

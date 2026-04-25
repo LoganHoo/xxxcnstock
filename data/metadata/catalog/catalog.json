@@ -1,0 +1,110 @@
+{
+  "assets": {
+    "kline_data": {
+      "name": "kline_data",
+      "type": "dataset",
+      "domain": "market_data",
+      "description": "股票K线数据，包含开盘价、收盘价、最高价、最低价、成交量等",
+      "owner": "data_team",
+      "tags": [
+        "kline",
+        "ohlc",
+        "market",
+        "daily"
+      ],
+      "created_at": "2026-04-19T16:26:41.462946",
+      "updated_at": "2026-04-19T16:26:41.462959",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.95
+    },
+    "stock_list": {
+      "name": "stock_list",
+      "type": "dataset",
+      "domain": "market_data",
+      "description": "A股股票列表，包含股票代码、名称、行业、市场等信息",
+      "owner": "data_team",
+      "tags": [
+        "stock",
+        "list",
+        "basic"
+      ],
+      "created_at": "2026-04-19T16:26:41.464733",
+      "updated_at": "2026-04-19T16:26:41.464741",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.98
+    },
+    "technical_features": {
+      "name": "technical_features",
+      "type": "dataset",
+      "domain": "technical",
+      "description": "技术指标特征数据，包含MACD、KDJ、RSI、均线等",
+      "owner": "data_team",
+      "tags": [
+        "technical",
+        "features",
+        "macd",
+        "kdj",
+        "rsi"
+      ],
+      "created_at": "2026-04-19T16:26:41.465820",
+      "updated_at": "2026-04-19T16:26:41.465827",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.92
+    },
+    "xcnstock.kline_data": {
+      "name": "xcnstock.kline_data",
+      "type": "dataset",
+      "domain": "market_data",
+      "description": "A股K线数据，包含OHLCV等基本行情数据",
+      "owner": "data_team",
+      "tags": [
+        "kline",
+        "ohlc",
+        "market",
+        "a_share"
+      ],
+      "created_at": "2026-04-19T14:11:18.441374",
+      "updated_at": "2026-04-19T14:11:18.441375",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.95
+    },
+    "xcnstock.stock_list": {
+      "name": "xcnstock.stock_list",
+      "type": "dataset",
+      "domain": "market_data",
+      "description": "A股股票列表，包含基本信息",
+      "owner": "data_team",
+      "tags": [
+        "stock_list",
+        "basic"
+      ],
+      "created_at": "2026-04-19T14:11:18.441380",
+      "updated_at": "2026-04-19T14:11:18.441380",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.98
+    },
+    "xcnstock.technical_features": {
+      "name": "xcnstock.technical_features",
+      "type": "dataset",
+      "domain": "technical",
+      "description": "技术指标特征数据",
+      "owner": "data_team",
+      "tags": [
+        "technical",
+        "features",
+        "indicators"
+      ],
+      "created_at": "2026-04-19T14:11:18.441382",
+      "updated_at": "2026-04-19T14:11:18.441383",
+      "row_count": null,
+      "size_bytes": null,
+      "quality_score": 0.92
+    }
+  },
+  "updated_at": "2026-04-19T16:26:41.465865"
+}

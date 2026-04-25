@@ -1,0 +1,408 @@
+id: xcnstock_verify_picks
+namespace: xcnstock
+
+description: |
+  XCNStock 选股结果验证工作流
+  
+  功能：
+  1. 验证前一日选股结果的表现
+  2. 计算收益率、胜率等指标
+  3. 生成验证报告
+  4. 更新策略绩效追踪
+  
+  调度：每日 15:30（收盘后）
+
+labels:
+  env: production
+  project: xcnstock
+  type: verification
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: verify_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 验证日期（验证前一日的选股结果）
+
+tasks:
+  # ========== 阶段1: 识别待验证的选股 ==========
+  - id: identify_pending_reviews
+    type: io.kestra.plugin.scripts.python.Script
+    description: 识别待验证的选股记录
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from pathlib import Path
+      from datetime import datetime, timedelta
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.identify")
+      
+      verify_date = "{{ inputs.verify_date }}"
+      yesterday = (datetime.strptime(verify_date, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+      
+      logger.info(f"识别 {yesterday} 的待验证选股...")
+      
+      # 查找待验证文件
+      review_file = Path(f"{{ vars.project_root }}/data/review_pending_{yesterday}.json")
+      
+      if not review_file.exists():
+          logger.info(f"未找到 {yesterday} 的待验证记录，跳过")
+          # 创建标记文件
+          with open("/tmp/no_review", 'w') as f:
+              f.write("none")
+          exit(0)
+      
+      # 读取待验证数据
+      with open(review_file, 'r') as f:
+          review_data = json.load(f)
+      
+      logger.info(f"找到待验证记录: {review_data}")
+      
+      # 保存到临时文件供后续使用
+      with open("/tmp/review_data.json", 'w') as f:
+          json.dump(review_data, f)
+      
+      # 删除标记文件
+      if os.path.exists("/tmp/no_review"):
+          os.remove("/tmp/no_review")
+      
+      logger.info("待验证记录已加载")
+    timeout: PT5M
+
+  # ========== 阶段2: 获取当日行情 ==========
+  - id: fetch_today_prices
+    type: io.kestra.plugin.scripts.python.Script
+    description: 获取当日收盘价用于验证
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install pandas pyarrow -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.fetch")
+      
+      # 检查是否需要跳过
+      if os.path.exists("/tmp/no_review"):
+          logger.info("无待验证记录，跳过")
+          exit(0)
+      
+      verify_date = "{{ inputs.verify_date }}"
+      
+      logger.info("=" * 60)
+      logger.info("阶段2: 获取当日行情")
+      logger.info("=" * 60)
+      
+      from scripts.fetch_today import main as fetch_today_main
+      
+      try:
+          fetch_today_main()
+          logger.info("当日行情获取完成")
+      except Exception as e:
+          logger.error(f"获取行情失败: {e}")
+          raise
+    timeout: PT15M
+
+  # ========== 阶段3: 验证选股表现 ==========
+  - id: verify_performance
+    type: io.kestra.plugin.scripts.python.Script
+    description: 计算选股收益率和胜率
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    beforeCommands:
+      - pip install pandas pyarrow numpy -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from datetime import datetime, timedelta
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.verify")
+      
+      # 检查是否需要跳过
+      if os.path.exists("/tmp/no_review"):
+          logger.info("无待验证记录，跳过")
+          exit(0)
+      
+      verify_date = "{{ inputs.verify_date }}"
+      yesterday = (datetime.strptime(verify_date, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+      
+      logger.info("=" * 60)
+      logger.info("阶段3: 验证选股表现")
+      logger.info("=" * 60)
+      
+      from scripts.check_next_day_performance import main as check_performance_main
+      
+      try:
+          result = check_performance_main(date=yesterday)
+          
+          # 保存验证结果
+          verification_result = {
+              "selection_date": yesterday,
+              "verify_date": verify_date,
+              "verified_at": datetime.now().isoformat(),
+              "performance": result
+          }
+          
+          result_path = f"{{ vars.project_root }}/data/verification_result_{yesterday}.json"
+          with open(result_path, 'w') as f:
+              json.dump(verification_result, f, indent=2)
+          
+          logger.info(f"验证结果已保存: {result_path}")
+          
+          # 输出摘要
+          if result:
+              avg_return = result.get('avg_return', 0)
+              win_rate = result.get('win_rate', 0)
+              logger.info(f"平均收益: {avg_return:.2%}")
+              logger.info(f"胜率: {win_rate:.1%}")
+          
+      except Exception as e:
+          logger.error(f"验证失败: {e}")
+          raise
+    timeout: PT15M
+
+  # ========== 阶段4: 更新策略绩效 ==========
+  - id: update_strategy_performance
+    type: io.kestra.plugin.scripts.python.Script
+    description: 更新策略绩效追踪
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      LOG_LEVEL: "{{ vars.log_level }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from datetime import datetime, timedelta
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.performance")
+      
+      # 检查是否需要跳过
+      if os.path.exists("/tmp/no_review"):
+          logger.info("无待验证记录，跳过")
+          exit(0)
+      
+      verify_date = "{{ inputs.verify_date }}"
+      yesterday = (datetime.strptime(verify_date, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+      
+      logger.info("=" * 60)
+      logger.info("阶段4: 更新策略绩效")
+      logger.info("=" * 60)
+      
+      # 读取验证结果
+      try:
+          with open(f"{{ vars.project_root }}/data/verification_result_{yesterday}.json", 'r') as f:
+              verification = json.load(f)
+          
+          performance = verification.get('performance', {})
+          
+          # 更新绩效追踪文件
+          performance_file = f"{{ vars.project_root }}/data/strategy_performance.json"
+          
+          if os.path.exists(performance_file):
+              with open(performance_file, 'r') as f:
+                  history = json.load(f)
+          else:
+              history = {"records": []}
+          
+          # 添加新记录
+          record = {
+              "date": yesterday,
+              "avg_return": performance.get('avg_return', 0),
+              "win_rate": performance.get('win_rate', 0),
+              "num_picks": performance.get('num_picks', 0),
+              "verified_at": datetime.now().isoformat()
+          }
+          
+          history["records"].append(record)
+          
+          # 只保留最近90天
+          history["records"] = history["records"][-90:]
+          
+          # 计算累计指标
+          if history["records"]:
+              history["summary"] = {
+                  "total_days": len(history["records"]),
+                  "avg_daily_return": sum(r["avg_return"] for r in history["records"]) / len(history["records"]),
+                  "overall_win_rate": sum(r["win_rate"] for r in history["records"]) / len(history["records"])
+              }
+          
+          with open(performance_file, 'w') as f:
+              json.dump(history, f, indent=2)
+          
+          logger.info("策略绩效已更新")
+          
+          # 输出累计表现
+          summary = history.get("summary", {})
+          logger.info(f"累计平均日收益: {summary.get('avg_daily_return', 0):.2%}")
+          logger.info(f"累计胜率: {summary.get('overall_win_rate', 0):.1%}")
+          
+      except Exception as e:
+          logger.error(f"更新绩效失败: {e}")
+          # 不阻断流程
+    timeout: PT5M
+
+  # ========== 阶段5: 标记已验证 ==========
+  - id: mark_as_verified
+    type: io.kestra.plugin.scripts.python.Script
+    description: 标记选股记录为已验证
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from datetime import datetime, timedelta
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.mark")
+      
+      # 检查是否需要跳过
+      if os.path.exists("/tmp/no_review"):
+          logger.info("无待验证记录，跳过")
+          exit(0)
+      
+      verify_date = "{{ inputs.verify_date }}"
+      yesterday = (datetime.strptime(verify_date, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+      
+      logger.info("=" * 60)
+      logger.info("阶段5: 标记已验证")
+      logger.info("=" * 60)
+      
+      # 更新待验证文件状态
+      review_file = f"{{ vars.project_root }}/data/review_pending_{yesterday}.json"
+      
+      try:
+          with open(review_file, 'r') as f:
+              review_data = json.load(f)
+          
+          review_data["verification_status"] = "verified"
+          review_data["verification_date"] = verify_date
+          
+          # 读取验证结果
+          try:
+              with open(f"{{ vars.project_root }}/data/verification_result_{yesterday}.json", 'r') as f:
+                  verification = json.load(f)
+              review_data["next_day_performance"] = verification.get("performance", {})
+          except:
+              pass
+          
+          # 保存为已验证文件
+          verified_file = f"{{ vars.project_root }}/data/review_verified_{yesterday}.json"
+          with open(verified_file, 'w') as f:
+              json.dump(review_data, f, indent=2)
+          
+          # 删除待验证文件
+          os.remove(review_file)
+          
+          logger.info(f"已标记为验证完成: {verified_file}")
+          
+      except Exception as e:
+          logger.error(f"标记失败: {e}")
+    timeout: PT5M
+
+  # ========== 阶段6: 发送验证报告 ==========
+  - id: send_verification_report
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送验证报告
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import json
+      from datetime import datetime, timedelta
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.notify")
+      
+      verify_date = "{{ inputs.verify_date }}"
+      yesterday = (datetime.strptime(verify_date, '%Y-%m-%d') - timedelta(days=1)).strftime('%Y-%m-%d')
+      
+      logger.info("=" * 60)
+      logger.info("阶段6: 发送验证报告")
+      logger.info("=" * 60)
+      
+      # 检查是否需要跳过
+      if os.path.exists("/tmp/no_review"):
+          message = f"【验证】{yesterday} 选股结果\n\n无待验证记录"
+          status = "SKIPPED"
+      else:
+          # 读取验证结果
+          try:
+              with open(f"{{ vars.project_root }}/data/verification_result_{yesterday}.json", 'r') as f:
+                  verification = json.load(f)
+              
+              performance = verification.get('performance', {})
+              
+              message = f"【验证】{yesterday} 选股结果\n\n"
+              message += f"选股数量: {performance.get('num_picks', 0)} 只\n"
+              message += f"平均收益: {performance.get('avg_return', 0):.2%}\n"
+              message += f"胜率: {performance.get('win_rate', 0):.1%}\n"
+              
+              if performance.get('top_performer'):
+                  top = performance['top_performer']
+                  message += f"\n最佳: {top.get('code', 'N/A')} +{top.get('return', 0):.2%}"
+              
+              status = "SUCCESS"
+              
+          except Exception as e:
+              message = f"【验证】{yesterday} 选股结果\n\n验证完成，但读取详情失败: {e}"
+              status = "SUCCESS"
+      
+      # 发送通知
+      try:
+          from scripts.pipeline.send_workflow_notification import send_notification
+          send_notification("xcnstock_verify_picks", status, message)
+          logger.info("验证报告已发送")
+      except Exception as e:
+          logger.error(f"通知发送失败: {e}")
+    timeout: PT5M
+
+triggers:
+  - id: verify_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "30 15 * * *"
+    timezone: Asia/Shanghai
+    disabled: false

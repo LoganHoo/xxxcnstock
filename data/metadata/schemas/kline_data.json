@@ -1,0 +1,105 @@
+{
+  "dataset_name": "kline_data",
+  "versions": [
+    {
+      "version": 1,
+      "fields": [
+        {
+          "name": "code",
+          "type": "string",
+          "description": "股票代码",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "trade_date",
+          "type": "date",
+          "description": "交易日期",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "primary_key",
+            "partition"
+          ]
+        },
+        {
+          "name": "open",
+          "type": "float",
+          "description": "开盘价",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "ohlc"
+          ]
+        },
+        {
+          "name": "high",
+          "type": "float",
+          "description": "最高价",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "ohlc"
+          ]
+        },
+        {
+          "name": "low",
+          "type": "float",
+          "description": "最低价",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "ohlc"
+          ]
+        },
+        {
+          "name": "close",
+          "type": "float",
+          "description": "收盘价",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "ohlc"
+          ]
+        },
+        {
+          "name": "volume",
+          "type": "integer",
+          "description": "成交量",
+          "nullable": false,
+          "default_value": null,
+          "tags": [
+            "volume"
+          ]
+        },
+        {
+          "name": "amount",
+          "type": "float",
+          "description": "成交额",
+          "nullable": true,
+          "default_value": null,
+          "tags": [
+            "amount"
+          ]
+        },
+        {
+          "name": "pct_chg",
+          "type": "float",
+          "description": "涨跌幅(%)",
+          "nullable": true,
+          "default_value": null,
+          "tags": [
+            "derived"
+          ]
+        }
+      ],
+      "created_at": "2026-04-19T13:52:30.523291",
+      "created_by": "system",
+      "change_log": "初始化K线数据Schema"
+    }
+  ],
+  "updated_at": "2026-04-19T13:52:30.523448"
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "upstream_dataset": "xcnstock.kline_data",
+    "downstream_dataset": "xcnstock.kline_data_cleaned",
+    "transformation_type": "cleaning",
+    "transformation_sql": "数据清洗: 去重、填充缺失值、异常值处理、退市股票过滤",
+    "created_at": "2026-04-19T14:11:18.439506",
+    "emitted_at": "2026-04-19T14:11:18.440332"
+  },
+  {
+    "upstream_dataset": "xcnstock.stock_list",
+    "downstream_dataset": "xcnstock.kline_data_cleaned",
+    "transformation_type": "join",
+    "transformation_sql": "关联股票基本信息: 行业、市场等",
+    "created_at": "2026-04-19T14:11:18.439511",
+    "emitted_at": "2026-04-19T14:11:18.441172"
+  }
+]

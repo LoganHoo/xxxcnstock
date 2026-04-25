@@ -1,0 +1,54 @@
+{
+  "name": "xcnstock.stock_list",
+  "platform": "parquet",
+  "env": "PROD",
+  "description": "A股股票列表，包含股票代码、名称、行业、市场等信息。共 5419 只股票",
+  "schema_fields": [
+    {
+      "name": "code",
+      "type": "string",
+      "description": "股票代码",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "股票名称",
+      "nullable": false
+    },
+    {
+      "name": "industry",
+      "type": "string",
+      "description": "所属行业",
+      "nullable": true
+    },
+    {
+      "name": "market",
+      "type": "string",
+      "description": "市场(沪市/深市)",
+      "nullable": false
+    },
+    {
+      "name": "list_date",
+      "type": "date",
+      "description": "上市日期",
+      "nullable": true
+    }
+  ],
+  "properties": {
+    "total_stocks": "5419",
+    "storage_format": "parquet",
+    "source": "baostock"
+  },
+  "tags": [
+    "stock_list",
+    "basic_info",
+    "a_share"
+  ],
+  "owners": [
+    "data_team"
+  ],
+  "created_at": "2026-04-19T14:11:18.437547",
+  "updated_at": "2026-04-19T14:11:18.437555",
+  "emitted_at": "2026-04-19T14:11:18.438128"
+}

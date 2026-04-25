@@ -1,0 +1,52 @@
+{
+  "name": "real_selection_comprehensive_2026-04-20",
+  "platform": "xcnstock",
+  "description": "\u9009\u80a1\u7b56\u7565\u7ed3\u679c: comprehensive",
+  "schema": {
+    "fields": [
+      {
+        "fieldPath": "code",
+        "type": "STRING",
+        "description": "\u80a1\u7968\u4ee3\u7801"
+      },
+      {
+        "fieldPath": "name",
+        "type": "STRING",
+        "description": "\u80a1\u7968\u540d\u79f0"
+      },
+      {
+        "fieldPath": "total_score",
+        "type": "NUMBER",
+        "description": "\u7efc\u5408\u8bc4\u5206"
+      },
+      {
+        "fieldPath": "financial_score",
+        "type": "NUMBER",
+        "description": "\u8d22\u52a1\u8bc4\u5206"
+      },
+      {
+        "fieldPath": "market_score",
+        "type": "NUMBER",
+        "description": "\u5e02\u573a\u8bc4\u5206"
+      },
+      {
+        "fieldPath": "technical_score",
+        "type": "NUMBER",
+        "description": "\u6280\u672f\u8bc4\u5206"
+      }
+    ]
+  },
+  "properties": {
+    "strategy_type": "comprehensive",
+    "total_stocks": 5142,
+    "selected_stocks": 1263,
+    "generated_at": "2026-04-20T02:31:23.969174",
+    "top_stocks": [
+      "000552",
+      "002297",
+      "600152",
+      "300858",
+      "688678"
+    ]
+  }
+}

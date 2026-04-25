@@ -1,203 +1,283 @@
 #!/usr/bin/env python3
 """
 数据新鲜度验证脚本
-验证K线数据是否为当日收盘数据
 
-使用方法:
-    python scripts/pipeline/check_data_freshness.py           # 检查今日数据
-    python scripts/pipeline/check_data_freshness.py --date 2026-04-16  # 检查指定日期
-    python scripts/pipeline/check_data_freshness.py --threshold 0.8    # 设置阈值
+功能：
+1. 验证所有股票数据是否最新
+2. 识别数据过期的股票
+3. 生成详细的新鲜度报告
 
-退出码:
-    0 - 数据新鲜度达标
-    1 - 数据新鲜度不达标
-    2 - 检查失败
+使用方式:
+    python scripts/pipeline/check_data_freshness.py
+    python scripts/pipeline/check_data_freshness.py --date 2026-04-24
 """
 import sys
 import argparse
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Tuple, List, Dict
-import json
+from typing import List, Dict, Tuple
+from collections import Counter
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger("check_data_freshness")
 
 # 添加项目根目录到路径
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import polars as pl
-from core.trading_calendar import check_market_status, get_recent_trade_dates
+import pandas as pd
+from core.delisting_guard import get_delisting_guard
 
 
-class DataFreshnessChecker:
-    """数据新鲜度检查器"""
+def parse_args():
+    """解析命令行参数"""
+    parser = argparse.ArgumentParser(description='数据新鲜度验证')
+    parser.add_argument(
+        '--date',
+        type=str,
+        default=None,
+        help='目标日期 YYYY-MM-DD（默认今天）'
+    )
+    parser.add_argument(
+        '--max-age-days',
+        type=int,
+        default=3,
+        help='最大数据年龄（天），超过视为过期（默认3）'
+    )
+    return parser.parse_args()
+
+
+def check_data_freshness(target_date: str, max_age_days: int = 3) -> Dict:
+    """
+    检查数据新鲜度
     
-    def __init__(self, target_date: str = None, threshold: float = 0.8):
-        """
-        初始化检查器
-        
-        Args:
-            target_date: 目标日期 (YYYY-MM-DD)，默认为最近交易日
-            threshold: 覆盖率阈值 (0-1)，默认80%
-        """
-        self.project_root = project_root
-        self.kline_dir = project_root / "data" / "kline"
-        self.threshold = threshold
-        
-        # 确定目标日期
-        if target_date:
-            self.target_date = target_date
-        else:
-            # 获取最近交易日
-            trade_dates = get_recent_trade_dates(1)
-            if trade_dates:
-                self.target_date = trade_dates[0]
-            else:
-                self.target_date = datetime.now().strftime('%Y-%m-%d')
-        
-        self.results = {
-            'target_date': self.target_date,
-            'threshold': threshold,
-            'total_stocks': 0,
-            'fresh_stocks': 0,
-            'stale_stocks': 0,
-            'missing_stocks': 0,
-            'coverage_rate': 0.0,
-            'passed': False,
-            'details': []
+    Returns:
+        {
+            'total': 总股票数,
+            'up_to_date': 最新数量,
+            'outdated': 过期数量,
+            'delisted': 已退市数量,
+            'suspended': 停牌数量,
+            'missing': 缺失数量,
+            'up_to_date_rate': 最新率,
+            'details': 详细列表
         }
+    """
+    logger.info("=" * 60)
+    logger.info("🔍 数据新鲜度检查")
+    logger.info("=" * 60)
+    logger.info(f"目标日期: {target_date}")
+    logger.info(f"最大数据年龄: {max_age_days} 天")
     
-    def check_freshness(self) -> Tuple[bool, Dict]:
-        """
-        检查数据新鲜度
+    # 获取股票列表
+    try:
+        stock_list_df = pl.read_parquet("data/stock_list.parquet")
+        all_codes = set(stock_list_df['code'].to_list())
+        logger.info(f"📋 股票列表: {len(all_codes)} 只")
+    except Exception as e:
+        logger.error(f"❌ 读取股票列表失败: {e}")
+        return {}
+    
+    kline_dir = Path("data/kline")
+    if not kline_dir.exists():
+        logger.error(f"❌ K线目录不存在: {kline_dir}")
+        return {}
+    
+    delisting_guard = get_delisting_guard()
+    
+    target = datetime.strptime(target_date, '%Y-%m-%d')
+    cutoff_date = target - timedelta(days=max_age_days)
+    
+    up_to_date = []      # 最新
+    outdated = []        # 过期
+    delisted = []        # 已退市
+    suspended = []       # 停牌
+    missing = []         # 缺失
+    error_files = []     # 读取错误
+    
+    # 遍历所有Parquet文件
+    parquet_files = list(kline_dir.glob("*.parquet"))
+    logger.info(f"📁 K线文件数: {len(parquet_files)}")
+    
+    for i, kline_file in enumerate(parquet_files, 1):
+        code = kline_file.stem
         
-        Returns:
-            (是否通过, 详细结果)
-        """
-        print(f"=" * 60)
-        print(f"数据新鲜度检查")
-        print(f"目标日期: {self.target_date}")
-        print(f"覆盖率阈值: {self.threshold * 100:.0f}%")
-        print(f"=" * 60)
+        if i % 500 == 0:
+            logger.info(f"  进度: {i}/{len(parquet_files)}")
         
-        if not self.kline_dir.exists():
-            print(f"❌ K线数据目录不存在: {self.kline_dir}")
-            return False, self.results
-        
-        # 获取所有股票文件
-        parquet_files = list(self.kline_dir.glob("*.parquet"))
-        self.results['total_stocks'] = len(parquet_files)
-        
-        print(f"\n检查 {len(parquet_files)} 只股票...")
-        
-        fresh_count = 0
-        stale_count = 0
-        missing_count = 0
-        errors = []
-        
-        for i, parquet_file in enumerate(sorted(parquet_files)):
-            code = parquet_file.stem
+        try:
+            df = pl.read_parquet(kline_file)
             
-            try:
-                # 读取parquet文件
-                df = pl.read_parquet(parquet_file)
-                
-                if len(df) == 0:
-                    missing_count += 1
-                    errors.append(f"{code}: 数据为空")
-                    continue
-                
-                # 获取最新日期
-                latest_date = df['trade_date'].max()
-                
-                if latest_date == self.target_date:
-                    fresh_count += 1
-                else:
-                    stale_count += 1
-                    # 记录前10个过期股票
-                    if len(errors) < 10:
-                        errors.append(f"{code}: 最新日期 {latest_date} != 目标日期 {self.target_date}")
-                
-                # 进度显示
-                if (i + 1) % 1000 == 0:
-                    print(f"  已检查 {i + 1}/{len(parquet_files)} 只...")
-                    
-            except Exception as e:
-                missing_count += 1
-                if len(errors) < 10:
-                    errors.append(f"{code}: 读取失败 - {str(e)}")
+            # 获取最新日期
+            if 'date' in df.columns:
+                latest_str = str(df['date'].max())
+            elif 'trade_date' in df.columns:
+                latest_str = str(df['trade_date'].max())
+            else:
+                logger.warning(f"⚠️ {code}: 未找到日期列")
+                error_files.append((code, "未找到日期列"))
+                continue
+            
+            latest = datetime.strptime(latest_str, '%Y-%m-%d')
+            days_diff = (target - latest).days
+            
+            # 检查是否已退市
+            if delisting_guard.is_delisted_by_code(code):
+                delisted.append({
+                    'code': code,
+                    'latest_date': latest_str,
+                    'days_diff': days_diff
+                })
+                continue
+            
+            # 检查是否在股票列表中
+            if code not in all_codes:
+                delisted.append({
+                    'code': code,
+                    'latest_date': latest_str,
+                    'days_diff': days_diff,
+                    'note': '不在股票列表中'
+                })
+                continue
+            
+            # 分类
+            if latest_str == target_date:
+                up_to_date.append({
+                    'code': code,
+                    'latest_date': latest_str,
+                    'days_diff': 0
+                })
+            elif days_diff <= max_age_days:
+                # 在允许范围内，可能是停牌
+                suspended.append({
+                    'code': code,
+                    'latest_date': latest_str,
+                    'days_diff': days_diff
+                })
+            else:
+                # 数据过期
+                outdated.append({
+                    'code': code,
+                    'latest_date': latest_str,
+                    'days_diff': days_diff
+                })
         
-        # 计算覆盖率
-        total_valid = fresh_count + stale_count
-        coverage_rate = fresh_count / total_valid if total_valid > 0 else 0
-        
-        self.results['fresh_stocks'] = fresh_count
-        self.results['stale_stocks'] = stale_count
-        self.results['missing_stocks'] = missing_count
-        self.results['coverage_rate'] = coverage_rate
-        self.results['passed'] = coverage_rate >= self.threshold
-        
-        # 输出结果
-        print(f"\n" + "=" * 60)
-        print(f"检查结果")
-        print(f"=" * 60)
-        print(f"总股票数: {self.results['total_stocks']}")
-        print(f"数据新鲜: {fresh_count} 只 ({fresh_count/len(parquet_files)*100:.1f}%)")
-        print(f"数据过期: {stale_count} 只 ({stale_count/len(parquet_files)*100:.1f}%)")
-        print(f"读取失败: {missing_count} 只 ({missing_count/len(parquet_files)*100:.1f}%)")
-        print(f"\n有效覆盖率: {coverage_rate*100:.1f}%")
-        print(f"阈值要求: {self.threshold*100:.0f}%")
-        
-        if errors:
-            print(f"\n问题样本 (前10个):")
-            for error in errors:
-                print(f"  - {error}")
-        
-        if self.results['passed']:
-            print(f"\n✅ 数据新鲜度检查通过")
-        else:
-            print(f"\n❌ 数据新鲜度检查未通过")
-        
-        return self.results['passed'], self.results
+        except Exception as e:
+            logger.warning(f"⚠️ {code}: 读取失败 - {e}")
+            error_files.append((code, str(e)))
     
-    def save_report(self):
-        """保存检查报告"""
-        report_file = self.project_root / "logs" / f"data_freshness_{self.target_date}.json"
-        report_file.parent.mkdir(exist_ok=True)
-        
-        with open(report_file, 'w', encoding='utf-8') as f:
-            json.dump(self.results, f, ensure_ascii=False, indent=2)
-        
-        print(f"\n报告已保存: {report_file}")
+    # 检查缺失的股票（在列表中但没有K线文件）
+    existing_codes = {f.stem for f in parquet_files}
+    missing_codes = all_codes - existing_codes
+    for code in missing_codes:
+        if not delisting_guard.is_delisted_by_code(code):
+            missing.append({
+                'code': code,
+                'latest_date': None,
+                'days_diff': None
+            })
+    
+    # 统计
+    total = len(up_to_date) + len(outdated) + len(delisted) + len(suspended) + len(missing)
+    up_to_date_rate = len(up_to_date) / total if total > 0 else 0
+    
+    logger.info("\n" + "=" * 60)
+    logger.info("📊 数据新鲜度报告")
+    logger.info("=" * 60)
+    logger.info(f"总股票数: {total}")
+    logger.info(f"✅ 最新: {len(up_to_date)} ({up_to_date_rate:.1%})")
+    logger.info(f"⚠️  过期: {len(outdated)}")
+    logger.info(f"⏸️  停牌: {len(suspended)}")
+    logger.info(f"🚫 退市: {len(delisted)}")
+    logger.info(f"❌ 缺失: {len(missing)}")
+    logger.info(f"⚠️  错误: {len(error_files)}")
+    
+    # 日期分布
+    if up_to_date:
+        logger.info(f"\n📅 最新日期分布（前10）:")
+        date_counts = Counter([s['latest_date'] for s in up_to_date + suspended + outdated])
+        for date, count in sorted(date_counts.items(), reverse=True)[:10]:
+            status = '✅' if date == target_date else '⚠️'
+            logger.info(f"  {status} {date}: {count} 只")
+    
+    # 过期股票示例
+    if outdated:
+        logger.info(f"\n⚠️ 过期股票示例（前10）:")
+        for s in sorted(outdated, key=lambda x: x['days_diff'], reverse=True)[:10]:
+            logger.info(f"  {s['code']}: {s['latest_date']} ({s['days_diff']} 天前)")
+    
+    return {
+        'target_date': target_date,
+        'check_time': datetime.now().isoformat(),
+        'total': total,
+        'up_to_date': len(up_to_date),
+        'outdated': len(outdated),
+        'delisted': len(delisted),
+        'suspended': len(suspended),
+        'missing': len(missing),
+        'errors': len(error_files),
+        'up_to_date_rate': up_to_date_rate,
+        'details': {
+            'up_to_date': up_to_date,
+            'outdated': outdated,
+            'delisted': delisted,
+            'suspended': suspended,
+            'missing': missing,
+            'errors': error_files
+        }
+    }
+
+
+def generate_report(result: Dict):
+    """生成详细报告"""
+    if not result:
+        return
+    
+    # 保存JSON报告
+    import json
+    report_path = Path("data/data_freshness_report.json")
+    with open(report_path, 'w', encoding='utf-8') as f:
+        json.dump(result, f, ensure_ascii=False, indent=2)
+    
+    logger.info(f"\n📄 详细报告已保存: {report_path}")
+    
+    # 生成CSV报告（过期股票）
+    if result['details']['outdated']:
+        outdated_df = pd.DataFrame(result['details']['outdated'])
+        csv_path = Path("data/outdated_stocks.csv")
+        outdated_df.to_csv(csv_path, index=False, encoding='utf-8-sig')
+        logger.info(f"📄 过期股票列表: {csv_path}")
 
 
 def main():
-    parser = argparse.ArgumentParser(description='数据新鲜度检查')
-    parser.add_argument('--date', type=str, help='目标日期 (YYYY-MM-DD)')
-    parser.add_argument('--threshold', type=float, default=0.8, help='覆盖率阈值 (0-1)，默认0.8')
-    parser.add_argument('--quiet', action='store_true', help='静默模式，只输出结果')
+    """主函数"""
+    args = parse_args()
     
-    args = parser.parse_args()
-    
-    # 检查是否为交易日
-    market_status = check_market_status()
-    if not market_status['is_trading_day']:
-        print("非交易日，跳过数据新鲜度检查")
-        sys.exit(0)
-    
-    checker = DataFreshnessChecker(
-        target_date=args.date,
-        threshold=args.threshold
-    )
-    
-    passed, results = checker.check_freshness()
-    checker.save_report()
-    
-    # 根据检查结果返回退出码
-    if passed:
-        sys.exit(0)
+    # 确定目标日期
+    if args.date:
+        target_date = args.date
     else:
-        sys.exit(1)
+        target_date = datetime.now().strftime('%Y-%m-%d')
+    
+    # 执行检查
+    result = check_data_freshness(target_date, args.max_age_days)
+    
+    # 生成报告
+    if result:
+        generate_report(result)
+        
+        # 返回码
+        if result['up_to_date_rate'] >= 0.95:
+            logger.info(f"\n✅ 数据新鲜度达标: {result['up_to_date_rate']:.1%}")
+            return 0
+        else:
+            logger.warning(f"\n⚠️ 数据新鲜度不足: {result['up_to_date_rate']:.1%}")
+            return 1
+    else:
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

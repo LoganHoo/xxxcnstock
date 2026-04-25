@@ -1,0 +1,175 @@
+# XCNStock 双调度器主备配置
+# Kestra (主) + APScheduler (备) 架构
+# 优先级: Kestra > APScheduler
+
+# ==================== 调度器配置 ====================
+
+# Kestra 配置
+kestra:
+  # API地址
+  api_url: "http://localhost:8082/api/v1"
+  
+  # 健康检查端点
+  health_endpoint: "/health"
+  
+  # 超时时间(秒)
+  timeout: 5
+  
+  # 命名空间
+  namespace: "xcnstock"
+  
+  # Web UI地址
+  web_ui: "http://localhost:8082/ui"
+
+# APScheduler 配置
+apscheduler:
+  # 心跳文件路径
+  heartbeat_file: "/app/logs/scheduler_heartbeat"
+  
+  # 状态文件路径
+  state_file: "/app/logs/task_states.json"
+  
+  # 心跳超时时间(秒)
+  timeout: 60
+  
+  # 日志文件
+  log_file: "/app/logs/apscheduler.log"
+
+# ==================== Redis 配置 ====================
+
+redis:
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: null
+  
+  # 连接池配置
+  max_connections: 20
+  socket_connect_timeout: 5
+  socket_timeout: 5
+
+# ==================== 主备切换配置 ====================
+# 优先级策略: Kestra > APScheduler
+# 1. Kestra健康时，始终是主调度器
+# 2. Kestra宕机时，APScheduler接管
+# 3. Kestra恢复后，自动切回Kestra
+
+failover:
+  # 是否启用自动故障转移
+  enabled: true
+  
+  # 主调度器类型 (kestra | apscheduler)
+  primary_scheduler: "kestra"
+  
+  # 故障转移阈值(连续失败次数)
+  threshold: 3
+  
+  # 是否自动恢复(主调度器恢复后是否切回)
+  # Kestra优先策略下，此配置为true
+  auto_recover: true
+  
+  # 健康检查间隔(秒)
+  health_check_interval: 30
+  
+  # Leader锁过期时间(秒)
+  leader_lock_ttl: 60
+  
+  # Kestra恢复后强制夺回Leader的延迟(秒)
+  # 给APScheduler完成当前任务的时间
+  takeover_delay: 10
+
+# ==================== 任务执行配置 ====================
+
+task_execution:
+  # 任务去重时间窗口(秒)
+  dedup_window: 300
+  
+  # 任务状态保留时间(天)
+  status_retention_days: 7
+  
+  # 最大并发任务数
+  max_concurrent_tasks: 5
+  
+  # 任务执行超时(秒)
+  default_timeout: 3600
+
+# ==================== 告警配置 ====================
+
+alert:
+  # 是否启用告警
+  enabled: true
+  
+  # 主备切换告警
+  failover_alert: true
+  
+  # 任务失败告警
+  task_failure_alert: true
+  
+  # 告警方式
+  channels:
+    - type: "log"
+      level: "error"
+    
+    # 可配置其他告警方式:
+    # - type: "webhook"
+    #   url: "https://hooks.slack.com/..."
+    # 
+    # - type: "email"
+    #   smtp_host: "smtp.example.com"
+    #   smtp_port: 587
+    #   username: "alert@example.com"
+    #   password: "password"
+    #   to: "admin@example.com"
+
+# ==================== 监控配置 ====================
+
+monitoring:
+  # 是否启用监控
+  enabled: true
+  
+  # 监控指标上报间隔(秒)
+  metrics_interval: 60
+  
+  # 监控指标
+  metrics:
+    - scheduler_health      # 调度器健康状态
+    - task_execution_time   # 任务执行时间
+    - task_success_rate     # 任务成功率
+    - failover_count        # 故障转移次数
+    - leader_changes        # Leader变更次数
+  
+  # Prometheus 配置
+  prometheus:
+    enabled: true
+    port: 9090
+    path: /metrics
+
+# ==================== 分布式锁配置 ====================
+
+distributed_lock:
+  # 锁默认过期时间(秒)
+  default_ttl: 60
+  
+  # 自动续期
+  auto_renew: true
+  
+  # 死锁检测间隔(秒)
+  deadlock_check_interval: 60
+  
+  # 锁最大存活时间(秒)，超过此时间强制释放
+  max_lock_age: 300
+
+# ==================== 日志配置 ====================
+
+logging:
+  level: "INFO"
+  
+  # 日志文件
+  file: "/app/logs/dual_scheduler.log"
+  
+  # 日志轮转
+  rotation: "00:00"
+  retention: "30 days"
+  
+  # 是否输出到控制台
+  console: true

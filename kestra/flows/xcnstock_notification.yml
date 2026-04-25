@@ -1,0 +1,107 @@
+id: xcnstock_notification
+namespace: xcnstock
+
+description: |
+  XCNStock 统一通知工作流
+  被其他工作流调用，发送执行结果通知
+
+labels:
+  env: production
+  project: xcnstock
+  type: notification
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+
+inputs:
+  - id: workflow_name
+    type: STRING
+    required: true
+    description: 调用工作流名称
+
+  - id: status
+    type: STRING
+    required: true
+    description: 执行状态 (success/failed/warning)
+
+  - id: message
+    type: STRING
+    defaults: ""
+    description: 通知消息内容
+
+  - id: duration
+    type: STRING
+    defaults: ""
+    description: 执行时长
+
+  - id: error_details
+    type: STRING
+    defaults: ""
+    description: 错误详情（失败时）
+
+tasks:
+  - id: send_notification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 发送统一通知
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      import os
+      import json
+      from datetime import datetime
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      # 获取输入参数
+      workflow_name = "{{ inputs.workflow_name }}"
+      status = "{{ inputs.status }}"
+      message = """{{ inputs.message }}"""
+      duration = "{{ inputs.duration }}"
+      error_details = """{{ inputs.error_details }}"""
+      
+      # 构建通知内容
+      emoji_map = {
+          "success": "✅",
+          "failed": "❌",
+          "warning": "⚠️"
+      }
+      
+      emoji = emoji_map.get(status, "ℹ️")
+      timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+      
+      notification = f"""
+{emoji} XCNStock 工作流执行通知
+
+📋 工作流: {workflow_name}
+📊 状态: {status.upper()}
+🕐 时间: {timestamp}
+⏱️ 耗时: {duration if duration else 'N/A'}
+
+📝 消息:
+{message if message else '无'}
+"""
+      
+      if error_details and status == "failed":
+          notification += f"""
+❗ 错误详情:
+{error_details[:500]}...
+"""
+      
+      print(notification)
+      
+      # 尝试发送 webhook 通知
+      try:
+          from scripts.pipeline.send_notification import send_alert
+          send_alert(
+              title=f"[{status.upper()}] {workflow_name}",
+              message=notification,
+              level="INFO" if status == "success" else "ERROR"
+          )
+          print("✅ 通知发送成功")
+      except Exception as e:
+          print(f"⚠️ 通知发送失败: {e}")
+          # 通知失败不阻塞主流程
+    timeout: PT1M
+    allowFailure: true

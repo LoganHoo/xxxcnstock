@@ -1,0 +1,10 @@
+[
+  {
+    "upstream_dataset": "baostock_api",
+    "downstream_dataset": "xcnstock.kline_data",
+    "transformation_type": "raw_ingestion",
+    "transformation_sql": "从Baostock API采集原始K线数据，包含日线行情",
+    "created_at": "2026-04-19T14:11:18.439486",
+    "emitted_at": "2026-04-19T14:11:18.439866"
+  }
+]

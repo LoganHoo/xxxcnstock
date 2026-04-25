@@ -1,0 +1,110 @@
+id: xcnstock_daily_maintenance
+namespace: xcnstock
+
+description: |
+  XCNStock 日常维护流水线 - 承接 cron_tasks.yaml 中 daily 组任务
+  
+  功能：
+  1. 采集昨日新闻联播 (00:22) - 每天凌晨主采集
+  2. 补采7天内缺失的新闻联播 (06:22) - 每天早晨补采
+  3. 批量更新历史多周期表现 (周六 10:00)
+  
+  调度：每天 00:22
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+  log_level: INFO
+
+inputs:
+  - id: run_date
+    type: STRING
+    defaults: "{{ trigger.date ?? now() | date('yyyy-MM-dd') }}"
+    description: 运行日期
+
+tasks:
+  # ========== 阶段1: 采集昨日新闻联播 (00:22) ==========
+  - id: collect_news_cctv_midnight
+    type: io.kestra.plugin.scripts.python.Script
+    description: 每天凌晨采集昨天和今天新闻联播
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install requests pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.cctv_midnight")
+      
+      logger.info("=" * 60)
+      logger.info("阶段1: 采集昨日新闻联播")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/cctv_analyzer.py", "--mode", "full", "--fetch-only"],
+              capture_output=True,
+              text=True,
+              timeout=300
+          )
+          logger.info(f"新闻联播采集完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"新闻联播采集失败: {e}")
+    timeout: PT5M
+
+  # ========== 阶段2: 补采7天内缺失的新闻联播 (06:22) ==========
+  - id: collect_news_cctv_morning
+    type: io.kestra.plugin.scripts.python.Script
+    description: 每天早晨补采7天内缺失的新闻联播
+    runner: PROCESS
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    beforeCommands:
+      - pip install requests pandas -q
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      os.chdir("{{ vars.project_root }}")
+      
+      import logging
+      import subprocess
+      
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.cctv_morning")
+      
+      logger.info("=" * 60)
+      logger.info("阶段2: 补采7天内缺失的新闻联播")
+      logger.info("=" * 60)
+      
+      try:
+          result = subprocess.run(
+              ["python3", "scripts/pipeline/cctv_analyzer.py", "--mode", "supplement", "--fetch-only"],
+              capture_output=True,
+              text=True,
+              timeout=300
+          )
+          logger.info(f"新闻联播补采完成:\n{result.stdout}")
+      except Exception as e:
+          logger.error(f"新闻联播补采失败: {e}")
+    timeout: PT5M
+
+triggers:
+  - id: daily_maintenance_schedule
+    type: io.kestra.core.models.triggers.types.Schedule
+    cron: "22 0 * * *"
+    timezone: Asia/Shanghai
+    disabled: false
+
+pluginDefaults:
+  - type: io.kestra.plugin.scripts.python.Script
+    values:
+      runner: PROCESS

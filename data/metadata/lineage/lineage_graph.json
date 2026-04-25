@@ -1,0 +1,51 @@
+{
+  "nodes": [
+    {
+      "id": "trading_signals",
+      "name": "trading_signals"
+    },
+    {
+      "id": "baostock_api",
+      "name": "baostock_api"
+    },
+    {
+      "id": "cleaned_kline_data",
+      "name": "cleaned_kline_data"
+    },
+    {
+      "id": "technical_features",
+      "name": "technical_features"
+    },
+    {
+      "id": "raw_kline_data",
+      "name": "raw_kline_data"
+    }
+  ],
+  "edges": [
+    {
+      "source": "baostock_api",
+      "target": "raw_kline_data",
+      "type": "raw_ingestion",
+      "description": "从Baostock API采集原始K线数据"
+    },
+    {
+      "source": "raw_kline_data",
+      "target": "cleaned_kline_data",
+      "type": "cleaning",
+      "description": "数据清洗: 去重、填充缺失值、异常值处理"
+    },
+    {
+      "source": "cleaned_kline_data",
+      "target": "technical_features",
+      "type": "feature_engineering",
+      "description": "计算技术指标: MACD, KDJ, RSI, 均线等"
+    },
+    {
+      "source": "technical_features",
+      "target": "trading_signals",
+      "type": "signal_generation",
+      "description": "生成交易信号: 金叉、突破、主力痕迹等"
+    }
+  ],
+  "generated_at": "2026-04-19T16:26:41.486078"
+}

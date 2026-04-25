@@ -61,7 +61,7 @@ factors:
     enabled: true
 indicators:
   10am_pivot:
-    price_threshold: 37.33000183105469
+    price_threshold: 12.1
     v_ratio10_threshold: 1.1
   defense:
     description: 防守信号 - 什么情况下绝对不能买
@@ -78,12 +78,12 @@ indicators:
     v_total_threshold: 1800
   market_sentiment:
     thresholds:
-      cost_peak_support: 53.11736165351485
-      oscillating_v_total_max: 2336.562346526291
-      oscillating_v_total_min: 1557.7082310175276
+      cost_peak_support: 11.795181999999997
+      oscillating_v_total_max: 0.34879199999999977
+      oscillating_v_total_min: 0.23252799999999985
       sentiment_temperature_overheat: 80
       sentiment_temperature_strong: 50
-      strong_v_total: 1927.7248858142098
+      strong_v_total: 0.30654000000000003
 strategy:
   four_step_exit:
     time_points:

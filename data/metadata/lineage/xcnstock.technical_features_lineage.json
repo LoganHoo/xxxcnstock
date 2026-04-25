@@ -1,0 +1,10 @@
+[
+  {
+    "upstream_dataset": "xcnstock.kline_data_cleaned",
+    "downstream_dataset": "xcnstock.technical_features",
+    "transformation_type": "feature_engineering",
+    "transformation_sql": "计算技术指标: MACD, KDJ, RSI, 均线, 布林带等",
+    "created_at": "2026-04-19T14:11:18.439509",
+    "emitted_at": "2026-04-19T14:11:18.440741"
+  }
+]

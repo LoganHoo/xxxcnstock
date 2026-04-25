@@ -1,0 +1,63 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "success",
+  "start_time": "2026-04-23T20:10:12.585355",
+  "end_time": "2026-04-23T20:10:12.852789",
+  "duration_seconds": 0.267434,
+  "total_stocks": 5122,
+  "selected_stocks": 5122,
+  "top_stocks": [
+    {
+      "rank": 1,
+      "code": "603618",
+      "name": "杭电股份",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 2,
+      "code": "688213",
+      "name": "思特威-W",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 3,
+      "code": "603687",
+      "name": "大胜达",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 4,
+      "code": "603587",
+      "name": "地素时尚",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 5,
+      "code": "601881",
+      "name": "中国银河",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    }
+  ],
+  "filters_applied": [
+    "ROE >= 10%",
+    "资产负债率 <= 60%",
+    "主力净流入 >= 0",
+    "近期无重大负面公告"
+  ],
+  "errors": []
+}

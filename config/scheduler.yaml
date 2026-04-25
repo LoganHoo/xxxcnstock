@@ -1,0 +1,67 @@
+# APScheduler 配置文件
+# 与 Kestra 双调度器协调，支持分布式锁
+
+scheduler:
+  name: "XCNStock APScheduler"
+  timezone: "Asia/Shanghai"
+  max_workers: 4
+
+# 任务列表
+tasks:
+  # 数据采集任务（需要分布式锁）
+  - name: "daily_data_collection"
+    description: "每日K线数据采集"
+    script: "scripts/pipeline/data_collect.py"
+    schedule: "30 17 * * 1-5"  # 工作日 17:30
+    enabled: true
+    timeout: 7200  # 2小时
+    requires_lock: true
+    lock_key: "data_collection"
+
+  # 数据质量检查（需要分布式锁）
+  - name: "data_quality_check"
+    description: "数据质量检查"
+    script: "scripts/pipeline/data_quality_check.py"
+    schedule: "0 18 * * 1-5"  # 工作日 18:00
+    enabled: true
+    timeout: 1800  # 30分钟
+    requires_lock: true
+    lock_key: "data_collection"
+
+  # 系统监控（不需要锁）
+  - name: "system_monitor"
+    description: "系统健康检查"
+    script: "scripts/monitor/system_check.py"
+    schedule: "*/15 * * * *"  # 每15分钟
+    enabled: true
+    timeout: 300  # 5分钟
+    requires_lock: false
+
+  # 数据新鲜度检查（不需要锁）
+  - name: "data_freshness_check"
+    description: "检查数据新鲜度"
+    script: "scripts/monitor/check_freshness.py"
+    schedule: "0 */2 * * *"  # 每2小时
+    enabled: true
+    timeout: 600  # 10分钟
+    requires_lock: false
+
+# 分布式锁配置
+lock:
+  redis:
+    host: "${REDIS_HOST:-localhost}"
+    port: ${REDIS_PORT:-6379}
+    db: 0
+    socket_timeout: 5
+  # 锁默认过期时间（秒）
+  default_ttl: 7200
+  # 是否自动续期
+  auto_renew: true
+
+# 监控配置
+monitoring:
+  enabled: true
+  # Prometheus 指标端口
+  metrics_port: 9090
+  # 任务执行历史保留数量
+  max_history: 1000

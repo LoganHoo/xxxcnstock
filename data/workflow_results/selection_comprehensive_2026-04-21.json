@@ -1,0 +1,198 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "success",
+  "start_time": "2026-04-21T09:19:51.091287",
+  "end_time": "2026-04-21T09:19:51.506842",
+  "duration_seconds": 0.415555,
+  "total_stocks": 5419,
+  "selected_stocks": 5419,
+  "top_stocks": [
+    {
+      "rank": 1,
+      "code": "000001",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 2,
+      "code": "002588",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 3,
+      "code": "002596",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 4,
+      "code": "002595",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 5,
+      "code": "002594",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 6,
+      "code": "002593",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 7,
+      "code": "002592",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 8,
+      "code": "002591",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 9,
+      "code": "002590",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 10,
+      "code": "002589",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 11,
+      "code": "002587",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 12,
+      "code": "002624",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 13,
+      "code": "002586",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 14,
+      "code": "002585",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 15,
+      "code": "002584",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 16,
+      "code": "002583",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 17,
+      "code": "002582",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 18,
+      "code": "002581",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 19,
+      "code": "002580",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    },
+    {
+      "rank": 20,
+      "code": "002579",
+      "name": "",
+      "score": 0.0,
+      "financial_score": 0.0,
+      "market_score": 0.0,
+      "announcement_score": 0.0
+    }
+  ],
+  "filters_applied": [
+    "ROE >= 10%",
+    "资产负债率 <= 60%",
+    "主力净流入 >= 0",
+    "近期无重大负面公告"
+  ],
+  "errors": []
+}

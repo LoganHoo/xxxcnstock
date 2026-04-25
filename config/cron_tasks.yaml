@@ -25,6 +25,38 @@ global:
   # Cron 健康检查配置
   health_check_enabled: true
   health_check_interval: 300  # 5分钟检查一次
+  
+  # 性能优化配置
+  performance:
+    # 并行数据采集配置
+    parallel_fetch:
+      enabled: true
+      max_concurrent: 50        # 最大并发数
+      batch_size: 100           # 每批处理数量
+      calls_per_minute: 480     # 每分钟请求数限制
+      request_timeout: 30       # 请求超时(秒)
+      pool_size: 100            # 连接池大小
+    
+    # 增量处理配置
+    incremental:
+      enabled: true
+      max_gap_days: 7           # 最大允许日期间隔
+      min_data_rows: 50         # 最小数据行数
+    
+    # 缓存配置
+    cache:
+      l1_enabled: true
+      l1_maxsize: 1000
+      l1_ttl: 3600
+      l2_enabled: true
+      l2_ttl: 86400
+    
+    # 监控配置
+    monitoring:
+      enabled: true
+      metrics_interval: 60
+      task_timeout_alert: true
+      task_duration_threshold: 1800  # 任务执行时间告警阈值(秒)
 
 # 定时任务定义
 tasks:

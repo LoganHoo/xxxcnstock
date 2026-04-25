@@ -1,0 +1,51 @@
+schema: spec-driven
+
+# Project context
+# This is shown to AI when creating artifacts.
+context: |
+  Tech stack: Python 3.11+, FastAPI, PostgreSQL, Redis, Kestra, APScheduler
+  Architecture: Dual-scheduler primary-backup (Kestra primary, APScheduler backup)
+  Domain: A-share stock trading analysis and data pipeline
+  
+  Key components:
+  - Data collection: A-share K-line data (daily), stored in Parquet
+  - Processing: Polars/DuckDB for data analysis
+  - Scheduling: Kestra (primary) + APScheduler (backup) with Redis state sync
+  - Workflows: Morning pipeline, Post-market pipeline, Evening pipeline
+  
+  Conventions:
+  - Use type hints (Python)
+  - Follow PEP 8 style guide
+  - All data operations must check market hours (no collection during trading)
+  - Filter out delisted/ST stocks
+  - Use YAML for configuration
+  - Store data in Parquet format
+  
+  Security:
+  - No hardcoded secrets (use .env)
+  - API keys managed via environment variables
+
+# Per-artifact rules
+rules:
+  proposal:
+    - Include data pipeline impact analysis
+    - Consider both Kestra and APScheduler compatibility
+    - Define rollback strategy
+    - Include market hours compliance check
+  
+  design:
+    - Use Mermaid diagrams for architecture
+    - Specify data flow clearly
+    - Include error handling strategy
+    - Document scheduler integration points
+  
+  tasks:
+    - Break into max 2-hour chunks
+    - Include test requirements
+    - Specify which scheduler (Kestra/APScheduler) for each task
+    - Add data validation steps
+  
+  spec:
+    - Define input/output schemas
+    - Include example data
+    - Document error cases

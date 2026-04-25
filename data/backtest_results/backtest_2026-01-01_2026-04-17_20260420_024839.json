@@ -1,0 +1,2456 @@
+{
+  "start_date": "2026-01-01",
+  "end_date": "2026-04-17",
+  "initial_capital": 1000000,
+  "final_capital": 1010018.8,
+  "total_return": 0.010018800000000046,
+  "annualized_return": 0.03763463736054895,
+  "max_drawdown": 0.13763800518303157,
+  "sharpe_ratio": 0.0,
+  "trade_count": 218,
+  "win_rate": 0.5714285714285714,
+  "avg_holding_days": 24.533333333333335,
+  "profit_factor": 0.0,
+  "trades": [
+    {
+      "date": "2026-01-05",
+      "code": "300894",
+      "action": "buy",
+      "price": 12.5,
+      "shares": 8000,
+      "value": 100000.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "603579",
+      "action": "buy",
+      "price": 26.19,
+      "shares": 3800,
+      "value": 99522.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "300699",
+      "action": "buy",
+      "price": 39.09,
+      "shares": 2500,
+      "value": 97725.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "301252",
+      "action": "buy",
+      "price": 33.16,
+      "shares": 3000,
+      "value": 99479.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "002916",
+      "action": "buy",
+      "price": 242.42,
+      "shares": 400,
+      "value": 96968.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "301383",
+      "action": "buy",
+      "price": 36.9,
+      "shares": 2700,
+      "value": 99630.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "300689",
+      "action": "buy",
+      "price": 46.81,
+      "shares": 2100,
+      "value": 98301.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "300884",
+      "action": "buy",
+      "price": 17.76,
+      "shares": 5600,
+      "value": 99456.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-05",
+      "code": "002340",
+      "action": "buy",
+      "price": 8.43,
+      "shares": 11800,
+      "value": 99474.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300894",
+      "action": "sell",
+      "price": 12.82,
+      "shares": 8000,
+      "value": 102560.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "603579",
+      "action": "sell",
+      "price": 27.99,
+      "shares": 3800,
+      "value": 106362.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300699",
+      "action": "sell",
+      "price": 46.47,
+      "shares": 2500,
+      "value": 116175.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "301252",
+      "action": "sell",
+      "price": 32.0,
+      "shares": 3000,
+      "value": 96000.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "002916",
+      "action": "sell",
+      "price": 227.55,
+      "shares": 400,
+      "value": 91020.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "301383",
+      "action": "sell",
+      "price": 37.99,
+      "shares": 2700,
+      "value": 102573.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300689",
+      "action": "sell",
+      "price": 50.87,
+      "shares": 2100,
+      "value": 106827.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300884",
+      "action": "sell",
+      "price": 18.18,
+      "shares": 5600,
+      "value": 101808.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "002340",
+      "action": "sell",
+      "price": 8.82,
+      "shares": 11800,
+      "value": 104076.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300075",
+      "action": "buy",
+      "price": 16.96,
+      "shares": 6100,
+      "value": 103456.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300556",
+      "action": "buy",
+      "price": 21.1,
+      "shares": 4900,
+      "value": 103390.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300689",
+      "action": "buy",
+      "price": 50.87,
+      "shares": 2000,
+      "value": 101740.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "688058",
+      "action": "buy",
+      "price": 31.54,
+      "shares": 3200,
+      "value": 100928.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "688120",
+      "action": "buy",
+      "price": 178.0,
+      "shares": 500,
+      "value": 89000.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "688765",
+      "action": "buy",
+      "price": 77.99,
+      "shares": 1300,
+      "value": 101387.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "002238",
+      "action": "buy",
+      "price": 8.96,
+      "shares": 11500,
+      "value": 103040.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "300748",
+      "action": "buy",
+      "price": 38.48,
+      "shares": 2600,
+      "value": 100047.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-12",
+      "code": "002281",
+      "action": "buy",
+      "price": 75.32,
+      "shares": 1300,
+      "value": 97915.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300075",
+      "action": "sell",
+      "price": 16.32,
+      "shares": 6100,
+      "value": 99552.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300556",
+      "action": "sell",
+      "price": 20.16,
+      "shares": 4900,
+      "value": 98784.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300689",
+      "action": "sell",
+      "price": 47.26,
+      "shares": 2000,
+      "value": 94520.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "688058",
+      "action": "sell",
+      "price": 31.15,
+      "shares": 3200,
+      "value": 99680.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "688120",
+      "action": "sell",
+      "price": 193.37,
+      "shares": 500,
+      "value": 96685.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "688765",
+      "action": "sell",
+      "price": 79.16,
+      "shares": 1300,
+      "value": 102908.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002238",
+      "action": "sell",
+      "price": 8.31,
+      "shares": 11500,
+      "value": 95565.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300748",
+      "action": "sell",
+      "price": 38.12,
+      "shares": 2600,
+      "value": 99112.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002281",
+      "action": "sell",
+      "price": 72.86,
+      "shares": 1300,
+      "value": 94718.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "688120",
+      "action": "buy",
+      "price": 193.37,
+      "shares": 500,
+      "value": 96685.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002350",
+      "action": "buy",
+      "price": 9.92,
+      "shares": 10200,
+      "value": 101184.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002026",
+      "action": "buy",
+      "price": 15.78,
+      "shares": 6400,
+      "value": 100992.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "600389",
+      "action": "buy",
+      "price": 25.99,
+      "shares": 3900,
+      "value": 101361.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300313",
+      "action": "buy",
+      "price": 9.0,
+      "shares": 11300,
+      "value": 101700.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002916",
+      "action": "buy",
+      "price": 237.95,
+      "shares": 400,
+      "value": 95180.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "688403",
+      "action": "buy",
+      "price": 22.52,
+      "shares": 4500,
+      "value": 101340.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300758",
+      "action": "buy",
+      "price": 16.71,
+      "shares": 6000,
+      "value": 100260.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "300620",
+      "action": "buy",
+      "price": 152.2,
+      "shares": 600,
+      "value": 91320.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-19",
+      "code": "002340",
+      "action": "buy",
+      "price": 9.13,
+      "shares": 11100,
+      "value": 101343.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "688120",
+      "action": "sell",
+      "price": 193.3,
+      "shares": 500,
+      "value": 96650.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002350",
+      "action": "sell",
+      "price": 9.46,
+      "shares": 10200,
+      "value": 96492.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002026",
+      "action": "sell",
+      "price": 16.76,
+      "shares": 6400,
+      "value": 107264.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "600389",
+      "action": "sell",
+      "price": 27.35,
+      "shares": 3900,
+      "value": 106665.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "300313",
+      "action": "sell",
+      "price": 9.07,
+      "shares": 11300,
+      "value": 102491.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002916",
+      "action": "sell",
+      "price": 241.5,
+      "shares": 400,
+      "value": 96600.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "688403",
+      "action": "sell",
+      "price": 19.9,
+      "shares": 4500,
+      "value": 89550.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "300758",
+      "action": "sell",
+      "price": 19.2,
+      "shares": 6000,
+      "value": 115200.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "300620",
+      "action": "sell",
+      "price": 155.11,
+      "shares": 600,
+      "value": 93066.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002340",
+      "action": "sell",
+      "price": 9.81,
+      "shares": 11100,
+      "value": 108891.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "600603",
+      "action": "buy",
+      "price": 6.78,
+      "shares": 15300,
+      "value": 103734.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "603132",
+      "action": "buy",
+      "price": 18.33,
+      "shares": 5600,
+      "value": 102647.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002340",
+      "action": "buy",
+      "price": 9.81,
+      "shares": 10500,
+      "value": 103005.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "300945",
+      "action": "buy",
+      "price": 20.21,
+      "shares": 5100,
+      "value": 103071.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "301393",
+      "action": "buy",
+      "price": 58.78,
+      "shares": 1700,
+      "value": 99926.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "002663",
+      "action": "buy",
+      "price": 2.12,
+      "shares": 49000,
+      "value": 103880.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "600056",
+      "action": "buy",
+      "price": 11.18,
+      "shares": 9200,
+      "value": 102856.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "000933",
+      "action": "buy",
+      "price": 33.35,
+      "shares": 3100,
+      "value": 103385.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-01-26",
+      "code": "600613",
+      "action": "buy",
+      "price": 6.53,
+      "shares": 15900,
+      "value": 103827.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "600603",
+      "action": "sell",
+      "price": 6.4,
+      "shares": 15300,
+      "value": 97920.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "603132",
+      "action": "sell",
+      "price": 17.5,
+      "shares": 5600,
+      "value": 98000.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "002340",
+      "action": "sell",
+      "price": 8.45,
+      "shares": 10500,
+      "value": 88724.99999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "300945",
+      "action": "sell",
+      "price": 18.54,
+      "shares": 5100,
+      "value": 94554.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "301393",
+      "action": "sell",
+      "price": 51.45,
+      "shares": 1700,
+      "value": 87465.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "002663",
+      "action": "sell",
+      "price": 2.0,
+      "shares": 49000,
+      "value": 98000.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "600056",
+      "action": "sell",
+      "price": 10.65,
+      "shares": 9200,
+      "value": 97980.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "000933",
+      "action": "sell",
+      "price": 30.78,
+      "shares": 3100,
+      "value": 95418.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "600613",
+      "action": "sell",
+      "price": 6.2,
+      "shares": 15900,
+      "value": 98580.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "000599",
+      "action": "buy",
+      "price": 7.33,
+      "shares": 13200,
+      "value": 96756.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "601107",
+      "action": "buy",
+      "price": 6.36,
+      "shares": 15200,
+      "value": 96672.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "600197",
+      "action": "buy",
+      "price": 14.14,
+      "shares": 6800,
+      "value": 96152.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "600330",
+      "action": "buy",
+      "price": 14.0,
+      "shares": 6900,
+      "value": 96600.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "603777",
+      "action": "buy",
+      "price": 13.69,
+      "shares": 7000,
+      "value": 95830.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "603395",
+      "action": "buy",
+      "price": 31.13,
+      "shares": 3100,
+      "value": 96503.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "001872",
+      "action": "buy",
+      "price": 19.49,
+      "shares": 4900,
+      "value": 95500.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "300065",
+      "action": "buy",
+      "price": 24.52,
+      "shares": 3900,
+      "value": 95628.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "159887",
+      "action": "buy",
+      "price": 1.262,
+      "shares": 76800,
+      "value": 96921.6,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-02",
+      "code": "603385",
+      "action": "buy",
+      "price": 7.08,
+      "shares": 13600,
+      "value": 96288.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "000599",
+      "action": "sell",
+      "price": 6.79,
+      "shares": 13200,
+      "value": 89628.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "601107",
+      "action": "sell",
+      "price": 6.57,
+      "shares": 15200,
+      "value": 99864.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "600197",
+      "action": "sell",
+      "price": 13.94,
+      "shares": 6800,
+      "value": 94792.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "600330",
+      "action": "sell",
+      "price": 17.05,
+      "shares": 6900,
+      "value": 117645.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "603777",
+      "action": "sell",
+      "price": 13.55,
+      "shares": 7000,
+      "value": 94850.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "603395",
+      "action": "sell",
+      "price": 30.57,
+      "shares": 3100,
+      "value": 94767.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "001872",
+      "action": "sell",
+      "price": 19.8,
+      "shares": 4900,
+      "value": 97020.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "300065",
+      "action": "sell",
+      "price": 27.68,
+      "shares": 3900,
+      "value": 107952.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "159887",
+      "action": "sell",
+      "price": 1.288,
+      "shares": 76800,
+      "value": 98918.40000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "603385",
+      "action": "sell",
+      "price": 7.43,
+      "shares": 13600,
+      "value": 101048.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "002663",
+      "action": "buy",
+      "price": 2.21,
+      "shares": 45300,
+      "value": 100113.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "000520",
+      "action": "buy",
+      "price": 4.57,
+      "shares": 21900,
+      "value": 100083.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "301252",
+      "action": "buy",
+      "price": 34.58,
+      "shares": 2900,
+      "value": 100282.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "159268",
+      "action": "buy",
+      "price": 1.011,
+      "shares": 99100,
+      "value": 100190.09999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "600187",
+      "action": "buy",
+      "price": 2.26,
+      "shares": 44300,
+      "value": 100117.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "600603",
+      "action": "buy",
+      "price": 6.8,
+      "shares": 14700,
+      "value": 99960.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "159545",
+      "action": "buy",
+      "price": 1.532,
+      "shares": 65400,
+      "value": 100192.8,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "002291",
+      "action": "buy",
+      "price": 8.87,
+      "shares": 11300,
+      "value": 100230.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "300620",
+      "action": "buy",
+      "price": 184.7,
+      "shares": 500,
+      "value": 92350.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-02-09",
+      "code": "600330",
+      "action": "buy",
+      "price": 17.05,
+      "shares": 5800,
+      "value": 98890.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "002663",
+      "action": "sell",
+      "price": 2.21,
+      "shares": 45300,
+      "value": 100113.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "000520",
+      "action": "sell",
+      "price": 4.73,
+      "shares": 21900,
+      "value": 103587.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "301252",
+      "action": "sell",
+      "price": 40.09,
+      "shares": 2900,
+      "value": 116261.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "159268",
+      "action": "sell",
+      "price": 0.949,
+      "shares": 99100,
+      "value": 94045.9,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600187",
+      "action": "sell",
+      "price": 2.09,
+      "shares": 44300,
+      "value": 92587.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600603",
+      "action": "sell",
+      "price": 7.17,
+      "shares": 14700,
+      "value": 105399.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "159545",
+      "action": "sell",
+      "price": 1.515,
+      "shares": 65400,
+      "value": 99081.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "002291",
+      "action": "sell",
+      "price": 7.12,
+      "shares": 11300,
+      "value": 80456.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "300620",
+      "action": "sell",
+      "price": 170.0,
+      "shares": 500,
+      "value": 85000.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600330",
+      "action": "sell",
+      "price": 17.64,
+      "shares": 5800,
+      "value": 102312.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "601117",
+      "action": "buy",
+      "price": 9.42,
+      "shares": 10500,
+      "value": 98910.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "000933",
+      "action": "buy",
+      "price": 33.9,
+      "shares": 2900,
+      "value": 98310.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "002350",
+      "action": "buy",
+      "price": 11.89,
+      "shares": 8300,
+      "value": 98687.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600603",
+      "action": "buy",
+      "price": 7.17,
+      "shares": 13700,
+      "value": 98229.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600320",
+      "action": "buy",
+      "price": 5.59,
+      "shares": 17600,
+      "value": 98384.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600399",
+      "action": "buy",
+      "price": 7.79,
+      "shares": 12700,
+      "value": 98933.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "600389",
+      "action": "buy",
+      "price": 30.18,
+      "shares": 3200,
+      "value": 96576.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-02",
+      "code": "300303",
+      "action": "buy",
+      "price": 9.06,
+      "shares": 10900,
+      "value": 98754.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "601117",
+      "action": "sell",
+      "price": 9.18,
+      "shares": 10500,
+      "value": 96390.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "000933",
+      "action": "sell",
+      "price": 36.26,
+      "shares": 2900,
+      "value": 105154.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "002350",
+      "action": "sell",
+      "price": 13.84,
+      "shares": 8300,
+      "value": 114872.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600603",
+      "action": "sell",
+      "price": 7.63,
+      "shares": 13700,
+      "value": 104531.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600320",
+      "action": "sell",
+      "price": 5.32,
+      "shares": 17600,
+      "value": 93632.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600399",
+      "action": "sell",
+      "price": 7.23,
+      "shares": 12700,
+      "value": 91821.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600389",
+      "action": "sell",
+      "price": 29.37,
+      "shares": 3200,
+      "value": 93984.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "300303",
+      "action": "sell",
+      "price": 10.22,
+      "shares": 10900,
+      "value": 111398.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600603",
+      "action": "buy",
+      "price": 7.63,
+      "shares": 13200,
+      "value": 100716.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "002663",
+      "action": "buy",
+      "price": 2.28,
+      "shares": 44400,
+      "value": 101231.99999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "301609",
+      "action": "buy",
+      "price": 57.0,
+      "shares": 1700,
+      "value": 96900.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "000933",
+      "action": "buy",
+      "price": 36.26,
+      "shares": 2700,
+      "value": 97902.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "600575",
+      "action": "buy",
+      "price": 3.89,
+      "shares": 26000,
+      "value": 101140.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "688058",
+      "action": "buy",
+      "price": 31.16,
+      "shares": 3200,
+      "value": 99712.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "000530",
+      "action": "buy",
+      "price": 6.52,
+      "shares": 15500,
+      "value": 101060.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "300065",
+      "action": "buy",
+      "price": 28.64,
+      "shares": 3500,
+      "value": 100240.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "300303",
+      "action": "buy",
+      "price": 10.22,
+      "shares": 9900,
+      "value": 101178.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-09",
+      "code": "603395",
+      "action": "buy",
+      "price": 31.63,
+      "shares": 3200,
+      "value": 101216.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600603",
+      "action": "sell",
+      "price": 8.05,
+      "shares": 13200,
+      "value": 106260.00000000001,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "002663",
+      "action": "sell",
+      "price": 2.28,
+      "shares": 44400,
+      "value": 101231.99999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "301609",
+      "action": "sell",
+      "price": 52.36,
+      "shares": 1700,
+      "value": 89012.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "000933",
+      "action": "sell",
+      "price": 35.89,
+      "shares": 2700,
+      "value": 96903.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600575",
+      "action": "sell",
+      "price": 3.99,
+      "shares": 26000,
+      "value": 103740.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "688058",
+      "action": "sell",
+      "price": 30.7,
+      "shares": 3200,
+      "value": 98240.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "000530",
+      "action": "sell",
+      "price": 6.46,
+      "shares": 15500,
+      "value": 100130.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "300065",
+      "action": "sell",
+      "price": 26.89,
+      "shares": 3500,
+      "value": 94115.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "300303",
+      "action": "sell",
+      "price": 10.03,
+      "shares": 9900,
+      "value": 99297.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "603395",
+      "action": "sell",
+      "price": 32.74,
+      "shares": 3200,
+      "value": 104768.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "001872",
+      "action": "buy",
+      "price": 22.81,
+      "shares": 4400,
+      "value": 100364.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600603",
+      "action": "buy",
+      "price": 8.05,
+      "shares": 12500,
+      "value": 100625.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600389",
+      "action": "buy",
+      "price": 31.15,
+      "shares": 3200,
+      "value": 99680.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "300313",
+      "action": "buy",
+      "price": 7.54,
+      "shares": 13300,
+      "value": 100282.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "603395",
+      "action": "buy",
+      "price": 32.74,
+      "shares": 3000,
+      "value": 98220.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "603777",
+      "action": "buy",
+      "price": 13.77,
+      "shares": 7300,
+      "value": 100521.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600330",
+      "action": "buy",
+      "price": 18.91,
+      "shares": 5300,
+      "value": 100223.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "600575",
+      "action": "buy",
+      "price": 3.99,
+      "shares": 25200,
+      "value": 100548.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "159887",
+      "action": "buy",
+      "price": 1.298,
+      "shares": 77500,
+      "value": 100595.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-16",
+      "code": "601117",
+      "action": "buy",
+      "price": 9.52,
+      "shares": 10500,
+      "value": 99960.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "001872",
+      "action": "sell",
+      "price": 22.29,
+      "shares": 4400,
+      "value": 98076.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600603",
+      "action": "sell",
+      "price": 7.31,
+      "shares": 12500,
+      "value": 91375.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600389",
+      "action": "sell",
+      "price": 28.5,
+      "shares": 3200,
+      "value": 91200.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "300313",
+      "action": "sell",
+      "price": 7.17,
+      "shares": 13300,
+      "value": 95361.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "603395",
+      "action": "sell",
+      "price": 29.11,
+      "shares": 3000,
+      "value": 87330.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "603777",
+      "action": "sell",
+      "price": 12.53,
+      "shares": 7300,
+      "value": 91469.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600330",
+      "action": "sell",
+      "price": 15.19,
+      "shares": 5300,
+      "value": 80507.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600575",
+      "action": "sell",
+      "price": 3.95,
+      "shares": 25200,
+      "value": 99540.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "159887",
+      "action": "sell",
+      "price": 1.253,
+      "shares": 77500,
+      "value": 97107.49999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "601117",
+      "action": "sell",
+      "price": 8.64,
+      "shares": 10500,
+      "value": 90720.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "300620",
+      "action": "buy",
+      "price": 167.91,
+      "shares": 500,
+      "value": 83955.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "688048",
+      "action": "buy",
+      "price": 191.0,
+      "shares": 400,
+      "value": 76400.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600976",
+      "action": "buy",
+      "price": 32.87,
+      "shares": 2800,
+      "value": 92036.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "002350",
+      "action": "buy",
+      "price": 13.67,
+      "shares": 6700,
+      "value": 91589.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "600575",
+      "action": "buy",
+      "price": 3.95,
+      "shares": 23500,
+      "value": 92825.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "159956",
+      "action": "buy",
+      "price": 2.042,
+      "shares": 45400,
+      "value": 92706.79999999999,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "001872",
+      "action": "buy",
+      "price": 22.29,
+      "shares": 4100,
+      "value": 91389.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "688387",
+      "action": "buy",
+      "price": 14.11,
+      "shares": 6500,
+      "value": 91715.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "002281",
+      "action": "buy",
+      "price": 79.01,
+      "shares": 1100,
+      "value": 86911.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-23",
+      "code": "300894",
+      "action": "buy",
+      "price": 10.76,
+      "shares": 8600,
+      "value": 92536.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "300620",
+      "action": "sell",
+      "price": 188.5,
+      "shares": 500,
+      "value": 94250.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "688048",
+      "action": "sell",
+      "price": 223.16,
+      "shares": 400,
+      "value": 89264.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "600976",
+      "action": "sell",
+      "price": 34.13,
+      "shares": 2800,
+      "value": 95564.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "002350",
+      "action": "sell",
+      "price": 14.17,
+      "shares": 6700,
+      "value": 94939.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "600575",
+      "action": "sell",
+      "price": 4.0,
+      "shares": 23500,
+      "value": 94000.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "159956",
+      "action": "sell",
+      "price": 2.067,
+      "shares": 45400,
+      "value": 93841.8,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "001872",
+      "action": "sell",
+      "price": 22.33,
+      "shares": 4100,
+      "value": 91553.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "688387",
+      "action": "sell",
+      "price": 14.71,
+      "shares": 6500,
+      "value": 95615.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "002281",
+      "action": "sell",
+      "price": 88.1,
+      "shares": 1100,
+      "value": 96910.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "300894",
+      "action": "sell",
+      "price": 10.53,
+      "shares": 8600,
+      "value": 90558.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "688120",
+      "action": "buy",
+      "price": 181.9,
+      "shares": 500,
+      "value": 90950.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "600613",
+      "action": "buy",
+      "price": 6.08,
+      "shares": 16000,
+      "value": 97280.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "603777",
+      "action": "buy",
+      "price": 13.96,
+      "shares": 6900,
+      "value": 96324.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "600976",
+      "action": "buy",
+      "price": 34.13,
+      "shares": 2800,
+      "value": 95564.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "000933",
+      "action": "buy",
+      "price": 31.8,
+      "shares": 3000,
+      "value": 95400.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "603122",
+      "action": "buy",
+      "price": 16.92,
+      "shares": 5700,
+      "value": 96444.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "300313",
+      "action": "buy",
+      "price": 8.52,
+      "shares": 11400,
+      "value": 97128.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "000589",
+      "action": "buy",
+      "price": 4.71,
+      "shares": 20600,
+      "value": 97026.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "000797",
+      "action": "buy",
+      "price": 2.97,
+      "shares": 32700,
+      "value": 97119.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-03-30",
+      "code": "300497",
+      "action": "buy",
+      "price": 19.42,
+      "shares": 5000,
+      "value": 97100.00000000001,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "688120",
+      "action": "sell",
+      "price": 179.09,
+      "shares": 500,
+      "value": 89545.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "600613",
+      "action": "sell",
+      "price": 6.06,
+      "shares": 16000,
+      "value": 96960.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "603777",
+      "action": "sell",
+      "price": 16.9,
+      "shares": 6900,
+      "value": 116609.99999999999,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "600976",
+      "action": "sell",
+      "price": 33.94,
+      "shares": 2800,
+      "value": 95032.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "000933",
+      "action": "sell",
+      "price": 33.33,
+      "shares": 3000,
+      "value": 99990.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "603122",
+      "action": "sell",
+      "price": 17.14,
+      "shares": 5700,
+      "value": 97698.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "300313",
+      "action": "sell",
+      "price": 8.33,
+      "shares": 11400,
+      "value": 94962.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "000589",
+      "action": "sell",
+      "price": 4.58,
+      "shares": 20600,
+      "value": 94348.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "000797",
+      "action": "sell",
+      "price": 2.83,
+      "shares": 32700,
+      "value": 92541.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "300497",
+      "action": "sell",
+      "price": 18.98,
+      "shares": 5000,
+      "value": 94900.0,
+      "reason": "rebalance"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "159956",
+      "action": "buy",
+      "price": 2.197,
+      "shares": 44800,
+      "value": 98425.6,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "002906",
+      "action": "buy",
+      "price": 30.7,
+      "shares": 3200,
+      "value": 98240.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "002515",
+      "action": "buy",
+      "price": 6.24,
+      "shares": 15700,
+      "value": 97968.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "301393",
+      "action": "buy",
+      "price": 55.1,
+      "shares": 1700,
+      "value": 93670.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "001234",
+      "action": "buy",
+      "price": 26.65,
+      "shares": 3600,
+      "value": 95940.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "159310",
+      "action": "buy",
+      "price": 2.18,
+      "shares": 45100,
+      "value": 98318.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "688403",
+      "action": "buy",
+      "price": 16.0,
+      "shares": 6100,
+      "value": 97600.0,
+      "reason": "selected"
+    },
+    {
+      "date": "2026-04-13",
+      "code": "603777",
+      "action": "buy",
+      "price": 16.9,
+      "shares": 5800,
+      "value": 98019.99999999999,
+      "reason": "selected"
+    }
+  ],
+  "daily_records": [
+    {
+      "date": "2026-01-05",
+      "cash": 1000000,
+      "positions_value": 0.0,
+      "total_value": 1000000.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-06",
+      "cash": 109444.0,
+      "positions_value": 894679.0,
+      "total_value": 1004123.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-07",
+      "cash": 109444.0,
+      "positions_value": 887499.0,
+      "total_value": 996943.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-08",
+      "cash": 109444.0,
+      "positions_value": 897278.0,
+      "total_value": 1006722.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-09",
+      "cash": 109444.0,
+      "positions_value": 900980.0,
+      "total_value": 1010424.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-12",
+      "cash": 109444.0,
+      "positions_value": 927401.0,
+      "total_value": 1036845.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-13",
+      "cash": 135940.0,
+      "positions_value": 883720.0,
+      "total_value": 1019660.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-14",
+      "cash": 135940.0,
+      "positions_value": 909415.0,
+      "total_value": 1045355.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-15",
+      "cash": 135940.0,
+      "positions_value": 902549.0,
+      "total_value": 1038489.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-16",
+      "cash": 135940.0,
+      "positions_value": 894499.0,
+      "total_value": 1030439.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-19",
+      "cash": 135940.0,
+      "positions_value": 881524.0,
+      "total_value": 1017464.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-20",
+      "cash": 26098.999999999985,
+      "positions_value": 994334.0,
+      "total_value": 1020433.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-21",
+      "cash": 26098.999999999985,
+      "positions_value": 1000394.0,
+      "total_value": 1026493.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-22",
+      "cash": 26098.999999999985,
+      "positions_value": 1012895.0,
+      "total_value": 1038994.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-23",
+      "cash": 26098.999999999985,
+      "positions_value": 1022417.0,
+      "total_value": 1048516.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-26",
+      "cash": 26098.999999999985,
+      "positions_value": 1012869.0,
+      "total_value": 1038968.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-27",
+      "cash": 112636.0,
+      "positions_value": 925921.0,
+      "total_value": 1038557.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-28",
+      "cash": 112636.0,
+      "positions_value": 963954.0,
+      "total_value": 1076590.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-29",
+      "cash": 112636.0,
+      "positions_value": 941128.0,
+      "total_value": 1053764.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-01-30",
+      "cash": 112636.0,
+      "positions_value": 895437.0,
+      "total_value": 1008073.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-02",
+      "cash": 112636.0,
+      "positions_value": 856642.0,
+      "total_value": 969278.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-03",
+      "cash": 6426.399999999994,
+      "positions_value": 990959.6,
+      "total_value": 997386.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-04",
+      "cash": 6426.399999999994,
+      "positions_value": 1017984.6,
+      "total_value": 1024411.0,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-05",
+      "cash": 6426.399999999994,
+      "positions_value": 1002489.4,
+      "total_value": 1008915.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-06",
+      "cash": 6426.399999999994,
+      "positions_value": 981458.0,
+      "total_value": 987884.4,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-09",
+      "cash": 6426.399999999994,
+      "positions_value": 996484.4,
+      "total_value": 1002910.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-10",
+      "cash": 10500.900000000081,
+      "positions_value": 987335.9,
+      "total_value": 997836.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-11",
+      "cash": 10500.900000000081,
+      "positions_value": 990686.8,
+      "total_value": 1001187.7000000002,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-12",
+      "cash": 10500.900000000081,
+      "positions_value": 996062.9,
+      "total_value": 1006563.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-13",
+      "cash": 10500.900000000081,
+      "positions_value": 962806.0,
+      "total_value": 973306.9000000001,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-24",
+      "cash": 10500.900000000081,
+      "positions_value": 985825.6,
+      "total_value": 996326.5,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-25",
+      "cash": 10500.900000000081,
+      "positions_value": 986537.7,
+      "total_value": 997038.6000000001,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-26",
+      "cash": 10500.900000000081,
+      "positions_value": 987873.4,
+      "total_value": 998374.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-02-27",
+      "cash": 10500.900000000081,
+      "positions_value": 990545.6000000001,
+      "total_value": 1001046.5000000002,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-02",
+      "cash": 10500.900000000081,
+      "positions_value": 978841.9,
+      "total_value": 989342.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-03",
+      "cash": 202559.80000000005,
+      "positions_value": 778904.0,
+      "total_value": 981463.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-04",
+      "cash": 202559.80000000005,
+      "positions_value": 795690.0,
+      "total_value": 998249.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-05",
+      "cash": 202559.80000000005,
+      "positions_value": 833557.0,
+      "total_value": 1036116.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-06",
+      "cash": 202559.80000000005,
+      "positions_value": 818792.0,
+      "total_value": 1021351.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-09",
+      "cash": 202559.80000000005,
+      "positions_value": 811782.0,
+      "total_value": 1014341.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-10",
+      "cash": 13045.800000000047,
+      "positions_value": 1006375.0,
+      "total_value": 1019420.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-11",
+      "cash": 13045.800000000047,
+      "positions_value": 1007102.0,
+      "total_value": 1020147.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-12",
+      "cash": 13045.800000000047,
+      "positions_value": 1015967.0,
+      "total_value": 1029012.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-13",
+      "cash": 13045.800000000047,
+      "positions_value": 1000390.0,
+      "total_value": 1013435.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-16",
+      "cash": 13045.800000000047,
+      "positions_value": 993697.0,
+      "total_value": 1006742.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-17",
+      "cash": 5724.800000000047,
+      "positions_value": 978383.5,
+      "total_value": 984108.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-18",
+      "cash": 5724.800000000047,
+      "positions_value": 982512.5,
+      "total_value": 988237.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-19",
+      "cash": 5724.800000000047,
+      "positions_value": 972480.5,
+      "total_value": 978205.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-20",
+      "cash": 5724.800000000047,
+      "positions_value": 957817.5,
+      "total_value": 963542.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-23",
+      "cash": 5724.800000000047,
+      "positions_value": 922685.5,
+      "total_value": 928410.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-24",
+      "cash": 36347.50000000006,
+      "positions_value": 914333.2,
+      "total_value": 950680.7,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-25",
+      "cash": 36347.50000000006,
+      "positions_value": 940389.4,
+      "total_value": 976736.9000000001,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-26",
+      "cash": 36347.50000000006,
+      "positions_value": 931124.2,
+      "total_value": 967471.7,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-27",
+      "cash": 36347.50000000006,
+      "positions_value": 939892.0,
+      "total_value": 976239.5,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-30",
+      "cash": 36347.50000000006,
+      "positions_value": 936494.8,
+      "total_value": 972842.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-03-31",
+      "cash": 12507.300000000032,
+      "positions_value": 938412.0,
+      "total_value": 950919.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-01",
+      "cash": 12507.300000000032,
+      "positions_value": 944477.0,
+      "total_value": 956984.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-02",
+      "cash": 12507.300000000032,
+      "positions_value": 953001.0,
+      "total_value": 965508.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-03",
+      "cash": 12507.300000000032,
+      "positions_value": 947750.0,
+      "total_value": 960257.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-07",
+      "cash": 12507.300000000032,
+      "positions_value": 958363.0,
+      "total_value": 970870.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-08",
+      "cash": 12507.300000000032,
+      "positions_value": 979255.0,
+      "total_value": 991762.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-09",
+      "cash": 12507.300000000032,
+      "positions_value": 972475.0,
+      "total_value": 984982.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-10",
+      "cash": 12507.300000000032,
+      "positions_value": 978258.0,
+      "total_value": 990765.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-13",
+      "cash": 12507.300000000032,
+      "positions_value": 972586.0,
+      "total_value": 985093.3,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-14",
+      "cash": 206911.70000000007,
+      "positions_value": 787937.4,
+      "total_value": 994849.1000000001,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-15",
+      "cash": 206911.70000000007,
+      "positions_value": 781835.4,
+      "total_value": 988747.1000000001,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-16",
+      "cash": 206911.70000000007,
+      "positions_value": 797356.1,
+      "total_value": 1004267.8,
+      "return_pct": 0.0
+    },
+    {
+      "date": "2026-04-17",
+      "cash": 206911.70000000007,
+      "positions_value": 803107.1,
+      "total_value": 1010018.8,
+      "return_pct": 0.0
+    }
+  ]
+}

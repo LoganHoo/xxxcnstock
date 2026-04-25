@@ -1,0 +1,70 @@
+{
+  "name": "kline_000007",
+  "platform": "xcnstock",
+  "description": "\u80a1\u7968 000007 \u7684K\u7ebf\u6570\u636e",
+  "schema": {
+    "fields": [
+      {
+        "fieldPath": "trade_date",
+        "type": "object",
+        "description": "\u5b57\u6bb5: trade_date"
+      },
+      {
+        "fieldPath": "code",
+        "type": "object",
+        "description": "\u5b57\u6bb5: code"
+      },
+      {
+        "fieldPath": "open",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: open"
+      },
+      {
+        "fieldPath": "high",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: high"
+      },
+      {
+        "fieldPath": "low",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: low"
+      },
+      {
+        "fieldPath": "close",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: close"
+      },
+      {
+        "fieldPath": "preclose",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: preclose"
+      },
+      {
+        "fieldPath": "volume",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: volume"
+      },
+      {
+        "fieldPath": "amount",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: amount"
+      },
+      {
+        "fieldPath": "turnover",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: turnover"
+      },
+      {
+        "fieldPath": "pct_chg",
+        "type": "float64",
+        "description": "\u5b57\u6bb5: pct_chg"
+      }
+    ]
+  },
+  "properties": {
+    "code": "000007",
+    "record_count": 795,
+    "date_range": "2023-01-03 to 2026-04-17",
+    "last_updated": "2026-04-20T03:34:19.618178"
+  }
+}

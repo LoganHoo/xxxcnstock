@@ -1,0 +1,81 @@
+{
+  "name": "xcnstock.kline_data",
+  "platform": "parquet",
+  "env": "PROD",
+  "description": "A股K线数据，包含开盘价、收盘价、最高价、最低价、成交量等。共 10 只股票，约 5,900 条记录",
+  "schema_fields": [
+    {
+      "name": "code",
+      "type": "string",
+      "description": "股票代码",
+      "nullable": false
+    },
+    {
+      "name": "trade_date",
+      "type": "date",
+      "description": "交易日期",
+      "nullable": false
+    },
+    {
+      "name": "open",
+      "type": "float",
+      "description": "开盘价",
+      "nullable": false
+    },
+    {
+      "name": "high",
+      "type": "float",
+      "description": "最高价",
+      "nullable": false
+    },
+    {
+      "name": "low",
+      "type": "float",
+      "description": "最低价",
+      "nullable": false
+    },
+    {
+      "name": "close",
+      "type": "float",
+      "description": "收盘价",
+      "nullable": false
+    },
+    {
+      "name": "volume",
+      "type": "integer",
+      "description": "成交量",
+      "nullable": false
+    },
+    {
+      "name": "amount",
+      "type": "float",
+      "description": "成交额",
+      "nullable": true
+    },
+    {
+      "name": "pct_chg",
+      "type": "float",
+      "description": "涨跌幅(%)",
+      "nullable": true
+    }
+  ],
+  "properties": {
+    "total_stocks": "10",
+    "total_rows": "5900",
+    "storage_format": "parquet",
+    "update_frequency": "daily"
+  },
+  "tags": [
+    "kline",
+    "ohlc",
+    "market_data",
+    "a_share",
+    "daily"
+  ],
+  "owners": [
+    "data_team"
+  ],
+  "created_at": "2026-04-19T14:11:18.422901",
+  "updated_at": "2026-04-19T14:11:18.422943",
+  "emitted_at": "2026-04-19T14:11:18.433697"
+}

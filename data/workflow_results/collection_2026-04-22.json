@@ -1,0 +1,105 @@
+{
+  "date": "2026-04-22",
+  "timestamp": "2026-04-23T20:09:38.074130",
+  "results": {
+    "financial": {
+      "collection_type": "financial",
+      "status": "success",
+      "start_time": "2026-04-23T20:09:32.322019",
+      "end_time": "2026-04-23T20:09:37.138975",
+      "duration_seconds": 4.816956,
+      "records_collected": 10,
+      "records_updated": 10,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "codes_processed": 5122,
+        "quality_score": 0,
+        "ge_validation": {
+          "checkpoint": "post_collection_validation",
+          "status": "passed",
+          "message": "GE验证通过: 100.0分",
+          "details": {
+            "data_type": "financial",
+            "rows": 5317,
+            "columns": 4,
+            "ge_success_rate": 100.0,
+            "freshness_score": 100,
+            "final_quality_score": 100.0,
+            "success_rate": 100.0,
+            "evaluated_expectations": 1,
+            "successful_expectations": 1,
+            "unsuccessful_expectations": 0
+          },
+          "timestamp": "2026-04-23T20:09:37.782720",
+          "retry_count": 0,
+          "ge_results": [
+            {
+              "success_rate": 100.0,
+              "evaluated_expectations": 1,
+              "successful_expectations": 1,
+              "unsuccessful_expectations": 0
+            }
+          ]
+        }
+      }
+    },
+    "market_behavior": {
+      "collection_type": "market_behavior",
+      "status": "success",
+      "start_time": "2026-04-23T20:09:37.140537",
+      "end_time": "2026-04-23T20:09:37.660929",
+      "duration_seconds": 0.520392,
+      "records_collected": 66,
+      "records_updated": 66,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "date": "2026-04-22",
+        "quality_score": 100,
+        "ge_validation": {
+          "checkpoint": "post_collection_validation",
+          "status": "passed",
+          "message": "GE验证通过: 100.0分",
+          "details": {
+            "data_type": "market_behavior",
+            "rows": 729,
+            "columns": 9,
+            "ge_success_rate": 100.0,
+            "freshness_score": 100,
+            "final_quality_score": 100.0,
+            "success_rate": 100.0,
+            "evaluated_expectations": 1,
+            "successful_expectations": 1,
+            "unsuccessful_expectations": 0
+          },
+          "timestamp": "2026-04-23T20:09:38.073171",
+          "retry_count": 0,
+          "ge_results": [
+            {
+              "success_rate": 100.0,
+              "evaluated_expectations": 1,
+              "successful_expectations": 1,
+              "unsuccessful_expectations": 0
+            }
+          ]
+        }
+      }
+    },
+    "announcement": {
+      "collection_type": "announcement",
+      "status": "success",
+      "start_time": "2026-04-23T20:09:37.661104",
+      "end_time": "2026-04-23T20:09:37.661854",
+      "duration_seconds": 0.00075,
+      "records_collected": 0,
+      "records_updated": 0,
+      "records_failed": 0,
+      "errors": [],
+      "details": {
+        "date": "2026-04-22",
+        "quality_score": 0
+      }
+    }
+  }
+}

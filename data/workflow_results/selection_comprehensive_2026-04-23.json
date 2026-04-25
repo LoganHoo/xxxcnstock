@@ -1,0 +1,14 @@
+{
+  "strategy_type": "comprehensive",
+  "status": "failed",
+  "start_time": "2026-04-23T19:46:35.964988",
+  "end_time": "2026-04-23T19:46:43.651267",
+  "duration_seconds": 7.686279,
+  "total_stocks": 0,
+  "selected_stocks": 0,
+  "top_stocks": [],
+  "filters_applied": [],
+  "errors": [
+    "选股前检查失败: GE验证失败: 50.0%"
+  ]
+}

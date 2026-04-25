@@ -1,4 +1,5 @@
 services:
+  # 主服务 - 数据流水线
   xcnstock-fetcher:
     build:
       context: .
@@ -9,6 +10,7 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
       - ./config:/app/config:ro
+      - ./.env:/app/.env:ro
     environment:
       - TZ=Asia/Shanghai
       - PYTHONUNBUFFERED=1
@@ -19,6 +21,140 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    depends_on:
+      - redis
+      - mysql
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis - 缓存和分布式锁
+  redis:
+    image: redis:7-alpine
+    container_name: xcnstock-redis
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - xcnstock-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  # MySQL - 数据存储
+  mysql:
+    image: mysql:8.0
+    container_name: xcnstock-mysql
+    restart: unless-stopped
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./config/mysql-init:/docker-entrypoint-initdb.d:ro
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-xcnstock_root}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-xcnstock}
+      - MYSQL_USER=${MYSQL_USER:-xcnstock}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-xcnstock_pass}
+    ports:
+      - "3306:3306"
+    networks:
+      - xcnstock-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus - 监控
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: xcnstock-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    networks:
+      - xcnstock-network
+    depends_on:
+      - xcnstock-fetcher
+
+  # Kestra - 主调度器 (可选)
+  kestra:
+    image: kestra/kestra:latest
+    container_name: xcnstock-kestra
+    restart: unless-stopped
+    user: "root"
+    command: server standalone
+    volumes:
+      - kestra-data:/app/storage
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /tmp/kestra-wd:/tmp/kestra-wd
+    environment:
+      KESTRA_CONFIGURATION: |
+        datasources:
+          postgres:
+            url: jdbc:postgresql://kestra-db:5432/kestra
+            driverClassName: org.postgresql.Driver
+            username: kestra
+            password: k3str4
+        kestra:
+          server:
+            base-path: "/"
+          repository:
+            type: postgres
+          storage:
+            type: local
+            local:
+              base-path: "/app/storage"
+          queue:
+            type: postgres
+          tasks:
+            tmp-dir:
+              path: /tmp/kestra-wd/tmp
+          url: http://localhost:8082/
+    ports:
+      - "8082:8082"
+    networks:
+      - xcnstock-network
+    depends_on:
+      kestra-db:
+        condition: service_started
+
+  # Kestra 数据库
+  kestra-db:
+    image: postgres:15
+    container_name: xcnstock-kestra-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kestra
+      POSTGRES_PASSWORD: k3str4
+      POSTGRES_DB: kestra
+    volumes:
+      - kestra-db-data:/var/lib/postgresql/data
+    networks:
+      - xcnstock-network
+
+volumes:
+  redis-data:
+  mysql-data:
+  prometheus-data:
+  kestra-data:
+  kestra-db-data:
 
 networks:
   xcnstock-network:

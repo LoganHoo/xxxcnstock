@@ -1,0 +1,128 @@
+id: xcnstock_morning_report
+namespace: xcnstock
+
+description: |
+  XCNStock 盘前涨停板系统报告
+  每日9:26执行，分析涨停板开板预测
+  
+  调试模式: 启用后会输出详细的文件路径和中间结果
+
+labels:
+  env: production
+  project: xcnstock
+  type: morning_report
+
+variables:
+  project_root: /projects/xxxcnstock
+  python_path: "{{ vars.project_root }}"
+
+inputs:
+  - id: debug_mode
+    type: BOOLEAN
+    defaults: false
+    description: 启用调试模式（输出详细日志和文件路径）
+
+tasks:
+  - id: morning_limit_up_analysis
+    type: io.kestra.plugin.scripts.python.Script
+    description: |
+      盘前涨停板分析
+      调试模式: {{ inputs.debug_mode }}
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+      DEBUG_MODE: "{{ inputs.debug_mode }}"
+    script: |
+      import sys
+      import os
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      from scripts.pipeline.morning_limit_up import main
+      import logging
+      
+      debug_mode = "{{ inputs.debug_mode }}".lower() == "true"
+      log_level = logging.DEBUG if debug_mode else logging.INFO
+      
+      logging.basicConfig(level=log_level)
+      logger = logging.getLogger("kestra.morning_report")
+      
+      logger.info("=" * 60)
+      logger.info("开始盘前涨停板分析")
+      logger.info("=" * 60)
+      
+      if debug_mode:
+          logger.debug("🔍 调试模式已启用")
+          logger.debug(f"项目根目录: {{ vars.project_root }}")
+          logger.debug(f"Python路径: {sys.path}")
+          
+          # 检查关键文件和目录
+          import pathlib
+          paths_to_check = [
+              "{{ vars.project_root }}/data",
+              "{{ vars.project_root }}/data/kline",
+              "{{ vars.project_root }}/reports",
+              "{{ vars.project_root }}/config",
+          ]
+          for path_str in paths_to_check:
+              path = pathlib.Path(path_str)
+              exists = "✅" if path.exists() else "❌"
+              logger.debug(f"{exists} {path_str}")
+      
+      try:
+          result = main()
+          logger.info("盘前分析完成")
+          
+          if debug_mode and result:
+              logger.debug(f"分析结果: {result}")
+              
+      except Exception as e:
+          logger.error(f"盘前分析失败: {e}")
+          if debug_mode:
+              import traceback
+              logger.debug(f"详细错误:\n{traceback.format_exc()}")
+          raise
+    timeout: PT5M
+    retry:
+      type: constant
+      interval: PT30S
+      maxAttempt: 3
+
+  - id: fallback_notification
+    type: io.kestra.plugin.scripts.python.Script
+    description: 熔断后发送告警通知
+    taskRunner:
+      type: io.kestra.plugin.core.runner.Process
+    env:
+      PYTHONPATH: "{{ vars.python_path }}"
+    script: |
+      import sys
+      sys.path.insert(0, "{{ vars.project_root }}")
+      
+      import logging
+      logging.basicConfig(level=logging.INFO)
+      logger = logging.getLogger("kestra.fallback")
+      
+      logger.error("🚨 熔断触发：盘前涨停板分析连续失败")
+      logger.info("已执行兜底逻辑：发送告警通知")
+      
+      # 这里可以添加实际的通知发送逻辑
+      # 如发送邮件、企业微信、钉钉等
+      try:
+          from scripts.pipeline.send_notification import send_alert
+          send_alert(
+              title="【熔断告警】盘前涨停板分析失败",
+              message="09:26核心任务连续失败，已触发熔断机制",
+              level="CRITICAL"
+          )
+      except Exception as e:
+          logger.warning(f"通知发送失败: {e}")
+    timeout: PT1M
+    allowFailure: true
+
+# 触发器：交易日9:26执行
+triggers:
+  - id: morning_trigger
+    type: io.kestra.plugin.core.trigger.Schedule
+    cron: "26 9 * * 1-5"
+    timezone: Asia/Shanghai

@@ -54,7 +54,11 @@ class UnifiedFetcher:
     
     async def initialize(self):
         """初始化"""
-        await self.ds_manager.initialize()
+        # DataSourceManager.initialize() 不是协程，直接调用
+        if hasattr(self.ds_manager, 'initialize'):
+            result = self.ds_manager.initialize()
+            if hasattr(result, '__await__'):
+                await result
     
     async def fetch_stock_list(self) -> pd.DataFrame:
         """
