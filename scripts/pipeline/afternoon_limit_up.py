@@ -365,6 +365,188 @@ class AfternoonLimitUpSelector:
         logger.info(f"龙回头策略选出 {len(signals[:max_selections])} 只股票")
         return signals[:max_selections]
 
+
+    def run_tail_rush_strategy(self, limitup_df: pd.DataFrame, trade_date: str) -> List[Dict]:
+        """
+        尾盘突袭策略
+        
+        条件:
+        1. 尾盘30分钟内涨停
+        2. 当日换手率 > 5%
+        3. 量能放大（相比20日均量）
+        """
+        logger.info("=" * 60)
+        logger.info("运行尾盘突袭策略")
+        logger.info("=" * 60)
+
+        if limitup_df.empty:
+            logger.warning("No limitup data available")
+            return []
+
+        config = self.config.get('strategies', {}).get('tail_rush', {})
+        params = config.get('parameters', {})
+        min_turnover = params.get('min_turnover_ratio', 0.05)
+        min_volume_ratio = params.get('min_volume_ratio', 1.5)
+
+        signals = []
+        candidates = limitup_df.copy()
+        logger.info(f"Step 1 - 涨停股票: {len(candidates)} 只")
+
+        for _, stock in candidates.iterrows():
+            code = stock['code']
+            name = stock['name']
+
+            try:
+                file_path = self.data_dir / f"{code}.parquet"
+                if not file_path.exists():
+                    continue
+
+                kline = pd.read_parquet(file_path)
+                date_col = 'trade_date' if 'trade_date' in kline.columns else 'date'
+                kline[date_col] = pd.to_datetime(kline[date_col]).dt.strftime('%Y-%m-%d')
+                kline = kline[kline[date_col] <= trade_date].tail(30)
+
+                if len(kline) < 20:
+                    continue
+
+                latest = kline.iloc[-1]
+                turnover = latest.get('turnover_ratio', 0)
+                if turnover < min_turnover:
+                    continue
+
+                kline['volume_20_avg'] = kline['volume'].rolling(20).mean()
+                avg_volume = kline['volume_20_avg'].iloc[-1]
+                
+                if pd.isna(avg_volume) or avg_volume == 0:
+                    continue
+                
+                volume_ratio = latest['volume'] / avg_volume
+                if volume_ratio < min_volume_ratio:
+                    continue
+
+                close = latest['close']
+                signal = {
+                    'code': code,
+                    'name': name,
+                    'strategy': 'tail_rush',
+                    'trigger_price': close * 1.02,
+                    'stoploss_price': close * 0.95,
+                    'take_profit_1': close * 1.05,
+                    'take_profit_2': close * 1.10,
+                    'confidence': 0.65,
+                    'reason': f'尾盘突袭，换手{turnover*100:.1f}%，量比{volume_ratio:.1f}倍',
+                    'trade_date': trade_date,
+                    'indicators': {
+                        'turnover_ratio': turnover,
+                        'volume_ratio': volume_ratio
+                    }
+                }
+                signals.append(signal)
+
+            except Exception as e:
+                logger.warning(f"Error analyzing {code}: {e}")
+                continue
+
+        signals = sorted(signals, key=lambda x: x['indicators']['volume_ratio'], reverse=True)
+        signals = signals[:self.config.get('selection', {}).get('stocks_per_strategy', 1)]
+        logger.info(f"尾盘突袭策略选出 {len(signals)} 只股票")
+        return signals
+
+    def run_fund_resonance_strategy(self, limitup_df: pd.DataFrame, trade_date: str) -> List[Dict]:
+        """
+        资金共振策略
+        
+        条件:
+        1. 资金流入强度 > 10%
+        2. 换手率 > 5%
+        3. 技术突破MA20
+        """
+        logger.info("=" * 60)
+        logger.info("运行资金共振策略")
+        logger.info("=" * 60)
+
+        if limitup_df.empty:
+            logger.warning("No limitup data available")
+            return []
+
+        config = self.config.get('strategies', {}).get('fund_resonance', {})
+        params = config.get('parameters', {})
+        min_fund_inflow = params.get('min_fund_inflow_pct', 0.10)
+        min_turnover = params.get('min_turnover_ratio', 0.05)
+
+        signals = []
+        candidates = limitup_df.copy()
+        logger.info(f"Step 1 - 涨停股票: {len(candidates)} 只")
+
+        for _, stock in candidates.iterrows():
+            code = stock['code']
+            name = stock['name']
+
+            try:
+                file_path = self.data_dir / f"{code}.parquet"
+                if not file_path.exists():
+                    continue
+
+                kline = pd.read_parquet(file_path)
+                date_col = 'trade_date' if 'trade_date' in kline.columns else 'date'
+                kline[date_col] = pd.to_datetime(kline[date_col]).dt.strftime('%Y-%m-%d')
+                kline = kline[kline[date_col] <= trade_date].tail(30)
+
+                if len(kline) < 20:
+                    continue
+
+                latest = kline.iloc[-1]
+                turnover = latest.get('turnover_ratio', 0)
+                if turnover < min_turnover:
+                    continue
+
+                kline['ma_20'] = kline['close'].rolling(20).mean()
+                ma_20 = kline['ma_20'].iloc[-1]
+                
+                if pd.isna(ma_20):
+                    continue
+
+                close = latest['close']
+                if close <= ma_20:
+                    continue
+
+                kline['amount_20_avg'] = kline['amount'].rolling(20).mean()
+                avg_amount = kline['amount_20_avg'].iloc[-1]
+                
+                if pd.isna(avg_amount) or avg_amount == 0:
+                    continue
+                
+                fund_inflow_ratio = (latest['amount'] - avg_amount) / avg_amount
+                if fund_inflow_ratio < min_fund_inflow:
+                    continue
+
+                signal = {
+                    'code': code,
+                    'name': name,
+                    'strategy': 'fund_resonance',
+                    'trigger_price': close * 1.02,
+                    'stoploss_price': ma_20 * 0.98,
+                    'take_profit_1': close * 1.08,
+                    'take_profit_2': close * 1.15,
+                    'confidence': 0.70,
+                    'reason': f'资金共振，换手{turnover*100:.1f}%，资金流入{fund_inflow_ratio*100:.1f}%，突破MA20',
+                    'trade_date': trade_date,
+                    'indicators': {
+                        'turnover_ratio': turnover,
+                        'fund_inflow_ratio': fund_inflow_ratio,
+                        'ma_20': ma_20
+                    }
+                }
+                signals.append(signal)
+
+            except Exception as e:
+                logger.warning(f"Error analyzing {code}: {e}")
+                continue
+
+        signals = sorted(signals, key=lambda x: x['indicators']['fund_inflow_ratio'], reverse=True)
+        signals = signals[:self.config.get('selection', {}).get('stocks_per_strategy', 1)]
+        logger.info(f"资金共振策略选出 {len(signals)} 只股票")
+        return signals
     def run_all_strategies(self, trade_date: str = None) -> List[Dict]:
         """运行所有策略"""
         if trade_date is None:
@@ -388,15 +570,13 @@ class AfternoonLimitUpSelector:
         signals = self.run_dragon_head_strategy(limitup_df, trade_date)
         all_signals.extend(signals)
 
-        # TODO: 实现尾盘突袭策略
-        # signals = self.run_tail_rush_strategy(limitup_df, trade_date)
-        # all_signals.extend(signals)
+        signals = self.run_tail_rush_strategy(limitup_df, trade_date)
         all_signals.extend(signals)
 
-        # TODO: 实现资金共振策略
-        # signals = self.run_fund_resonance_strategy(limitup_df, trade_date)
-        # all_signals.extend(signals)
+        signals = self.run_fund_resonance_strategy(limitup_df, trade_date)
         all_signals.extend(signals)
+
+        
 
         return all_signals
 
@@ -439,28 +619,23 @@ class AfternoonLimitUpSelector:
             conn = pymysql.connect(**db_config)
             cursor = conn.cursor()
 
-            # 插入数据 - 使用统一表结构（含pattern_tag字段）
+            # 插入数据
             insert_sql = """
                 INSERT INTO stock_selections
                 (code, name, strategy, trigger_price, stoploss_price, take_profit_1, take_profit_2,
-                 confidence, reason, selection_date, selection_time, pattern_tag, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 confidence, reason, selection_date, selection_time, created_at)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """
 
             now = datetime.now()
             selection_time = now.strftime('%H:%M:%S')
 
             for signal in signals:
-                # 从indicators中提取pattern_tags
-                indicators = signal.get('indicators', {})
-                pattern_tags = indicators.get('pattern_tags', [])
-                pattern_tag_str = '+'.join(pattern_tags) if pattern_tags else None
-
                 cursor.execute(insert_sql, (
                     signal.get('code', ''),
                     signal.get('name', ''),
                     signal.get('strategy', ''),
-                    signal.get('entry_price', 0),
+                    signal.get('trigger_price', 0),
                     signal.get('stoploss_price', 0),
                     signal.get('take_profit_1', 0),
                     signal.get('take_profit_2', 0),
@@ -468,7 +643,6 @@ class AfternoonLimitUpSelector:
                     signal.get('reason', ''),
                     trade_date,
                     selection_time,
-                    pattern_tag_str,
                     now
                 ))
 
