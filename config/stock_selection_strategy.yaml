@@ -1,0 +1,97 @@
+# 选股策略配置 - 支持严格/宽松模式切换
+# 用于解决策略条件过严导致选不出股票的问题
+
+# 全局配置
+global:
+  # 策略模式: strict(严格) / balanced(平衡) / relaxed(宽松)
+  mode: balanced
+  # 每个策略选股数量
+  stocks_per_strategy: 1
+
+# 策略参数配置
+strategies:
+  # 涨停回调战法
+  limitup_callback:
+    enabled: true
+    strict:
+      max_consecutive_limitup: 3
+      max_turnover_ratio: 0.15
+      min_macd_signal: 0
+    balanced:
+      max_consecutive_limitup: 5      # 放宽到5连板
+      max_turnover_ratio: 0.20        # 放宽换手率到20%
+      min_macd_signal: -0.1           # 允许轻微负值
+    relaxed:
+      max_consecutive_limitup: 10
+      max_turnover_ratio: 0.30
+      min_macd_signal: -0.2
+
+  # 龙回头策略
+  dragon_head:
+    enabled: true
+    strict:
+      min_consecutive_limitup: 3
+      max_pullback_pct: 0.15
+      min_pullback_pct: 0.05
+      stabilization_days: 2
+    balanced:
+      min_consecutive_limitup: 2      # 降低到2连板
+      max_pullback_pct: 0.20          # 放宽回调幅度
+      min_pullback_pct: 0.03          # 降低最小回调
+      stabilization_days: 1           # 企稳1天即可
+    relaxed:
+      min_consecutive_limitup: 1
+      max_pullback_pct: 0.25
+      min_pullback_pct: 0.02
+      stabilization_days: 1
+
+  # 尾盘突袭策略
+  tail_rush:
+    enabled: true
+    strict:
+      min_turnover_ratio: 0.05
+      min_volume_ratio: 1.5
+      min_seal_strength: 0.05
+    balanced:
+      min_turnover_ratio: 0.03        # 降低换手率要求
+      min_volume_ratio: 1.2           # 降低量比要求
+      min_seal_strength: 0.03         # 降低封单强度
+    relaxed:
+      min_turnover_ratio: 0.02
+      min_volume_ratio: 1.0
+      min_seal_strength: 0.02
+
+  # 资金共振策略
+  fund_resonance:
+    enabled: true
+    strict:
+      min_fund_inflow_pct: 0.10
+      min_turnover_ratio: 0.05
+    balanced:
+      min_fund_inflow_pct: 0.08       # 降低资金流入要求
+      min_turnover_ratio: 0.03        # 降低换手率
+    relaxed:
+      min_fund_inflow_pct: 0.05
+      min_turnover_ratio: 0.02
+
+# 动态仓位管理配置（基于凯利公式）
+position_management:
+  enabled: true
+  # 策略历史胜率（需要定期更新）
+  win_rates:
+    limitup_callback: 0.55
+    dragon_head: 0.60
+    tail_rush: 0.50
+    fund_resonance: 0.70
+  # 平均盈亏比（需要定期更新）
+  profit_loss_ratios:
+    limitup_callback: 1.5   # 平均盈利/平均亏损
+    dragon_head: 2.0
+    tail_rush: 1.2
+    fund_resonance: 1.8
+  # 凯利公式保守系数（0-1，建议0.25-0.5）
+  kelly_fraction: 0.25
+  # 最小仓位（即使凯利公式计算为0）
+  min_position: 0.1
+  # 最大仓位（风险控制）
+  max_position: 0.3

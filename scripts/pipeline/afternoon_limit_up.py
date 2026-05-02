@@ -58,13 +58,23 @@ logger = logging.getLogger(__name__)
 class AfternoonLimitUpSelector:
     """盘后涨停板选股器"""
 
-    def __init__(self, config_path: str = None):
+    def __init__(self, config_path: str = None, strategy_config_path: str = None):
         self.config = self._load_config(config_path)
+        self.strategy_config = self._load_strategy_config(strategy_config_path)
         self.data_dir = Path(self.config.get('data', {}).get('kline_dir', 'data/kline'))
         self.output_dir = Path(self.config.get('data', {}).get('selection_dir', 'data/selection'))
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.limitup_collector = LimitUpDataCollector()
+
+        # 初始化凯利计算器
+        from core.kelly_calculator import KellyCalculator
+        position_config = self.strategy_config.get('position_management', {})
+        self.kelly_calculator = KellyCalculator(
+            kelly_fraction=position_config.get('kelly_fraction', 0.25),
+            min_position=position_config.get('min_position', 0.1),
+            max_position=position_config.get('max_position', 0.3)
+        )
 
     def _load_config(self, config_path: str = None) -> dict:
         """加载配置文件"""
@@ -79,6 +89,26 @@ class AfternoonLimitUpSelector:
             return {
                 'data': {'kline_dir': 'data/kline', 'selection_dir': 'data/selection'},
                 'selection': {'stocks_per_strategy': 1}
+            }
+
+
+    def _load_strategy_config(self, config_path: str = None) -> dict:
+        """加载策略参数配置"""
+        if config_path is None:
+            config_path = project_root / 'config' / 'stock_selection_strategy.yaml'
+
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+                mode = config.get('global', {}).get('mode', 'balanced')
+                logger.info(f"✅ 加载策略配置: mode={mode}")
+                return config
+        except Exception as e:
+            logger.warning(f"Failed to load strategy config: {e}, using defaults")
+            return {
+                'global': {'mode': 'balanced', 'stocks_per_strategy': 1},
+                'strategies': {},
+                'position_management': {'enabled': False}
             }
 
     def run_limitup_callback_strategy(self, limitup_df: pd.DataFrame, trade_date: str) -> List[Dict]:
