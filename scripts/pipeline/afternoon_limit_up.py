@@ -547,6 +547,76 @@ class AfternoonLimitUpSelector:
         signals = signals[:self.config.get('selection', {}).get('stocks_per_strategy', 1)]
         logger.info(f"资金共振策略选出 {len(signals)} 只股票")
         return signals
+
+    def _get_existing_picks(self, trade_date: str) -> List[str]:
+        """
+        获取当日已选股票代码列表（盘前选股结果）
+        
+        Args:
+            trade_date: 交易日期
+            
+        Returns:
+            股票代码列表
+        """
+        try:
+            import pymysql
+            
+            db_config = {
+                'host': os.getenv('DB_HOST', 'localhost'),
+                'port': int(os.getenv('DB_PORT', '3306')),
+                'user': os.getenv('DB_USER', 'root'),
+                'password': os.getenv('DB_PASSWORD', ''),
+                'database': os.getenv('DB_NAME', 'xcn_db'),
+                'charset': 'utf8mb4'
+            }
+            
+            conn = pymysql.connect(**db_config)
+            cursor = conn.cursor()
+            
+            query = """
+                SELECT DISTINCT code 
+                FROM stock_selections 
+                WHERE selection_date = %s
+            """
+            cursor.execute(query, (trade_date,))
+            results = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            
+            existing_codes = [row[0] for row in results]
+            if existing_codes:
+                logger.info(f"🔍 发现{len(existing_codes)}只已选股票: {existing_codes}")
+            
+            return existing_codes
+            
+        except Exception as e:
+            logger.warning(f"查询已选股票失败: {e}")
+            return []
+    
+    def _filter_existing_picks(self, candidates: pd.DataFrame, existing_codes: List[str]) -> pd.DataFrame:
+        """
+        过滤已选股票
+        
+        Args:
+            candidates: 候选股票DataFrame
+            existing_codes: 已选股票代码列表
+            
+        Returns:
+            过滤后的DataFrame
+        """
+        if not existing_codes:
+            return candidates
+        
+        original_count = len(candidates)
+        filtered = candidates[~candidates['code'].isin(existing_codes)].copy()
+        filtered_count = original_count - len(filtered)
+        
+        if filtered_count > 0:
+            logger.info(f"🚫 过滤{filtered_count}只重复股票，剩余{len(filtered)}只候选")
+        
+        return filtered
+
     def run_all_strategies(self, trade_date: str = None) -> List[Dict]:
         """运行所有策略"""
         if trade_date is None:
@@ -556,11 +626,32 @@ class AfternoonLimitUpSelector:
         logger.info(f"盘后涨停板选股: {trade_date}")
         logger.info(f"{'='*60}\n")
 
+        # P0修复1: 数据新鲜度检查
+        try:
+            from core.data_quality_guardian import DataQualityGuardian
+            guardian = DataQualityGuardian()
+            is_ready, msg = guardian.is_data_ready_for_selection(trade_date)
+
+            if not is_ready:
+                logger.error(f"❌ 数据未就绪，跳过选股: {msg}")
+                return []
+        except Exception as e:
+            logger.warning(f"数据就绪检查失败: {e}，继续执行")
+
         # 获取涨停数据
         limitup_df = self.limitup_collector.fetch_limit_up_data()
         if limitup_df.empty:
             logger.warning(f"No limitup data for {trade_date}")
             return []
+
+        # P0修复2: 查询盘前已选股票，避免重复
+        existing_codes = self._get_existing_picks(trade_date)
+        if existing_codes:
+            limitup_df = self._filter_existing_picks(limitup_df, existing_codes)
+            if limitup_df.empty:
+                logger.warning("所有候选股票已在盘前选出，无新增选股")
+                return []
+
 
         all_signals = []
 
