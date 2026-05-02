@@ -30,9 +30,7 @@ import yaml
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from limitup_data_collect import LimitUpDataCollector
-from tail_rush_strategy import TailRushStrategy
-from fund_resonance_strategy import FundResonanceStrategy
+from scripts.pipeline.limitup_data_collect import LimitUpDataCollector
 
 # 导入技术分析模块
 try:
@@ -67,8 +65,6 @@ class AfternoonLimitUpSelector:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         self.limitup_collector = LimitUpDataCollector()
-        self.tail_rush_strategy = TailRushStrategy(config_path)
-        self.fund_resonance_strategy = FundResonanceStrategy(config_path)
 
     def _load_config(self, config_path: str = None) -> dict:
         """加载配置文件"""
@@ -392,10 +388,14 @@ class AfternoonLimitUpSelector:
         signals = self.run_dragon_head_strategy(limitup_df, trade_date)
         all_signals.extend(signals)
 
-        signals = self.tail_rush_strategy.run(trade_date)
+        # TODO: 实现尾盘突袭策略
+        # signals = self.run_tail_rush_strategy(limitup_df, trade_date)
+        # all_signals.extend(signals)
         all_signals.extend(signals)
 
-        signals = self.fund_resonance_strategy.run(trade_date)
+        # TODO: 实现资金共振策略
+        # signals = self.run_fund_resonance_strategy(limitup_df, trade_date)
+        # all_signals.extend(signals)
         all_signals.extend(signals)
 
         return all_signals
