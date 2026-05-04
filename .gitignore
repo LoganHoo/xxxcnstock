@@ -48,6 +48,7 @@ htmlcov/
 
 # Data files (large files)
 data/kline/*.parquet
+cache/
 data/index/*.parquet
 data/stock_list.parquet
 data/stock_list.csv
@@ -93,3 +94,4 @@ data/kline/.fetch_progress.json
 # OS
 .DS_Store
 Thumbs.db
+cache/
