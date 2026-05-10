@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+
+from core.logger import get_logger
 异步K线数据获取器
 
 使用 asyncio 实现高并发采集，替代多进程方案
@@ -10,7 +12,7 @@
 4. 适合IO密集型任务（网络请求）
 """
 import asyncio
-import logging
+
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple

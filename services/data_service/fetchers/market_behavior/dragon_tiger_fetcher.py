@@ -98,7 +98,10 @@ class DragonTigerData:
 
 class DragonTigerFetcher:
     """龙虎榜数据获取器"""
-    
+
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2
+
     def __init__(self):
         self.logger = logger
         self.hot_money_seats = HOT_MONEY_SEATS
@@ -106,32 +109,30 @@ class DragonTigerFetcher:
     def fetch_daily_list(self, trade_date: Optional[str] = None) -> pd.DataFrame:
         """
         获取每日龙虎榜列表
-        
+
         Args:
             trade_date: 交易日期 (YYYYMMDD), None表示最新
-        
+
         Returns:
             龙虎榜列表DataFrame
         """
         try:
-            if trade_date:
-                # AKShare API 只接受 date 参数
-                df = ak.stock_lhb_detail_daily_sina(date=trade_date)
-            else:
-                # 获取最近一个交易日
-                df = ak.stock_lhb_detail_daily_sina()
-            
+            df = ak.stock_lhb_detail_em()
+
             if df.empty:
                 self.logger.warning(f"{trade_date or '最新'} 龙虎榜列表为空")
                 return df
-            
-            # 标准化列名
+
+            df['上榜日'] = pd.to_datetime(df['上榜日']).dt.strftime('%Y%m%d')
+            if trade_date:
+                df = df[df['上榜日'] == trade_date]
+
             df = self._standardize_list_columns(df)
             df['source'] = 'akshare'
-            
+
             self.logger.info(f"获取到 {len(df)} 条龙虎榜记录")
             return df
-            
+
         except Exception as e:
             self.logger.error(f"获取龙虎榜列表失败: {e}")
             return pd.DataFrame()
@@ -203,46 +204,42 @@ class DragonTigerFetcher:
     ) -> pd.DataFrame:
         """
         获取日期范围内的龙虎榜数据
-        
+
         Args:
             start_date: 开始日期 (YYYYMMDD)
             end_date: 结束日期 (YYYYMMDD)
-        
+
         Returns:
             龙虎榜DataFrame
         """
-        try:
-            # AKShare API 只接受单个 date 参数，需要逐日获取
-            from datetime import datetime, timedelta
-            
-            all_data = []
-            current = datetime.strptime(start_date, '%Y%m%d')
-            end = datetime.strptime(end_date, '%Y%m%d')
-            
-            while current <= end:
-                date_str = current.strftime('%Y%m%d')
-                try:
-                    df = ak.stock_lhb_detail_daily_sina(date=date_str)
-                    if not df.empty:
-                        all_data.append(df)
-                except Exception as e:
-                    self.logger.warning(f"获取 {date_str} 龙虎榜数据失败: {e}")
-                current += timedelta(days=1)
-            
-            if not all_data:
-                self.logger.warning(f"{start_date}-{end_date} 龙虎榜数据为空")
-                return pd.DataFrame()
-            
-            df = pd.concat(all_data, ignore_index=True)
-            df = self._standardize_list_columns(df)
-            df['source'] = 'akshare'
-            
-            self.logger.info(f"获取到 {len(df)} 条龙虎榜记录")
-            return df
-            
-        except Exception as e:
-            self.logger.error(f"获取龙虎榜数据失败: {e}")
-            return pd.DataFrame()
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                df = ak.stock_lhb_detail_em()
+
+                if df.empty:
+                    self.logger.warning(f"{start_date}-{end_date} 龙虎榜数据为空")
+                    return df
+
+                df['上榜日'] = pd.to_datetime(df['上榜日']).dt.strftime('%Y%m%d')
+                df = df[(df['上榜日'] >= start_date) & (df['上榜日'] <= end_date)]
+
+                if df.empty:
+                    self.logger.warning(f"{start_date}-{end_date} 龙虎榜数据为空")
+                    return df
+
+                df = self._standardize_list_columns(df)
+                df['source'] = 'akshare'
+
+                self.logger.info(f"获取到 {len(df)} 条龙虎榜记录")
+                return df
+
+            except Exception as e:
+                self.logger.warning(f"获取龙虎榜数据失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                if attempt < self.MAX_RETRIES - 1:
+                    time.sleep(self.RETRY_DELAY * (attempt + 1))
+                else:
+                    self.logger.error(f"获取龙虎榜数据失败已达最大重试次数: {e}")
+        return pd.DataFrame()
     
     def fetch_institution_trading(
         self,
@@ -366,14 +363,25 @@ class DragonTigerFetcher:
         column_mapping = {
             '代码': 'code',
             '名称': 'name',
-            '上榜日期': 'trade_date',
+            '上榜日': 'trade_date',
             '上榜原因': 'reason',
             '收盘价': 'close_price',
-            '对应值': 'change_pct',
-            '成交额': 'turnover',
-            '成交量': 'volume',
+            '涨跌幅': 'change_pct',
+            '龙虎榜净买额': 'net_amount',
+            '龙虎榜买入额': 'buy_amount',
+            '龙虎榜卖出额': 'sell_amount',
+            '龙虎榜成交额': 'total_amount',
+            '市场总成交额': 'market_total_amount',
+            '净买额占总成交比': 'net_pct',
+            '成交额占总成交比': 'turnover_pct',
+            '换手率': 'turnover_rate',
+            '流通市值': 'market_cap',
+            '上榜后1日': 'after_1d',
+            '上榜后2日': 'after_2d',
+            '上榜后5日': 'after_5d',
+            '上榜后10日': 'after_10d',
         }
-        
+
         rename_dict = {k: v for k, v in column_mapping.items() if k in df.columns}
         return df.rename(columns=rename_dict)
 

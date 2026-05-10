@@ -171,18 +171,9 @@ class TradeDateFetcher:
 
 # ==================== 同步接口 ====================
 
-def run_async(coro):
-    """运行异步函数"""
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
-
-
 def fetch_trade_dates(start_date: str, end_date: str) -> List[Dict]:
     """同步接口：获取交易日信息"""
+    from services.data_service.async_utils import run_async
     fetcher = TradeDateFetcher()
     dates = run_async(fetcher.fetch_trade_dates(start_date, end_date))
     return [d.__dict__ for d in dates]

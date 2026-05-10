@@ -18,6 +18,8 @@ from typing import List, Dict, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, date
 import time
+from requests.exceptions import ProxyError
+from requests.exceptions import ConnectionError as ReqConnectionError
 import akshare as ak
 
 from core.logger import setup_logger
@@ -70,9 +72,28 @@ class MoneyFlowData:
 
 class MoneyFlowFetcher:
     """资金流向数据获取器"""
-    
+
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2
+
     def __init__(self):
         self.logger = logger
+
+    def _retry_on_akshare_failure(self, func):
+        """装饰器: AKShare失败时重试"""
+        def wrapper(*args, **kwargs):
+            last_error = None
+            for attempt in range(self.MAX_RETRIES):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    last_error = e
+                    self.logger.warning(f"AKShare请求失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                    if attempt < self.MAX_RETRIES - 1:
+                        time.sleep(self.RETRY_DELAY * (attempt + 1))
+            self.logger.error(f"AKShare请求失败已达最大重试次数: {last_error}")
+            return None
+        return wrapper
     
     def fetch_stock_money_flow(
         self,
@@ -81,74 +102,101 @@ class MoneyFlowFetcher:
     ) -> Optional[MoneyFlowData]:
         """
         获取单只股票资金流向
-        
+
         Args:
             code: 股票代码
             market: 市场 (sh/sz)
-        
+
         Returns:
             MoneyFlowData对象
         """
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                code_clean = code.split('.')[0] if '.' in code else code
+                df = ak.stock_individual_fund_flow(stock=code_clean, market=market)
+
+                if df.empty:
+                    self.logger.warning(f"{code} 资金流向数据为空")
+                    return None
+
+                latest = df.iloc[0]
+                trade_date = latest.get('日期', datetime.now().strftime('%Y-%m-%d'))
+
+                data = MoneyFlowData(
+                    code=code_clean,
+                    name=latest.get('名称', ''),
+                    trade_date=trade_date,
+                    source='akshare',
+                    update_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                )
+
+                data.close_price = self._parse_amount(latest.get('收盘价'))
+                data.change_pct = self._parse_amount(latest.get('涨跌幅'))
+                data.main_net_flow = self._parse_amount(latest.get('主力净流入-净额'))
+                data.main_net_ratio = self._parse_amount(latest.get('主力净流入-净占比'))
+                data.super_large_net = self._parse_amount(latest.get('超大单净流入-净额'))
+                data.large_net = self._parse_amount(latest.get('大单净流入-净额'))
+                data.retail_net_flow = self._parse_amount(latest.get('中单净流入-净额'))
+                data.retail_net_ratio = self._parse_amount(latest.get('中单净流入-净占比'))
+                small_net = self._parse_amount(latest.get('小单净流入-净额'))
+
+                if data.retail_net_flow is not None and small_net is not None:
+                    data.retail_net_flow += small_net
+
+                if data.main_net_flow is not None:
+                    data.main_inflow = max(data.main_net_flow, 0)
+                    data.main_outflow = max(-data.main_net_flow, 0)
+
+                self.logger.info(f"{code} 资金流向数据获取成功")
+                return data
+
+            except ProxyError as e:
+                self.logger.warning(f"{code} AKShare资金流向Proxy错误,改用腾讯行情: {e}")
+                return self._fetch_from_tencent_estimate(code_clean)
+            except Exception as e:
+                self.logger.warning(f"{code} AKShare资金流向获取失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                if attempt < self.MAX_RETRIES - 1:
+                    time.sleep(self.RETRY_DELAY * (attempt + 1))
+                else:
+                    self.logger.error(f"{code} AKShare资金流向获取失败已达最大重试次数,改用腾讯行情: {e}")
+                    return self._fetch_from_tencent_estimate(code_clean)
+        return None
+
+    def _fetch_from_tencent_estimate(self, code: str) -> Optional[MoneyFlowData]:
+        """腾讯行情换手率推算主力资金"""
         try:
-            # 移除代码后缀
-            code_clean = code.split('.')[0] if '.' in code else code
-            
-            # 使用AKShare获取资金流向
-            df = ak.stock_individual_fund_flow(stock=code_clean, market=market)
-            
-            if df.empty:
-                self.logger.warning(f"{code} 资金流向数据为空")
-                return None
-            
-            # 获取最新日期数据
-            latest = df.iloc[0]
-            trade_date = latest.get('日期', datetime.now().strftime('%Y-%m-%d'))
-            
-            data = MoneyFlowData(
-                code=code_clean,
-                name=latest.get('名称', ''),
-                trade_date=trade_date,
-                source='akshare',
-                update_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            )
-            
-            # 解析资金流向数据
-            data.close_price = self._parse_amount(latest.get('收盘价'))
-            data.change_pct = self._parse_amount(latest.get('涨跌幅'))
-            
-            # 主力净流入
-            data.main_net_flow = self._parse_amount(latest.get('主力净流入-净额'))
-            data.main_net_ratio = self._parse_amount(latest.get('主力净流入-净占比'))
-            
-            # 超大单
-            data.super_large_net = self._parse_amount(latest.get('超大单净流入-净额'))
-            
-            # 大单
-            data.large_net = self._parse_amount(latest.get('大单净流入-净额'))
-            
-            # 中单(散户)
-            data.retail_net_flow = self._parse_amount(latest.get('中单净流入-净额'))
-            data.retail_net_ratio = self._parse_amount(latest.get('中单净流入-净占比'))
-            
-            # 小单(散户)
-            small_net = self._parse_amount(latest.get('小单净流入-净额'))
-            
-            # 合并散户资金
-            if data.retail_net_flow is not None and small_net is not None:
-                data.retail_net_flow += small_net
-            
-            # 计算主力流入流出
-            if data.main_net_flow is not None:
-                # 估算: 净流入为正时,流入=净额+流出,流出为固定比例
-                # 这里简化处理
-                data.main_inflow = max(data.main_net_flow, 0)
-                data.main_outflow = max(-data.main_net_flow, 0)
-            
-            self.logger.info(f"{code} 资金流向数据获取成功")
-            return data
-            
+            import requests
+            qcode = f"sz{code}" if not code.startswith(('sh', 'sz')) else code.lower()
+            url = f"https://qt.gtimg.cn/q={qcode}"
+            r = requests.get(url, timeout=5)
+            r.encoding = 'utf-8'
+            if '=' in r.text:
+                val = r.text.split('=')[1].strip('"; ')
+                parts = val.split('~')
+                if len(parts) > 38:
+                    close = float(parts[3]) if parts[3] else 0
+                    turnover = float(parts[38]) if parts[38] else 0
+                    volume = float(parts[36]) if parts[36] else 0
+                    amount = float(parts[37]) if parts[37] else 0
+                    net_flow = amount * turnover / 100 * 0.3
+                    data = MoneyFlowData(
+                        code=code,
+                        name=parts[1],
+                        trade_date=datetime.now().strftime('%Y-%m-%d'),
+                        close_price=close,
+                        change_pct=float(parts[32]) if parts[32] else 0,
+                        main_net_flow=net_flow,
+                        main_net_ratio=turnover * 0.3,
+                        source='tencent_estimate',
+                        update_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    )
+                    data.main_inflow = max(net_flow, 0)
+                    data.main_outflow = max(-net_flow, 0)
+                    self.logger.info(f"{code} 腾讯行情资金流向估算成功")
+                    return data
+            return None
         except Exception as e:
-            self.logger.error(f"{code} 资金流向获取失败: {e}")
+            self.logger.error(f"{code} 腾讯行情资金流向获取失败: {e}")
             return None
     
     def fetch_stock_money_flow_hist(
@@ -202,7 +250,10 @@ class MoneyFlowFetcher:
             df = df.head(days)
             
             return df
-            
+
+        except (ProxyError, ReqConnectionError):
+            self.logger.warning(f"{code} AKShare历史资金流向Proxy/Connection错误,返回空DataFrame")
+            return pd.DataFrame()
         except Exception as e:
             self.logger.error(f"{code} 历史资金流向获取失败: {e}")
             return pd.DataFrame()

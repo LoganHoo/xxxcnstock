@@ -303,6 +303,118 @@ class DomesticIndexFetcher:
         return result
 
 
+    def _safe_float(self, value, default=0.0) -> float:
+        """安全的浮点数转换"""
+        if value is None:
+            return default
+        try:
+            if hasattr(value, 'item'):
+                value = value.item()
+            return float(value)
+        except (ValueError, TypeError):
+            return default
+
+    def fetch_realtime_indices(self) -> Dict[str, Any]:
+        """获取实时指数数据（轻量级备用方案）
+
+        直接从网络API获取最新指数数据，无需依赖Parquet文件
+        适用于：
+        1. Parquet文件不存在或损坏
+        2. 需要最新的实时数据
+        3. 作为其他采集方式的降级方案
+        """
+        import requests
+        result = {}
+
+        try:
+            url = "https://qt.gtimg.cn/q=" + ",".join([symbol for symbol, _, _ in self.INDICES])
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                lines = response.text.strip().split(';')
+
+                for line in lines:
+                    line = line.strip()
+                    if not line or '=' not in line:
+                        continue
+
+                    parts = line.split('=', 1)
+                    if len(parts) != 2:
+                        continue
+
+                    symbol_full = parts[0].strip()
+                    data_str = parts[1].strip().strip('"')
+
+                    if not data_str.startswith('v'):
+                        continue
+
+                    fields = data_str.split('~')
+                    if len(fields) < 50:
+                        continue
+
+                    code = fields[2][:6] if len(fields[2]) >= 6 else ''
+                    name = fields[1] if len(fields) > 1 else ''
+
+                    if not code or not name:
+                        continue
+
+                    try:
+                        result[code] = {
+                            'code': code,
+                            'name': name,
+                            'open': self._safe_float(fields[5]),
+                            'close': self._safe_float(fields[3]),
+                            'high': self._safe_float(fields[33]),
+                            'low': self._safe_float(fields[34]),
+                            'prev_close': self._safe_float(fields[4]),
+                            'change': self._safe_float(fields[31]),
+                            'change_pct': self._safe_float(fields[32]),
+                            'volume': self._safe_float(fields[36]) / 100 if self._safe_float(fields[36]) > 0 else 0,
+                            'amount': self._safe_float(fields[37]) / 1000 if self._safe_float(fields[37]) > 0 else 0,
+                            'source': 'tencent_realtime',
+                            'trade_date': datetime.now().strftime('%Y-%m-%d')
+                        }
+                    except (IndexError, ValueError) as e:
+                        logger.warning(f"解析{code}实时数据失败: {e}")
+                        continue
+
+                logger.info(f"腾讯实时API获取到 {len(result)} 个指数")
+
+        except Exception as e:
+            logger.error(f"获取实时指数失败: {e}")
+
+        if not result:
+            logger.warning("实时指数获取为空，返回静态默认值")
+            for _, code, name in self.INDICES:
+                result[code] = {
+                    'code': code,
+                    'name': name,
+                    'open': 0.0,
+                    'close': 0.0,
+                    'high': 0.0,
+                    'low': 0.0,
+                    'prev_close': 0.0,
+                    'change': 0.0,
+                    'change_pct': 0.0,
+                    'volume': 0.0,
+                    'amount': 0.0,
+                    'source': 'static_fallback',
+                    'trade_date': datetime.now().strftime('%Y-%m-%d')
+                }
+
+        return {
+            'date': self.today,
+            'update_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'data': result,
+            'status': 'success' if len(result) > 0 else 'failed',
+            'message': f'获取到 {len(result)} 个指数'
+        }
+
+
 # 同步包装函数
 async def fetch_domestic_indices_via_service(data_dir: Optional[Path] = None) -> Dict[str, Any]:
     """通过微服务获取国内指数数据"""

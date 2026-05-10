@@ -54,9 +54,9 @@ class LimitUpFetcher:
                         code=str(row.get("代码", "")),
                         name=str(row.get("名称", "")),
                         change_pct=float(row.get("涨跌幅", 0) or 0),
-                        limit_time=str(row.get("涨停时间", "")),
-                        seal_amount=float(row.get("封单资金", 0) or 0) / 10000,  # 转万
-                        open_count=int(row.get("开板次数", 0) or 0),
+                        limit_time=str(row.get("首次封板时间", "")),
+                        seal_amount=float(row.get("封板资金", 0) or 0) / 10000,  # 转万
+                        open_count=int(row.get("炸板次数", 0) or 0),
                         continuous_limit=int(row.get("连板数", 1) or 1),
                         sector=str(row.get("所属行业", ""))
                     )

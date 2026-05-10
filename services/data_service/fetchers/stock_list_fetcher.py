@@ -20,16 +20,6 @@ from core.logger import setup_logger
 logger = setup_logger("stock_list_fetcher", log_file="system/stock_list_fetcher.log")
 
 
-def run_async(coro):
-    """运行异步函数"""
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
-
-
 async def fetch_stock_list_via_service() -> pd.DataFrame:
     """通过微服务获取股票列表"""
     try:
@@ -44,12 +34,13 @@ async def fetch_stock_list_via_service() -> pd.DataFrame:
 def fetch_stock_list() -> List[Dict]:
     """
     获取股票列表
-    
+
     Returns:
         股票列表字典列表
     """
+    from services.data_service.async_utils import run_async
     logger.info("从微服务获取股票列表...")
-    
+
     try:
         df = run_async(fetch_stock_list_via_service())
         

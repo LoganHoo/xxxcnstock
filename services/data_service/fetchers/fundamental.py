@@ -182,14 +182,23 @@ class FundamentalFetcher:
             DataFrame
         """
         import polars as pl
+        import pandas as pd
         
         try:
-            # 读取股票列表
-            df_stocks = pl.read_parquet(stock_list_path)
-            stock_list = [
-                {'code': row['code'], 'name': row['name']}
-                for row in df_stocks.iter_rows(named=True)
-            ]
+            # 尝试用pandas读取（更稳定）
+            try:
+                df_stocks = pd.read_parquet(stock_list_path)
+            except Exception:
+                # polars备用
+                df_stocks = pl.read_parquet(stock_list_path).to_pandas()
+            
+            # 过滤有效A股代码
+            stock_list = []
+            for _, row in df_stocks.iterrows():
+                code = str(row['code']).zfill(6)
+                # A股: 60xxxx(沪市), 00xxxx(深市主板), 30xxxx(创业板), 68xxxx(科创板)
+                if code.startswith('60') or code.startswith('0') or code.startswith('30') or code.startswith('68'):
+                    stock_list.append({'code': code, 'name': str(row['name'])})
             
             logger.info(f"从 {stock_list_path} 读取了 {len(stock_list)} 只股票")
             

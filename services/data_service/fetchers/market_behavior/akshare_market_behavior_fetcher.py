@@ -25,45 +25,49 @@ class AKShareMarketBehaviorFetcher:
     def fetch_dragon_tiger_list(self, date: str) -> pd.DataFrame:
         """
         获取龙虎榜数据
-        
+
         Args:
-            date: 日期 (YYYYMMDD)
-        
+            date: 日期 (YYYY-MM-DD)
+
         Returns:
             龙虎榜数据 DataFrame
         """
         try:
             logger.info(f"获取 {date} 龙虎榜数据")
-            
-            # 格式化日期
-            date_str = date.replace('-', '')
-            
-            # 获取龙虎榜数据
-            df = ak.stock_lhb_detail_daily_sina(date=date_str)
-            
+
+            df = ak.stock_lhb_detail_em()
+
             if df.empty:
                 logger.warning(f"{date} 无龙虎榜数据")
                 return pd.DataFrame()
-            
-            # 标准化列名
+
+            df['上榜日'] = pd.to_datetime(df['上榜日']).dt.strftime('%Y-%m-%d')
+            df = df[df['上榜日'] == date]
+
+            if df.empty:
+                logger.warning(f"{date} 无龙虎榜数据")
+                return pd.DataFrame()
+
             column_mapping = {
                 '序号': 'seq',
-                '股票代码': 'code',
-                '股票名称': 'name',
+                '代码': 'code',
+                '名称': 'name',
+                '上榜日': 'date',
                 '收盘价': 'close',
-                '对应值': 'change_pct',
-                '成交量': 'volume',
-                '成交额': 'amount',
-                '指标': 'indicator'
+                '涨跌幅': 'change_pct',
+                '龙虎榜净买额': 'net_amount',
+                '龙虎榜买入额': 'buy_amount',
+                '龙虎榜卖出额': 'sell_amount',
+                '龙虎榜成交额': 'total_amount',
+                '上榜原因': 'reason',
+                '换手率': 'turnover_rate',
+                '流通市值': 'market_cap'
             }
             df = df.rename(columns=column_mapping)
-            
-            # 添加日期列
-            df['date'] = date
-            
+
             logger.info(f"{date} 获取到 {len(df)} 条龙虎榜记录")
             return df
-            
+
         except Exception as e:
             logger.error(f"获取 {date} 龙虎榜数据失败: {e}")
             return pd.DataFrame()
@@ -149,7 +153,47 @@ class AKShareMarketBehaviorFetcher:
         except Exception as e:
             logger.error(f"获取 {code} 资金流向失败: {e}")
             return None
-    
+
+    def fetch_northbound_money_flow(self) -> pd.DataFrame:
+        """
+        获取北向资金（沪深港通）流向数据
+
+        Returns:
+            北向资金流向 DataFrame
+        """
+        try:
+            logger.info("获取北向资金流向数据")
+
+            df = ak.stock_hsgt_fund_flow_summary_em()
+
+            if df.empty:
+                logger.warning("无北向资金数据")
+                return pd.DataFrame()
+
+            column_mapping = {
+                '交易日': 'trade_date',
+                '类型': 'type',
+                '板块': 'sector',
+                '资金方向': 'direction',
+                '成交净买额': 'net_buy',
+                '资金净流入': 'net_flow',
+                '当日资金余额': 'daily_balance',
+                '上涨数': 'rise_count',
+                '持平数': 'flat_count',
+                '下跌数': 'fall_count',
+                '相关指数': 'index_name',
+                '指数涨跌幅': 'index_change_pct'
+            }
+            df = df.rename(columns=column_mapping)
+            df['trade_date'] = pd.to_datetime(df['trade_date']).dt.strftime('%Y-%m-%d')
+
+            logger.info(f"获取到 {len(df)} 条北向资金记录")
+            return df
+
+        except Exception as e:
+            logger.error(f"获取北向资金流向失败: {e}")
+            return pd.DataFrame()
+
     def fetch_sector_money_flow(self, sector_type: str = "industry") -> pd.DataFrame:
         """
         获取板块资金流向

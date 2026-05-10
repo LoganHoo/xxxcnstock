@@ -201,9 +201,22 @@ class ForeignIndexFetcher:
                     resp = session.get(url, params=params, headers=headers, timeout=10)
 
                     if resp.status_code == 200:
-                        data = resp.json().get('data', {})
-                        price = data.get('f43', 0) / 100 if data.get('f43') else 0
-                        prev_close = data.get('f170', 0) / 100 if data.get('f170') else 0
+                        json_data = resp.json()
+                        if not json_data:
+                            logger.warning(f"[Eastmoney] {name} 返回空数据")
+                            continue
+                        data = json_data.get('data', {}) or {}
+                        if not data:
+                            logger.warning(f"[Eastmoney] {name} 无有效数据")
+                            continue
+                        price = data.get('f43', 0)
+                        if price:
+                            price = price / 100
+                        prev_close = data.get('f170', 0)
+                        if prev_close:
+                            prev_close = prev_close / 100
+                        else:
+                            prev_close = 0
                         change = price - prev_close
                         change_pct = (change / prev_close * 100) if prev_close else 0
 
@@ -404,7 +417,8 @@ async def fetch_foreign_indices_via_service() -> Dict[str, Any]:
 
 def fetch_foreign_indices() -> Dict[str, Any]:
     """同步接口：获取外盘指数数据"""
-    return asyncio.run(fetch_foreign_indices_via_service())
+    from services.data_service.async_utils import run_async
+    return run_async(fetch_foreign_indices_via_service())
 
 
 if __name__ == "__main__":

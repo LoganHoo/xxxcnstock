@@ -7,7 +7,7 @@ import importlib
 import pandas as pd
 from typing import List, Dict
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from core.logger import setup_logger
@@ -82,14 +82,48 @@ class StockListFetcher:
         try:
             logger.info("开始获取股票列表...")
             
-            # 获取上海A股
+            # 自动查找最近的有效交易日（最多回溯10天）
             stocks = []
+            rs_sh = None
+            query_date = None
+            max_backtrack_days = 10
             
-            # 上海A股
-            rs_sh = self._bs.query_all_stock(day=datetime.now().strftime('%Y-%m-%d'))
+            for days_ago in range(max_backtrack_days + 1):
+                test_date = (datetime.now() - timedelta(days=days_ago)).strftime('%Y-%m-%d')
+                
+                rs_test = self._bs.query_all_stock(day=test_date)
+                
+                # 只检查第一条记录，避免遍历整个结果集
+                if rs_test.next():
+                    query_date = test_date
+                    rs_sh = rs_test  # 直接使用已打开的结果集
+                    first_row = rs_test.get_row_data()
+                    logger.info(f"找到有效交易日: {test_date} (示例: {first_row[0]} - {first_row[1]})")
+                    break
+                else:
+                    if days_ago < 3:
+                        logger.debug(f"日期 {test_date} 无数据，继续回溯...")
+            
+            if not query_date or not rs_sh:
+                logger.error(f"最近{max_backtrack_days}天均无有效交易数据")
+                return []
+            
+            # 解析股票数据（继续使用已打开的结果集）
+            # 先添加第一条记录（已经在next()中读取了）
+            row = rs_sh.get_row_data()
+            code = row[0].split('.')[-1]
+            stocks.append(StockInfo(
+                code=code,
+                name=row[1],
+                industry=row[2] if len(row) > 2 else '',
+                exchange='sh',
+                status=row[3] if len(row) > 3 else '1'
+            ))
+            
+            # 继续读取剩余记录
             while rs_sh.next():
                 row = rs_sh.get_row_data()
-                code = row[0].split('.')[-1]  # sh.600000 -> 600000
+                code = row[0].split('.')[-1]
                 stocks.append(StockInfo(
                     code=code,
                     name=row[1],
@@ -98,7 +132,7 @@ class StockListFetcher:
                     status=row[3] if len(row) > 3 else '1'
                 ))
             
-            logger.info(f"获取到 {len(stocks)} 只股票")
+            logger.info(f"获取到 {len(stocks)} 只股票 (数据日期: {query_date})")
             return stocks
             
         except Exception as e:

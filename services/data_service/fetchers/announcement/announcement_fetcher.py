@@ -110,7 +110,10 @@ class AnnouncementData:
 
 class AnnouncementFetcher:
     """公告数据获取器"""
-    
+
+    MAX_RETRIES = 3
+    RETRY_DELAY = 2
+
     def __init__(self):
         self.logger = logger
         self.keywords_map = ANNOUNCEMENT_KEYWORDS
@@ -123,54 +126,73 @@ class AnnouncementFetcher:
     ) -> pd.DataFrame:
         """
         获取单只股票公告
-        
+
         Args:
             code: 股票代码
             start_date: 开始日期 (YYYYMMDD)
             end_date: 结束日期 (YYYYMMDD)
-        
+
         Returns:
             公告DataFrame
         """
-        try:
-            # 移除代码后缀
-            code_clean = code.split('.')[0] if '.' in code else code
-            
-            # 使用AKShare获取公告
-            df = ak.stock_notice_report(
-                symbol=code_clean,
-                date=end_date or datetime.now().strftime('%Y%m%d')
-            )
-            
-            if df.empty:
-                self.logger.warning(f"{code} 公告数据为空")
+        for attempt in range(self.MAX_RETRIES):
+            try:
+                code_clean = code.split('.')[0] if '.' in code else code
+
+                if start_date:
+                    begin_time = f"{start_date[:4]}-{start_date[4:6]}-{start_date[6:8]}"
+                else:
+                    begin_time = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+
+                if end_date:
+                    end_time = f"{end_date[:4]}-{end_date[4:6]}-{end_date[6:8]}"
+                else:
+                    end_time = datetime.now().strftime('%Y-%m-%d')
+
+                url = 'https://np-anotice-stock.eastmoney.com/api/security/ann'
+                params = {
+                    'sr': '-1',
+                    'page_size': '100',
+                    'page_index': '1',
+                    'ann_type': 'A',
+                    'client_source': 'web',
+                    'f_node': '0',
+                    's_node': '0',
+                    'stock_list': code_clean,
+                    'begin_time': begin_time,
+                    'end_time': end_time,
+                }
+
+                import requests
+                r = requests.get(url, params=params, timeout=15)
+                data = r.json()
+                notices = data.get('data', {}).get('list', [])
+
+                if not notices:
+                    return pd.DataFrame()
+
+                rows = []
+                for item in notices:
+                    rows.append({
+                        'code': code_clean,
+                        'title': item.get('title', ''),
+                        'notice_date': item.get('notice_date', ''),
+                        'ann_type': item.get('ann_type', ''),
+                    })
+
+                df = pd.DataFrame(rows)
+                df['source'] = 'eastmoney'
+
+                self.logger.info(f"{code} 获取到 {len(df)} 条公告")
                 return df
-            
-            # 标准化列名
-            df = self._standardize_columns(df)
-            df['code'] = code_clean
-            
-            # 日期过滤
-            if start_date:
-                df = df[df['publish_date'] >= start_date]
-            if end_date:
-                df = df[df['publish_date'] <= end_date]
-            
-            # 分类公告
-            df['announcement_type'] = df['title'].apply(self._classify_announcement)
-            
-            # 评估重要性
-            df['importance'] = df.apply(self._evaluate_importance, axis=1)
-            
-            df['source'] = 'akshare'
-            df['update_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-            self.logger.info(f"{code} 获取到 {len(df)} 条公告")
-            return df
-            
-        except Exception as e:
-            self.logger.error(f"{code} 公告获取失败: {e}")
-            return pd.DataFrame()
+
+            except Exception as e:
+                self.logger.warning(f"{code} 公告获取失败 (尝试 {attempt + 1}/{self.MAX_RETRIES}): {e}")
+                if attempt < self.MAX_RETRIES - 1:
+                    time.sleep(self.RETRY_DELAY * (attempt + 1))
+                else:
+                    self.logger.error(f"{code} 公告获取失败已达最大重试次数: {e}")
+        return pd.DataFrame()
     
     def fetch_market_announcements(
         self,

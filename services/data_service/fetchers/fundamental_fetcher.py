@@ -67,14 +67,7 @@ async def fetch_fundamental_via_service(code: str) -> Optional[Dict]:
         return None
 
 
-def run_async(coro):
-    """运行异步函数"""
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    return loop.run_until_complete(coro)
+from services.data_service.async_utils import run_async
 
 
 # ==================== 数据获取函数 ====================

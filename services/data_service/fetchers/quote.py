@@ -36,18 +36,23 @@ class QuoteFetcher:
             quotes = []
             for _, row in df.iterrows():
                 try:
+                    def _f(val, dtype=float):
+                        if pd.isna(val):
+                            return 0
+                        return dtype(val)
+
                     quote = StockQuote(
                         code=str(row.get("代码", "")),
                         name=str(row.get("名称", "")),
-                        price=float(row.get("最新价", 0) or 0),
-                        change_pct=float(row.get("涨跌幅", 0) or 0),
-                        volume=int(row.get("成交量", 0) or 0),
-                        turnover_rate=float(row.get("换手率", 0) or 0),
-                        amount=float(row.get("成交额", 0) or 0),
-                        high=float(row.get("最高", 0) or 0),
-                        low=float(row.get("最低", 0) or 0),
-                        open=float(row.get("今开", 0) or 0),
-                        pre_close=float(row.get("昨收", 0) or 0),
+                        price=_f(row.get("最新价")),
+                        change_pct=_f(row.get("涨跌幅")),
+                        volume=_f(row.get("成交量"), int),
+                        turnover_rate=_f(row.get("换手率")),
+                        amount=_f(row.get("成交额")),
+                        high=_f(row.get("最高")),
+                        low=_f(row.get("最低")),
+                        open=_f(row.get("今开")),
+                        pre_close=_f(row.get("昨收")),
                     )
                     quotes.append(quote)
                 except Exception as e:

@@ -5,7 +5,7 @@
 import os
 import json
 import hashlib
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Tuple, Optional, List
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -189,15 +189,14 @@ class OptimizedDataLoader:
         
         if not all_dfs:
             logger.warning("没有找到任何数据")
-            # P1优化：使用更紧凑的数据类型
             return pl.DataFrame(schema={
-                "code": pl.Categorical,  # Utf8 → Categorical（节省50%+内存）
-                "trade_date": pl.Date,   # Utf8 → Date（节省30%内存，便于日期计算）
-                "open": pl.Float32,      # Float64 → Float32（节省50%内存）
-                "high": pl.Float32,
-                "low": pl.Float32,
-                "close": pl.Float32,
-                "volume": pl.UInt64      # Float64 → UInt64（成交量应为整数）
+                "code": pl.Categorical,
+                "trade_date": pl.Date,
+                "open": pl.Float64,
+                "high": pl.Float64,
+                "low": pl.Float64,
+                "close": pl.Float64,
+                "volume": pl.Int64
             })
         
         # 合并所有批次数据
@@ -231,42 +230,54 @@ class OptimizedDataLoader:
         
         for f in files_batch:
             try:
-                # 扫描Parquet文件（不立即加载）
                 lf = pl.scan_parquet(f)
-                
-                # 选择需要的列
-                available_cols = [c for c in columns if c in lf.columns]
+
+                if "date" in lf.columns:
+                    if "trade_date" in columns:
+                        available_cols = [c if c != "trade_date" else "date" for c in columns]
+                        available_cols = [c for c in available_cols if c in lf.columns]
+                    else:
+                        available_cols = [c for c in columns if c in lf.columns]
+                else:
+                    available_cols = [c for c in columns if c in lf.columns]
                 lf = lf.select([pl.col(c) for c in available_cols])
-                
-                # 过滤日期范围
-                lf = lf.filter(
-                    (pl.col("trade_date") >= start_date) &
-                    (pl.col("trade_date") <= end_date)
-                )
-                
-                # P1优化：使用紧凑的数据类型
-                type_mappings = {
-                    'code': pl.Categorical,
-                    'trade_date': pl.Date,
-                    'open': pl.Float32,
-                    'high': pl.Float32,
-                    'low': pl.Float32,
-                    'close': pl.Float32,
-                    'volume': pl.UInt64
-                }
-                
-                for col, dtype in type_mappings.items():
-                    if col in available_cols:
-                        lf = lf.with_columns(pl.col(col).cast(dtype))
-                
-                # 收集数据
+
+                if "date" in lf.columns:
+                    lf = lf.rename({"date": "trade_date"})
+
+                if "trade_date" in lf.columns:
+                    date_dtype = lf.schema["trade_date"]
+                    if date_dtype in (pl.Datetime,):
+                        lf = lf.with_columns(
+                            pl.col("trade_date").dt.date().cast(pl.Date).alias("trade_date")
+                        )
+                    elif date_dtype in (pl.Utf8,):
+                        lf = lf.with_columns(
+                            pl.col("trade_date").str.to_date().alias("trade_date")
+                        )
+
+                    start_dt = date(*[int(x) for x in start_date.split('-')])
+                    end_dt = date(*[int(x) for x in end_date.split('-')])
+                    lf = lf.filter(
+                        (pl.col("trade_date") >= start_dt) &
+                        (pl.col("trade_date") <= end_dt)
+                    )
+
+                lf = lf.with_columns([
+                    pl.col("code").cast(pl.Categorical),
+                    pl.col("open").cast(pl.Float64),
+                    pl.col("high").cast(pl.Float64),
+                    pl.col("low").cast(pl.Float64),
+                    pl.col("close").cast(pl.Float64),
+                    pl.col("volume").cast(pl.Int64),
+                ])
+
                 df = lf.collect()
-                
+
                 if len(df) > 0:
                     batch_dfs.append(df)
-                    
+
             except Exception:
-                # 静默跳过错误文件
                 continue
         
         if batch_dfs:

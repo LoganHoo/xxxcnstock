@@ -230,9 +230,12 @@ class BalanceSheetFetcher:
             code = code.split('.')[0] if '.' in code else code
             
             # 使用AKShare获取资产负债表
-            df = ak.stock_balance_sheet_by_report_em(symbol=code)
+            try:
+                df = ak.stock_balance_sheet_by_report_em(symbol=code)
+            except TypeError:
+                df = None
             
-            if df.empty:
+            if df is None or df.empty:
                 self.logger.warning(f"{code} 未从AKShare获取到资产负债表数据")
                 return df
             
@@ -277,14 +280,17 @@ class BalanceSheetFetcher:
         # 尝试优先数据源
         if priority == 'tushare':
             df = self.fetch_from_tushare(code, start_date, end_date, report_type)
-            if df.empty:
+            if df is None or df.empty:
                 self.logger.info(f"{code} Tushare获取失败,尝试AKShare")
                 df = self.fetch_from_akshare(code, start_date, end_date)
         else:
             df = self.fetch_from_akshare(code, start_date, end_date)
-            if df.empty:
+            if df is None or df.empty:
                 self.logger.info(f"{code} AKShare获取失败,尝试Tushare")
                 df = self.fetch_from_tushare(code, start_date, end_date, report_type)
+        
+        if df is None:
+            return pd.DataFrame()
         
         return df
     

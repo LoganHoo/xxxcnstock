@@ -242,11 +242,11 @@ class NewsDatabase:
 
     def __init__(self):
         self.config = {
-            "host": os.getenv("DB_HOST", "localhost"),
-            "port": int(os.getenv("DB_PORT", "3306")),
-            "user": os.getenv("DB_USER", "root"),
-            "password": os.getenv("DB_PASSWORD", ""),
-            "database": os.getenv("DB_NAME", "xcn_db"),
+            "host": os.getenv("MYSQL_HOST", os.getenv("DB_HOST", "localhost")),
+            "port": int(os.getenv("MYSQL_PORT", os.getenv("DB_PORT", "3306"))),
+            "user": os.getenv("MYSQL_USER", os.getenv("DB_USER", "root")),
+            "password": os.getenv("MYSQL_PASSWORD", os.getenv("DB_PASSWORD", "")),
+            "database": os.getenv("MYSQL_DATABASE", os.getenv("DB_NAME", "xcn_db")),
             "charset": os.getenv("DB_CHARSET", "utf8mb4"),
         }
         self._ensure_table_exists()
