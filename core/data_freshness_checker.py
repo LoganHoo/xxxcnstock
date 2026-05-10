@@ -4,6 +4,7 @@
 """
 import logging
 import polars as pl
+import pyarrow.parquet as pq
 from typing import Dict, Any, Tuple
 from datetime import datetime, time
 from pathlib import Path
@@ -51,9 +52,11 @@ class DataFreshnessChecker:
                 if kline_dir.exists():
                     sample_file = kline_dir / "000001.parquet"
                     if sample_file.exists():
-                        sample_data = pl.read_parquet(sample_file)
-                        latest_date = sample_data['trade_date'].max()
-                        if latest_date == last_trading_day:
+                        table = pq.read_table(str(sample_file))
+                        df = pl.from_arrow(table)
+                        dates = df.select("date").to_series().to_list()
+                        latest_date = max(dates)
+                        if str(latest_date.date()) == last_trading_day:
                             return True, f"使用上一交易日({last_trading_day})数据"
                 return False, f"市场未收盘，当前时间: {current_time}"
 
@@ -85,7 +88,7 @@ class DataFreshnessChecker:
         
         try:
             # 读取股票列表
-            stock_list = pl.read_parquet(stock_list_file)
+            stock_list = pl.from_arrow(pq.read_table(str(stock_list_file)))
             stock_codes = stock_list['code'].to_list()
             
             if len(stock_codes) == 0:
@@ -99,13 +102,15 @@ class DataFreshnessChecker:
                 return False, f"样本股票文件不存在: {sample_file}", {}
             
             # 读取样本数据
-            sample_data = pl.read_parquet(sample_file)
+            sample_data = pl.from_arrow(pq.read_table(str(sample_file)))
             
             if len(sample_data) == 0:
                 return False, "样本股票数据为空", {}
             
             # 检查是否包含上一交易日数据
-            latest_date = sample_data['trade_date'].max()
+            date_col = 'trade_date' if 'trade_date' in sample_data.columns else 'date'
+            dates = sample_data.select(date_col).to_series().to_list()
+            latest_date = max(dates)
             
             if isinstance(latest_date, str):
                 latest_date = datetime.fromisoformat(latest_date).date()
