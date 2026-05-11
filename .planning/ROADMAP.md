@@ -37,7 +37,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. When an individual task crashes, the scheduler process itself stays alive and continues scheduling other tasks
   3. Scheduler health check endpoint returns alive status and uptime
   4. System resource usage (memory, threads) remains stable over 24 hours with no leaks
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Walking skeleton: unified config, scheduler engine, subprocess executor, crash isolation, signal handling
+- [ ] 01-02-PLAN.md — Production resilience: Redis degradation, history DB, circuit breaker, market calendar, Flask API process
 
 ### Phase 2: Task Failure Recovery
 **Goal**: Every scheduled task has automatic retry with exponential backoff, and persistent failures trigger alert notifications
@@ -178,7 +182,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scheduler Process Stability | 0/? | Not started | - |
+| 1. Scheduler Process Stability | 0/2 | Planning complete | - |
 | 2. Task Failure Recovery | 0/? | Not started | - |
 | 3. Execution History | 0/? | Not started | - |
 | 4. Pipeline Dependency Chains | 0/? | Not started | - |
