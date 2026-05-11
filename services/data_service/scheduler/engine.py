@@ -1,8 +1,9 @@
 """
 SchedulerEngine: BlockingScheduler with subprocess execution,
-crash isolation, signal handling, and health endpoint.
+crash isolation, signal handling, resilience modules, and health endpoint.
 """
 
+import datetime
 import json
 import os
 import signal
@@ -26,6 +27,10 @@ from services.data_service.scheduler.task_config import (
     load_config,
 )
 from services.data_service.scheduler.executor import run_subprocess
+from services.data_service.scheduler.history import HistoryDB
+from services.data_service.scheduler.lock_manager import TaskLockManager
+from services.data_service.scheduler.circuit_breaker import CircuitBreaker
+from services.data_service.scheduler.calendar import MarketCalendar
 
 
 class SchedulerEngine:
@@ -53,6 +58,18 @@ class SchedulerEngine:
 
         # Load config immediately to detect errors early
         self._scheduler_config, self._config_tasks = load_config(config_path)
+
+        # Initialize resilience modules
+        self._history_db = HistoryDB(Path("data/scheduler_history.db"))
+        self._lock_manager = TaskLockManager(
+            lock_timeout=self._scheduler_config.redis_lock_timeout,
+        )
+        self._circuit_breaker = CircuitBreaker(
+            state_dir=Path("data/circuit_breaker"),
+        )
+        self._market_calendar = MarketCalendar(
+            holidays=self._scheduler_config.market_calendar.special_holidays,
+        )
 
         scheduler_cls = BackgroundScheduler if use_background else BlockingScheduler
         executor = ThreadPoolExecutor(max_workers=self._scheduler_config.max_workers)
@@ -83,41 +100,116 @@ class SchedulerEngine:
 
         def job_callback():
             try:
-                script_path = Path(task.script)
-                if script_path.suffix == ".py":
-                    cmd = [sys.executable, str(script_path)]
-                elif script_path.suffix == ".sh":
-                    cmd = ["/bin/bash", str(script_path)]
-                else:
-                    cmd = [str(script_path)]
+                # 1. Check market calendar
+                if not self._market_calendar.should_run_task(
+                    task.day_type, datetime.date.today()
+                ):
+                    logger.info(
+                        f"Skipping '{task.name}': not a trading day "
+                        f"(day_type={task.day_type})"
+                    )
+                    return
 
-                if task.args:
-                    cmd.extend(task.args)
-
-                env = os.environ.copy()
-                env.update({k: str(v) for k, v in task.env.items()})
-
-                cwd = str(Path.cwd())
-
-                returncode, stdout, stderr = run_subprocess(
-                    cmd=cmd,
-                    timeout=task.timeout,
-                    cwd=cwd,
-                    env=env,
+                # 2. Check circuit breaker
+                cb_config = (
+                    task.circuit_breaker.__dict__ if task.circuit_breaker else {}
                 )
+                if self._circuit_breaker.should_skip(task.name, cb_config):
+                    logger.warning(
+                        f"Skipping '{task.name}': circuit breaker open"
+                    )
+                    return
 
-                if returncode == 0:
-                    logger.info(f"Task '{task.name}' completed successfully")
-                else:
-                    stderr_excerpt = stderr[:500] if stderr else ""
-                    logger.error(
-                        f"Task '{task.name}' failed with exit code {returncode}: "
-                        f"{stderr_excerpt}"
+                # 3. Check run_once
+                if task.run_once:
+                    today = datetime.date.today().isoformat()
+                    if self._history_db.has_successful_run_on_date(
+                        task.name, today
+                    ):
+                        logger.info(
+                            f"Skipping '{task.name}': already ran today"
+                        )
+                        return
+
+                # 4. Acquire lock
+                lock = self._lock_manager.acquire(
+                    task.lock_key or task.name,
+                )
+                if lock is None:
+                    logger.info(
+                        f"Skipping '{task.name}': locked by another instance"
+                    )
+                    return
+
+                # 5. Record start
+                record_id = self._history_db.record_start(task.name)
+                start_time = time.time()
+
+                try:
+                    script_path = Path(task.script)
+                    if script_path.suffix == ".py":
+                        cmd = [sys.executable, str(script_path)]
+                    elif script_path.suffix == ".sh":
+                        cmd = ["/bin/bash", str(script_path)]
+                    else:
+                        cmd = [str(script_path)]
+
+                    if task.args:
+                        cmd.extend(task.args)
+
+                    env = os.environ.copy()
+                    env.update({k: str(v) for k, v in task.env.items()})
+
+                    cwd = str(Path.cwd())
+
+                    returncode, stdout, stderr = run_subprocess(
+                        cmd=cmd,
+                        timeout=task.timeout,
+                        cwd=cwd,
+                        env=env,
                     )
 
+                    duration_ms = int((time.time() - start_time) * 1000)
+
+                    if returncode == 0:
+                        self._history_db.record_complete(
+                            record_id, "success", 0, "", duration_ms
+                        )
+                        self._circuit_breaker.record_success(task.name)
+                        logger.info(f"Task '{task.name}' completed successfully")
+                    else:
+                        stderr_excerpt = stderr[:2000] if stderr else ""
+                        self._history_db.record_complete(
+                            record_id,
+                            "failed",
+                            returncode,
+                            stderr_excerpt,
+                            duration_ms,
+                        )
+                        self._circuit_breaker.record_failure(
+                            task.name, cb_config
+                        )
+                        logger.error(
+                            f"Task '{task.name}' failed with exit code "
+                            f"{returncode}: {stderr_excerpt[:500]}"
+                        )
+
+                except Exception as e:
+                    duration_ms = int((time.time() - start_time) * 1000)
+                    self._history_db.record_complete(
+                        record_id, "failed", -1, str(e)[:2000], duration_ms
+                    )
+                    self._circuit_breaker.record_failure(task.name, cb_config)
+                    logger.error(f"Task '{task.name}' raised exception: {e}")
+
+                finally:
+                    self._lock_manager.release(lock)
+
             except Exception as e:
-                logger.error(f"Task '{task.name}' raised exception: {e}")
-                # Swallow exception -- scheduler must stay alive
+                # Outer catch: any error in resilience code must not crash scheduler
+                logger.error(
+                    f"Unexpected error in job callback for '{task.name}': {e}"
+                )
 
         return job_callback
 
