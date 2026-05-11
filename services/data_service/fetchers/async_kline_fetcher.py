@@ -136,10 +136,10 @@ class AsyncKlineFetcher:
                     try:
                         df_existing = pl.read_parquet(output_file).to_pandas()
                         df_combined = pd.concat([df_existing, df_new], ignore_index=True)
-                        # 兼容两种列名
                         date_col = 'trade_date' if 'trade_date' in df_combined.columns else 'date'
+                        df_combined[date_col] = df_combined[date_col].astype(str)
                         df_combined = df_combined.drop_duplicates(subset=[date_col], keep='last')
-                        df_combined = df_combined.sort_values(date_col)
+                        df_combined = df_combined.sort_values(date_col).reset_index(drop=True)
                         df_new = df_combined
                     except Exception as e:
                         logger.warning(f"合并{code}数据失败，使用新数据: {e}")
