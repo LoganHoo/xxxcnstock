@@ -1,158 +1,192 @@
-# XCNStock 路线图
+# Roadmap: XCNStock Stabilization & Refactoring
 
-## 里程碑概览
+## Overview
 
-| 里程碑 | 状态 | 完成日期 | 主要交付物 |
-|-------|------|---------|-----------|
-| M1: 数据流水线优化 | ✅ | 2026-04-25 | 并行采集、增量处理、Polars指标 |
-| M2: 工作流合并 | ✅ | 2026-04-25 | 统一采集/监控工作流 |
-| M3: 工作流清理 | ⏳ | 2025-06-25 | 删除废弃文件、归档文档 |
-| M4: 性能提升V2 | 📋 | 待定 | 待规划 |
+This roadmap stabilizes the XCNStock scheduling and pipeline system so it runs without human intervention, then progressively improves code quality and business agility. The journey: first make the scheduler survive (Phases 1-4), then clean up configuration (Phases 5-6), then fix code structure (Phases 7-10), and finally enable business users to change strategies without developer involvement (Phases 11-12).
 
----
+## Phases
 
-## Phase 1: 数据流水线性能优化 ✅
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-**状态**: 已完成  
-**时间**: 2026-04-25  
-**变更单**: `optimize-data-pipeline-performance`
+Decimal phases appear between their surrounding integers in numeric order.
 
-### 交付物
-- [x] 并行数据获取引擎
-- [x] 增量数据处理系统
-- [x] Polars技术指标实现
-- [x] 多级缓存系统
-- [x] 分布式锁协调
-- [x] 监控告警系统
-- [x] 部署配置和文档
+- [ ] **Phase 1: Scheduler Process Stability** - APScheduler keeps running without crashes or hangs
+- [ ] **Phase 2: Task Failure Recovery** - Failed tasks auto-retry with exponential backoff and alert on exhaustion
+- [ ] **Phase 3: Execution History** - Task execution records persisted and queryable
+- [ ] **Phase 4: Pipeline Dependency Chains** - Pipeline tasks execute in correct dependency order
+- [ ] **Phase 5: Configuration Unification** - Single config entry point, eliminate dual config systems
+- [ ] **Phase 6: Credential Cleanup** - All hardcoded credentials removed, env-driven config
+- [ ] **Phase 7: Import Path Fix** - Eliminate sys.path hacks, proper package structure
+- [ ] **Phase 8: Error Handling Standardization** - Structured error handling in pipeline scripts
+- [ ] **Phase 9: Duplicate Code Elimination** - Extract shared logic into core modules
+- [ ] **Phase 10: Module Boundary Enforcement** - Clear layer responsibilities, no cross-layer calls
+- [ ] **Phase 11: Strategy Configuration** - Strategy changes via YAML only, no code changes
+- [ ] **Phase 12: Feature Toggles & Independent Steps** - Config-driven toggles and runnable individual pipeline steps
 
-### 关键指标
-- 数据采集: 5000+股票 < 5分钟
-- 指标计算: 10,000条 < 2ms
-- 测试通过率: 100%
+## Phase Details
 
----
+### Phase 1: Scheduler Process Stability
+**Goal**: APScheduler service starts and stays running indefinitely without crashes, hangs, or silent failures
+**Mode**: mvp
+**Depends on**: Nothing (first phase)
+**Requirements**: SCHED-01
+**Success Criteria** (what must be TRUE):
+  1. Scheduler process starts and remains running for 24+ hours without manual intervention
+  2. When an individual task crashes, the scheduler process itself stays alive and continues scheduling other tasks
+  3. Scheduler health check endpoint returns alive status and uptime
+  4. System resource usage (memory, threads) remains stable over 24 hours with no leaks
+**Plans**: TBD
 
-## Phase 2: Kestra工作流合并 ✅
+### Phase 2: Task Failure Recovery
+**Goal**: Every scheduled task has automatic retry with exponential backoff, and persistent failures trigger alert notifications
+**Mode**: mvp
+**Depends on**: Phase 1
+**Requirements**: SCHED-02
+**Success Criteria** (what must be TRUE):
+  1. When a task fails, it automatically retries up to 3 times with increasing delay between attempts
+  2. After all retries exhausted, an alert notification is sent via configured channel (DingTalk/WeChat)
+  3. Alert message includes task name, failure reason, and retry count
+  4. Successful retry resets the failure counter without sending false alarms
+**Plans**: TBD
 
-**状态**: 已完成 96.7%  
-**时间**: 2026-04-25  
-**变更单**: `kestra-workflow-consolidation`
+### Phase 3: Execution History
+**Goal**: Every task execution is recorded with status, timing, and error details, queryable for debugging
+**Mode**: mvp
+**Depends on**: Phase 1
+**Requirements**: SCHED-03
+**Success Criteria** (what must be TRUE):
+  1. Every task execution creates a database record with start time, end time, and status (success/failed)
+  2. Failed task records include the error message and stack trace
+  3. Execution history is queryable by date range and task name
+  4. History records are retained for at least 30 days automatically
+**Plans**: TBD
 
-### 交付物
-- [x] 统一数据采集工作流 (5合1)
-- [x] 统一监控工作流 (3合1)
-- [x] 晨会报告调试模式
-- [x] 9个废弃工作流标记
-- [x] 迁移脚本 (verify/rollback/health)
-- [x] 健康检查通过
+### Phase 4: Pipeline Dependency Chains
+**Goal**: Pipeline tasks execute in correct dependency order -- downstream tasks only run after upstream tasks succeed
+**Mode**: mvp
+**Depends on**: Phase 2, Phase 3
+**Requirements**: SCHED-04
+**Success Criteria** (what must be TRUE):
+  1. Daily pipeline tasks execute in defined sequence: collect -> audit -> compute -> score -> report
+  2. If an upstream task fails, downstream dependent tasks are skipped (not silently run on stale data)
+  3. Independent tasks within the same pipeline run in parallel for efficiency
+  4. Pipeline completion status is logged with overall success/failure and individual task outcomes
+**Plans**: TBD
 
-### 待完成
-- [ ] 删除废弃工作流文件 (计划: 2025-06-25)
-- [ ] 归档变更文档 (计划: 2025-06-25)
+### Phase 5: Configuration Unification
+**Goal**: One configuration entry point that merges YAML, env vars, and defaults -- no more dual config systems
+**Mode**: mvp
+**Depends on**: Nothing (independent of scheduler, runs in parallel with Phases 2-4 if needed)
+**Requirements**: CONF-01
+**Success Criteria** (what must be TRUE):
+  1. All modules read configuration through a single import (get_settings or equivalent unified entry point)
+  2. core/config.py and core/unified_config.py are merged or one is deprecated with a clear migration
+  3. Existing YAML configs (scheduler.yaml, factors/*.yaml, etc.) continue to load without breaking changes
+  4. Configuration precedence is documented: env vars override YAML, YAML overrides defaults
+**Plans**: TBD
 
----
+### Phase 6: Credential Cleanup
+**Goal**: Zero hardcoded IPs, passwords, or file paths in source code -- all sensitive values come from environment variables or Nacos
+**Mode**: mvp
+**Depends on**: Phase 5
+**Requirements**: CONF-02, CONF-03
+**Success Criteria** (what must be TRUE):
+  1. Grep for '49.233.10.199', '100200', '192.168.1.168' returns zero results in Python files
+  2. Every os.getenv() call with hardcoded fallback credentials is replaced with config-driven reads
+  3. .env.example documents all required environment variables with descriptions
+  4. Application fails fast with a clear error message when required env vars are missing
+**Plans**: TBD
 
-## Phase 3: 工作流清理与归档 📋
+### Phase 7: Import Path Fix
+**Goal**: All imports resolve through proper package structure with zero sys.path.insert() calls
+**Mode**: mvp
+**Depends on**: Nothing (independent, but logically follows config cleanup)
+**Requirements**: CODE-04
+**Success Criteria** (what must be TRUE):
+  1. Grep for 'sys.path.insert' returns zero results in Python source files
+  2. All hardcoded absolute paths (/Volumes/Xdata/...) are removed
+  3. pip install -e . works and enables correct imports across all modules
+  4. All existing scripts run successfully with the new import structure
+**Plans**: TBD
 
-**状态**: 已规划，待执行  
-**计划时间**: 2026-04-25  
-**负责人**: AI Assistant
+### Phase 8: Error Handling Standardization
+**Goal**: All critical pipeline scripts have structured try/catch blocks with proper logging -- no silent exception swallowing
+**Mode**: mvp
+**Depends on**: Phase 7
+**Requirements**: CODE-03
+**Success Criteria** (what must be TRUE):
+  1. Every pipeline script in scripts/pipeline/ has a top-level try/catch that logs the full error and exits with non-zero code
+  2. No bare `except:` or `except Exception: pass` patterns remain in pipeline scripts
+  3. Error logs include structured context: script name, input parameters, and actionable error message
+  4. Logging output goes to both console and log files with consistent formatting
+**Plans**: TBD
 
-### 执行计划
+### Phase 9: Duplicate Code Elimination
+**Goal**: Common patterns (data fetching, DB connections, logging setup) extracted into core/ modules with zero copy-paste across scripts
+**Mode**: mvp
+**Depends on**: Phase 7, Phase 8
+**Requirements**: CODE-01
+**Success Criteria** (what must be TRUE):
+  1. DB connection code uses a shared utility (no more raw pymysql.connect() scattered across scripts)
+  2. Data fetching patterns use shared adapters (no duplicate Baostock/Tushare connection logic)
+  3. Logging setup uses a single consistent pattern across all pipeline scripts
+  4. Grep for duplicate function names across scripts/ returns zero meaningful duplicates
+**Plans**: TBD
 
-#### Plan 03-01: 删除废弃工作流文件
-**预计耗时**: 10分钟  
-**状态**: 📝 已规划
+### Phase 10: Module Boundary Enforcement
+**Goal**: core/scripts/services/workflows layers have clear responsibilities with no cross-layer direct calls bypassing the layer abstraction
+**Mode**: mvp
+**Depends on**: Phase 9
+**Requirements**: CODE-02
+**Success Criteria** (what must be TRUE):
+  1. scripts/ only calls core/ public APIs, never directly accesses services/ internals
+  2. services/ only uses core/ abstractions, never imports from scripts/ or other services/ directly
+  3. core/ has no dependencies on scripts/ or services/ (verified by import analysis)
+  4. Each module's public interface is documented or implied by __all__ exports
+**Plans**: TBD
 
-**任务清单**:
-- [ ] 验证删除前状态（健康检查）
-- [ ] 删除 8 个废弃工作流文件
-- [ ] 更新废弃工作流文档
-- [ ] 提交变更
+### Phase 11: Strategy Configuration
+**Goal**: Quant analysts change stock selection strategies by editing YAML files only -- no code changes, no redeployment needed
+**Mode**: mvp
+**Depends on**: Phase 10
+**Requirements**: BIZ-01
+**Success Criteria** (what must be TRUE):
+  1. Changing factor weights in a YAML config file changes stock selection results on next run
+  2. Adding a new strategy is done by creating a new YAML file with no Python code changes
+  3. Existing strategies continue to work identically after this change
+  4. Strategy YAML schema is documented with examples for common modifications
+**Plans**: TBD
 
-**废弃文件清单**:
-| 文件名 | 替代方案 |
-|--------|----------|
-| `xcnstock_daily_update.yml` | `xcnstock_data_collection_unified` (mode=daily) |
-| `xcnstock_data_collection_with_ge.yml` | `xcnstock_data_collection_unified` (mode=ge) |
-| `xcnstock_smart_pipeline.yml` | `xcnstock_data_pipeline` |
-| `xcnstock_data_collection.yml` | `xcnstock_data_collection_unified` (mode=standard) |
-| `xcnstock_data_inspection.yml` | `xcnstock_monitoring_unified` (check_type=data) |
-| `xcnstock_system_monitor.yml` | `xcnstock_monitoring_unified` (check_type=system) |
-| `xcnstock_data_pipeline_simple.yml` | `xcnstock_data_collection_unified` |
-| `xcnstock_morning_report_simple.yml` | `xcnstock_monitoring_unified` |
+### Phase 12: Feature Toggles & Independent Steps
+**Goal**: Factors/filters/data sources toggle on/off via config, and every pipeline step runs independently for debugging
+**Mode**: mvp
+**Depends on**: Phase 11
+**Requirements**: BIZ-02, BIZ-03
+**Success Criteria** (what must be TRUE):
+  1. Setting enabled: false on a factor in config skips that factor in computation without errors
+  2. Setting enabled: false on a data source falls back to remaining sources gracefully
+  3. Any single pipeline step (e.g., stock_pick, data_collect) runs independently via command line with correct results
+  4. Running a step independently produces the same output as running it within the full pipeline
+**Plans**: TBD
 
-#### Plan 03-02: 归档变更文档
-**预计耗时**: 10分钟  
-**状态**: 📝 已规划
+## Progress
 
-**任务清单**:
-- [ ] 创建归档目录结构
-- [ ] 移动变更文档到 archive/
-- [ ] 更新归档索引
-- [ ] 清理空目录
-- [ ] 提交变更
+**Execution Order:**
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 11 -> 12
 
-**归档内容**:
-- `openspec/openspec/changes/kestra-workflow-consolidation/` → `openspec/openspec/changes/archive/kestra-workflow-consolidation/`
-
----
-
-## Phase 4: 性能提升V2 📋
-
-**状态**: 待规划  
-**计划时间**: 待定
-
-### 潜在优化方向
-
-#### 4.1 技术指标扩展
-- 添加更多技术指标 (ADX, OBV, etc.)
-- 优化Polars计算性能
-- 添加指标缓存
-
-#### 4.2 数据存储优化
-- 分区Parquet文件
-- 压缩优化
-- 查询性能提升
-
-#### 4.3 工作流优化
-- 动态调度
-- 资源自动伸缩
-- 故障自动恢复
-
----
-
-## 依赖关系图
-
-```
-M1: 数据流水线优化 ✅
-    │
-    ▼
-M2: 工作流合并 ✅
-    │
-    ▼
-M3: 工作流清理 ⏳ (依赖M2完成并稳定运行2个月)
-    │
-    ▼
-M4: 性能提升V2 📋 (依赖M3完成)
-```
-
----
-
-## 风险与缓解
-
-| 风险 | 影响 | 缓解措施 |
-|-----|------|---------|
-| 废弃工作流删除后发现问题 | 高 | 保留备份2周，支持快速回滚 |
-| 新工作流性能不达标 | 中 | 持续监控，设置告警阈值 |
-| 数据质量问题 | 高 | 多层级验证，异常自动重试 |
-
----
-
-## 更新记录
-
-| 日期 | 更新内容 | 更新人 |
-|-----|---------|-------|
-| 2026-04-25 | 创建路线图，标记M1/M2完成 | AI Assistant |
-| 2026-04-25 | 添加M3计划 (2025-06-25) | AI Assistant |
+| Phase | Plans Complete | Status | Completed |
+|-------|----------------|--------|-----------|
+| 1. Scheduler Process Stability | 0/? | Not started | - |
+| 2. Task Failure Recovery | 0/? | Not started | - |
+| 3. Execution History | 0/? | Not started | - |
+| 4. Pipeline Dependency Chains | 0/? | Not started | - |
+| 5. Configuration Unification | 0/? | Not started | - |
+| 6. Credential Cleanup | 0/? | Not started | - |
+| 7. Import Path Fix | 0/? | Not started | - |
+| 8. Error Handling Standardization | 0/? | Not started | - |
+| 9. Duplicate Code Elimination | 0/? | Not started | - |
+| 10. Module Boundary Enforcement | 0/? | Not started | - |
+| 11. Strategy Configuration | 0/? | Not started | - |
+| 12. Feature Toggles & Independent Steps | 0/? | Not started | - |
