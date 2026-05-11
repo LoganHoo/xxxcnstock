@@ -99,6 +99,8 @@ class CheckpointManager:
                 
             except json.JSONDecodeError as e:
                 logger.error(f"进度文件JSON格式错误: {e}，将重新开始")
+                if hasattr(e, 'pos') and e.pos is not None:
+                    logger.error(f"错误位置: 字符 {e.pos}，文件大小: {self.checkpoint_file.stat().st_size} 字节")
             except Exception as e:
                 logger.warning(f"加载进度文件失败: {e}，将重新开始")
         
@@ -145,8 +147,23 @@ class CheckpointManager:
             try:
                 self.data['timestamp'] = datetime.now().isoformat()
                 
-                with open(self.checkpoint_file, 'w', encoding='utf-8') as f:
-                    json.dump(self.data, f, indent=2, ensure_ascii=False, default=str)
+                import tempfile
+                import os
+                temp_fd, temp_path = tempfile.mkstemp(
+                    dir=self.checkpoint_file.parent,
+                    prefix='.fetch_progress_',
+                    suffix='.tmp'
+                )
+                try:
+                    with os.fdopen(temp_fd, 'w', encoding='utf-8') as f:
+                        json.dump(self.data, f, indent=2, ensure_ascii=False, default=str)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    os.replace(temp_path, self.checkpoint_file)
+                except Exception:
+                    if os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    raise
                 
                 logger.debug(
                     f"进度已保存: ✓{len(self.data['completed'])} "
