@@ -4,7 +4,7 @@
 资金流向数据采集脚本
 
 采集个股资金流向数据，用于资金共振策略和尾盘突袭策略。
-数据来源：Tushare Pro moneyflow 接口
+数据来源：微服务 MoneyFlowFetcher (AKShare)
 
 采集字段：
 - 主力净流入/流出
@@ -16,8 +16,8 @@ Author: AI Assistant
 Date: 2026-04-27
 """
 
-import os
 import sys
+import time
 import argparse
 import logging
 from datetime import datetime, timedelta
@@ -31,6 +31,11 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from core.market_guardian import enforce_market_closed
+from services.data_service.fetchers.market_behavior import (
+    MoneyFlowFetcher,
+    MoneyFlowData,
+    fetch_money_flow,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +56,7 @@ class FundFlowCollector:
 
     def __init__(self, config_path: str = None):
         self.config = self._load_config(config_path)
-        self.pro = None
+        self.fetcher = None
         self.data_dir = Path(self.config.get('data', {}).get('fund_flow_dir', 'data/fund_flow'))
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,80 +77,80 @@ class FundFlowCollector:
             }
 
     def connect(self) -> bool:
-        """连接Tushare Pro"""
+        """初始化数据获取器"""
         try:
-            import tushare as ts
-            token = os.environ.get(
-                self.config.get('tushare', {}).get('token_env', 'TUSHARE_TOKEN')
-            )
-            if not token:
-                logger.error("TUSHARE_TOKEN not set")
-                return False
-            ts.set_token(token)
-            self.pro = ts.pro_api()
-            logger.info("Connected to Tushare Pro")
+            self.fetcher = MoneyFlowFetcher()
+            logger.info("MoneyFlowFetcher initialized")
             return True
-        except ImportError:
-            logger.error("Tushare not installed. Install with: pip install tushare")
-            return False
         except Exception as e:
-            logger.error(f"Failed to connect to Tushare: {e}")
+            logger.error(f"Failed to initialize MoneyFlowFetcher: {e}")
             return False
 
     def fetch_fund_flow(self, trade_date: str) -> pd.DataFrame:
         """
-        获取指定日期的资金流向数据
+        获取指定日期的资金流向数据（通过微服务按股票采集并汇总）
 
         Args:
             trade_date: 交易日期 YYYY-MM-DD
 
         Returns:
-            DataFrame with columns: code, name, buy_elg_amount, sell_elg_amount,
-            net_mf_amount, trade_amount, etc.
+            DataFrame with fund flow data for all stocks
         """
-        if not self.pro:
+        if not self.fetcher:
             if not self.connect():
                 return pd.DataFrame()
 
         try:
-            date_str = trade_date.replace('-', '')
+            stock_list_path = project_root / 'data' / 'stock_list.parquet'
+            if stock_list_path.exists():
+                import polars as pl
+                stock_df = pl.read_parquet(stock_list_path)
+                codes = stock_df['code'].to_list() if 'code' in stock_df.columns else []
+            else:
+                stock_list_csv = project_root / 'data' / 'stock_list.csv'
+                if stock_list_csv.exists():
+                    import csv
+                    with open(stock_list_csv, 'r') as f:
+                        reader = csv.DictReader(f)
+                        codes = [row.get('code', row.get('ts_code', '')) for row in reader]
+                else:
+                    logger.error("No stock list found")
+                    return pd.DataFrame()
 
-            df = self.pro.moneyflow(trade_date=date_str)
+            if not codes:
+                logger.warning("Empty stock list")
+                return pd.DataFrame()
 
-            if df is None or df.empty:
+            records = []
+            rate_limit = self.config.get('collection', {}).get('rate_limit', 200)
+
+            for i, code in enumerate(codes):
+                code_clean = code.split('.')[0] if '.' in code else code
+                market = 'sz' if code_clean.startswith(('0', '3')) else 'sh'
+
+                try:
+                    data = fetch_money_flow(code_clean, market)
+                    if data:
+                        records.append({
+                            'code': data.code,
+                            'name': data.name,
+                            'net_main_force_amount': data.main_net_flow or 0,
+                            'main_force_in_ratio': data.main_net_ratio or 0,
+                            'total_trade_amount': 0,
+                            'trade_date': trade_date,
+                        })
+                except Exception:
+                    pass
+
+                if (i + 1) % rate_limit == 0:
+                    logger.info(f"Progress: {i+1}/{len(codes)}, collected {len(records)} records")
+                    time.sleep(1)
+
+            if not records:
                 logger.warning(f"No fund flow data for {trade_date}")
                 return pd.DataFrame()
 
-            df = df.rename(columns={
-                'ts_code': 'code',
-                'buy_sm_amount': 'buy_small_amount',
-                'sell_sm_amount': 'sell_small_amount',
-                'buy_md_amount': 'buy_medium_amount',
-                'sell_md_amount': 'sell_medium_amount',
-                'buy_lg_amount': 'buy_large_amount',
-                'sell_lg_amount': 'sell_large_amount',
-                'buy_elg_amount': 'buy_extra_large_amount',
-                'sell_elg_amount': 'sell_extra_large_amount',
-                'net_mf_amount': 'net_main_force_amount',
-                'trade_amount': 'total_trade_amount'
-            })
-
-            df['trade_date'] = trade_date
-
-            df['small_net_amount'] = df['buy_small_amount'] - df['sell_small_amount']
-            df['medium_net_amount'] = df['buy_medium_amount'] - df['sell_medium_amount']
-            df['large_net_amount'] = df['buy_large_amount'] - df['sell_large_amount']
-            df['extra_large_net_amount'] = df['buy_extra_large_amount'] - df['sell_extra_large_amount']
-
-            df['main_force_in_ratio'] = (
-                df['net_main_force_amount'] / df['total_trade_amount'] * 100
-            ).round(2)
-
-            df['retail_in_ratio'] = (
-                (df['small_net_amount'] + df['medium_net_amount']) /
-                df['total_trade_amount'] * 100
-            ).round(2)
-
+            df = pd.DataFrame(records)
             logger.info(f"Fetched {len(df)} fund flow records for {trade_date}")
             return df
 
@@ -163,32 +168,30 @@ class FundFlowCollector:
         获取个股历史资金流向数据
 
         Args:
-            ts_code: 股票代码 (如 '000001.SZ')
+            ts_code: 股票代码 (如 '000001.SZ' 或 '000001')
             start_date: 开始日期 YYYY-MM-DD
             end_date: 结束日期 YYYY-MM-DD
 
         Returns:
             DataFrame with historical fund flow data
         """
-        if not self.pro:
+        if not self.fetcher:
             if not self.connect():
                 return pd.DataFrame()
 
         try:
-            start_str = start_date.replace('-', '')
-            end_str = end_date.replace('-', '')
+            code_clean = ts_code.split('.')[0] if '.' in ts_code else ts_code
+            market = 'sz' if code_clean.startswith(('0', '3')) else 'sh'
 
-            df = self.pro.moneyflow(
-                ts_code=ts_code,
-                start_date=start_str,
-                end_date=end_str
-            )
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            days = (end - start).days
+
+            df = self.fetcher.fetch_stock_money_flow_hist(code_clean, market, days=max(days, 1))
 
             if df is None or df.empty:
                 logger.warning(f"No fund flow history for {ts_code}")
                 return pd.DataFrame()
-
-            df['trade_date'] = pd.to_datetime(df['trade_date'] if 'trade_date' in df.columns else df['date']).dt.strftime('%Y-%m-%d')
 
             return df
 
@@ -302,10 +305,10 @@ def main():
     if args.check_only:
         logger.info("检查模式 - 验证配置和连接")
         if collector.connect():
-            logger.info("✅ Tushare连接正常")
+            logger.info("✅ MoneyFlowFetcher 初始化正常")
             return 0
         else:
-            logger.error("❌ Tushare连接失败")
+            logger.error("❌ MoneyFlowFetcher 初始化失败")
             return 1
 
     if args.history:

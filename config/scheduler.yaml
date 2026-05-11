@@ -61,7 +61,7 @@ tasks:
   # 17:00 - 智能数据审计
   - name: "data_audit_unified"
     description: "【2.2.智能数据审计】验证数据新鲜度、完整性、质量（带熔断机制）"
-    script: "scripts/pipeline/smart_data_audit.py"
+    script: "scripts/pipeline/data_audit_unified.py"
     schedule: "0 17 * * 1-5"
     enabled: true
     timeout: 1800
@@ -77,16 +77,6 @@ tasks:
     timeout: 7200
     requires_lock: true
     lock_key: "data_collection"
-
-  # 17:35 - 龙虎榜数据采集
-  - name: "dragon_tiger_fetch"
-    description: "【2.1.龙虎榜采集】延迟发布的龙虎榜数据"
-    script: "scripts/pipeline/fetch_dragon_tiger.py"
-    schedule: "35 17 * * 1-5"
-    enabled: true
-    timeout: 1800
-    requires_lock: true
-    lock_key: "dragon_tiger"
 
   # 17:40 - CVD指标计算
   - name: "calculate_cvd"
@@ -108,12 +98,12 @@ tasks:
     requires_lock: true
     lock_key: "dragon_tiger"
 
-  # 17:50 - 当日复盘分析
+  # 17:50 - 当日复盘分析（待实现）
   - name: "market_review"
-    description: "【3.复盘分析】采集和更新大盘数据，计算涨跌停家数、板块强度、CVD资金净流入"
-    script: "scripts/pipeline/daily_review.py"
+    description: "【3.复盘分析】采集和更新大盘数据（待实现替代脚本）"
+    script: "scripts/pipeline/data_audit_unified.py"
     schedule: "50 17 * * 1-5"
-    enabled: true
+    enabled: false
     timeout: 900
     requires_lock: true
     lock_key: "market_review"
@@ -147,13 +137,12 @@ tasks:
     timeout: 600
     requires_lock: false
 
-  # 18:15 - 涨停板策略每日复盘
+  # 18:15 - 涨停板策略每日复盘（待实现）
   - name: "limitup_daily_review"
-    description: "【涨停系统-5.每日复盘】跟踪昨日选股信号表现"
-    script: "scripts/pipeline/daily_review.py"
+    description: "【涨停系统-5.每日复盘】跟踪昨日选股信号表现（待实现替代脚本）"
+    script: "scripts/pipeline/daily_stock_selection_review.py"
     schedule: "15 18 * * 1-5"
-    enabled: true
-    timeout: 600
+    enabled: false
     requires_lock: false
 
   # 18:20 - 回撤分析
@@ -342,15 +331,6 @@ tasks:
     timeout: 3600
     requires_lock: true
     lock_key: "weekly_update"
-
-  # 每周日 20:00 - 涨停板策略周冠军报告
-  - name: "weekly_champion_report"
-    description: "【涨停系统-6.周冠军报告】每周生成策略对比报告"
-    script: "scripts/pipeline/weekly_champion_report.py"
-    schedule: "0 20 * * 0"
-    enabled: true
-    timeout: 600
-    requires_lock: false
 
   # ========== 系统维护 ==========
 

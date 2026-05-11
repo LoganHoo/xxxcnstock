@@ -39,7 +39,6 @@ try:
     TECHNICAL_ANALYSIS = True
 except ImportError:
     TECHNICAL_ANALYSIS = False
-    logger.warning("技术分析模块未加载")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -581,45 +580,25 @@ class AfternoonLimitUpSelector:
     def _get_existing_picks(self, trade_date: str) -> List[str]:
         """
         获取当日已选股票代码列表（盘前选股结果）
-        
+
         Args:
             trade_date: 交易日期
-            
+
         Returns:
             股票代码列表
         """
         try:
-            import pymysql
-            
-            db_config = {
-                'host': os.getenv('DB_HOST', 'localhost'),
-                'port': int(os.getenv('DB_PORT', '3306')),
-                'user': os.getenv('DB_USER', 'root'),
-                'password': os.getenv('DB_PASSWORD', ''),
-                'database': os.getenv('DB_NAME', 'xcn_db'),
-                'charset': 'utf8mb4'
-            }
-            
-            conn = pymysql.connect(**db_config)
-            cursor = conn.cursor()
-            
-            query = """
-                SELECT DISTINCT code 
-                FROM stock_selections 
-                WHERE selection_date = %s
-            """
-            cursor.execute(query, (trade_date,))
-            results = cursor.fetchall()
-            
-            cursor.close()
-            conn.close()
-            
-            existing_codes = [row[0] for row in results]
+            from services.stock_selection_db_service import StockSelectionDBService
+
+            service = StockSelectionDBService()
+            selections = service.get_selections_by_date(trade_date)
+
+            existing_codes = [s['code'] for s in selections]
             if existing_codes:
                 logger.info(f"🔍 发现{len(existing_codes)}只已选股票: {existing_codes}")
-            
+
             return existing_codes
-            
+
         except Exception as e:
             logger.warning(f"查询已选股票失败: {e}")
             return []
@@ -723,53 +702,28 @@ class AfternoonLimitUpSelector:
             return False
 
     def _save_to_database(self, signals: List[Dict], trade_date: str):
-        """保存选股结果到数据库 stock_selections 表"""
+        """保存选股结果到数据库 daily_stock_selections 表"""
         try:
-            import pymysql
+            from services.stock_selection_db_service import StockSelectionDBService
 
-            # 获取数据库配置
-            db_config = {
-                'host': os.getenv('DB_HOST', 'localhost'),
-                'port': int(os.getenv('DB_PORT', '3306')),
-                'user': os.getenv('DB_USER', 'root'),
-                'password': os.getenv('DB_PASSWORD', ''),
-                'database': os.getenv('DB_NAME', 'xcn_db'),
-                'charset': 'utf8mb4'
-            }
-
-            conn = pymysql.connect(**db_config)
-            cursor = conn.cursor()
-
-            # 插入数据
-            insert_sql = """
-                INSERT INTO stock_selections
-                (code, name, strategy, trigger_price, stoploss_price, take_profit_1, take_profit_2,
-                 confidence, reason, selection_date, selection_time, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """
-
-            now = datetime.now()
-            selection_time = now.strftime('%H:%M:%S')
-
+            selections = []
             for signal in signals:
-                cursor.execute(insert_sql, (
-                    signal.get('code', ''),
-                    signal.get('name', ''),
-                    signal.get('strategy', ''),
-                    signal.get('trigger_price', 0),
-                    signal.get('stoploss_price', 0),
-                    signal.get('take_profit_1', 0),
-                    signal.get('take_profit_2', 0),
-                    signal.get('confidence', 0),
-                    signal.get('reason', ''),
-                    trade_date,
-                    selection_time,
-                    now
-                ))
+                selections.append({
+                    'code': signal.get('code', ''),
+                    'name': signal.get('name', ''),
+                    'selection_type': signal.get('strategy', 'limitup'),
+                    'score': signal.get('confidence', 0),
+                    'close': signal.get('trigger_price', 0),
+                    'filters': {
+                        'stoploss_price': signal.get('stoploss_price', 0),
+                        'take_profit_1': signal.get('take_profit_1', 0),
+                        'take_profit_2': signal.get('take_profit_2', 0),
+                        'reason': signal.get('reason', ''),
+                    },
+                })
 
-            conn.commit()
-            cursor.close()
-            conn.close()
+            service = StockSelectionDBService()
+            service.save_selections(trade_date, selections)
 
             logger.info(f"Saved {len(signals)} selections to database")
             return True

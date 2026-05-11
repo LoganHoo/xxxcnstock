@@ -16,7 +16,6 @@ Author: AI Assistant
 Date: 2026-04-27
 """
 
-import os
 import sys
 import argparse
 import logging
@@ -150,19 +149,23 @@ class DragonTigerCollector:
             return pd.DataFrame()
 
     def fetch_broker_list(self) -> pd.DataFrame:
-        """获取营业部列表"""
-        if not self.pro:
+        """获取营业部列表 (从龙虎榜数据中提取)"""
+        if not self.fetcher:
             if not self.connect():
                 return pd.DataFrame()
 
         try:
-            df = self.pro.broker_list()
+            from datetime import date as date_type
+            today = date_type.today().strftime('%Y%m%d')
+            yesterday = (date_type.today() - timedelta(days=7)).strftime('%Y%m%d')
+
+            df = self.fetcher.fetch_date_range(yesterday, today)
 
             if df is None or df.empty:
-                logger.warning("No broker list data")
+                logger.warning("No broker list data from recent dragon tiger records")
                 return pd.DataFrame()
 
-            logger.info(f"Fetched {len(df)} brokers")
+            logger.info(f"Extracted broker data from {len(df)} records")
             return df
 
         except Exception as e:
@@ -364,10 +367,10 @@ def main():
     if args.check_only:
         logger.info("检查模式 - 验证配置和连接")
         if collector.connect():
-            logger.info("✅ Tushare连接正常")
+            logger.info("✅ DragonTigerFetcher 初始化正常")
             return 0
         else:
-            logger.error("❌ Tushare连接失败")
+            logger.error("❌ DragonTigerFetcher 初始化失败")
             return 1
 
     if args.analyze:
