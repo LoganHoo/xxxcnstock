@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-05-12)
 
 Phase: 1 of 12 (Scheduler Process Stability)
 Plan: 0 of ? in current phase
-Status: Ready to plan
-Last activity: 2026-05-12 -- Roadmap created, 12 phases defined
+Status: Context gathered, ready to plan
+Last activity: 2026-05-12 -- Phase 1 context gathered (discuss-phase)
 
 Progress: [░░░░░░░░░░░░] 0%
 
@@ -45,6 +45,9 @@ Recent decisions affecting current work:
 - [Roadmap]: Stabilize first, refactor second -- scheduler stability is highest priority
 - [Roadmap]: Fine granularity (12 phases) to keep each phase focused and verifiable
 - [Roadmap]: Phases 5 and 7 are independent of scheduler work and can run in parallel if needed
+- [Phase 1]: Brand new scheduler implementation (not patching existing code)
+- [Phase 1]: Dual process architecture (scheduler engine + HTTP API)
+- [Phase 1]: Unified config to scheduler.yaml, deprecate cron_tasks.yaml
 
 ### Pending Todos
 
@@ -54,7 +57,8 @@ None yet.
 
 - [General]: Production service -- all changes must be backward compatible, cannot break existing functionality
 - [General]: This week deadline -- phases must be executed efficiently without over-engineering
-- [Phase 1]: Scheduler graceful degradation mode when Redis unavailable needs careful handling
+- [Phase 1]: Two existing scheduler implementations need careful migration plan
+- [Phase 1]: Unclear crash causes -- need to stabilize without full diagnosis first
 
 ## Deferred Items
 
@@ -68,5 +72,5 @@ Items acknowledged and carried forward from previous milestone close:
 ## Session Continuity
 
 Last session: 2026-05-12
-Stopped at: Roadmap created with 12 phases, ready to begin Phase 1 planning
-Resume file: None
+Stopped at: Phase 1 context gathered, ready for planning
+Resume file: .planning/phases/01-scheduler-process-stability/01-CONTEXT.md
