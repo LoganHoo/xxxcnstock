@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 """
+
+from core.logger import get_logger
 历史数据采集器
 
 用于采集收盘后的历史数据：
@@ -13,7 +15,7 @@
 - 完整质量验证
 """
 import asyncio
-import logging
+
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
@@ -165,13 +167,21 @@ class HistoricalCollector:
                 continue
 
             try:
-                df = pl.read_parquet(kline_file)
-                if 'trade_date' in df.columns:
-                    last_date = df['trade_date'].max()
-                    last = datetime.strptime(str(last_date), "%Y-%m-%d").date()
-
-                    if last < target:
-                        codes_to_update.append(code)
+                import pyarrow.parquet as pq
+                table = pq.read_table(kline_file)
+                date_col = None
+                if 'trade_date' in table.schema.names:
+                    date_col = 'trade_date'
+                elif 'date' in table.schema.names:
+                    date_col = 'date'
+                if date_col:
+                    dates = table.column(date_col).to_pylist()
+                    valid_dates = [d for d in dates if d is not None and str(d).strip()]
+                    if valid_dates:
+                        last_date_str = str(max(valid_dates))[:10]
+                        last = datetime.strptime(last_date_str, "%Y-%m-%d").date()
+                        if last < target:
+                            codes_to_update.append(code)
             except Exception as e:
                 logger.warning(f"检查 {code} 失败: {e}")
                 codes_to_update.append(code)
@@ -240,7 +250,8 @@ class HistoricalCollector:
     async def batch_collect_kline(
         self,
         codes: List[str],
-        days: int = 3 * 365
+        days: int = 3 * 365,
+        skip_precheck: bool = False
     ) -> Dict[str, HistoricalCollectionResult]:
         """
         批量采集K线数据
@@ -255,7 +266,7 @@ class HistoricalCollector:
         logger.info(f"🔄 批量采集 {len(codes)} 只股票K线数据")
 
         # 使用多进程并行采集
-        stats = fetch_kline_data_parallel(codes, self.kline_dir, days)
+        stats = await fetch_kline_data_parallel(codes, self.kline_dir, days, skip_precheck=skip_precheck)
 
         logger.info(f"✅ 成功: {stats.get('success', 0)}")
         logger.info(f"❌ 失败: {stats.get('failed', 0)}")
@@ -352,7 +363,7 @@ class HistoricalCollector:
             return {'success': True, 'updated': 0}
 
         # 4. 批量采集K线
-        results = await self.batch_collect_kline(codes_to_update, days=3*365)
+        results = await self.batch_collect_kline(codes_to_update, days=3*365, skip_precheck=True)
 
         # 5. 验证数据质量
         is_passed, report = await self.validate_collected_data(sample_size=100)

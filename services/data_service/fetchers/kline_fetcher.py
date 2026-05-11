@@ -305,7 +305,8 @@ async def fetch_kline_data_parallel(
     codes: List[str],
     kline_dir: Path,
     days: int = None,
-    filter_delisted: bool = True
+    filter_delisted: bool = True,
+    skip_precheck: bool = False
 ) -> Dict:
     """
     纯异步高并发采集K线数据
@@ -324,7 +325,7 @@ async def fetch_kline_data_parallel(
         if filtered_count > 0:
             logger.info(f"已过滤 {filtered_count} 只退市股票，剩余 {len(codes)} 只")
 
-    if config.batch_precheck and len(codes) > 100:
+    if not skip_precheck and config.batch_precheck and len(codes) > 100:
         logger.info("执行批量预检查，跳过已最新数据的股票...")
         codes_to_skip, codes = batch_precheck_fresh(codes, kline_dir, config.skip_fresh_days)
         logger.info(f"预检查完成: {len(codes_to_skip)}只股票已是最新，{len(codes)}只需要更新")
