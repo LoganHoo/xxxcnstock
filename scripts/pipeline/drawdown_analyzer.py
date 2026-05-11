@@ -25,6 +25,7 @@ sys.path.insert(0, str(project_root))
 import polars as pl
 import pandas as pd
 from core.trading_calendar import get_recent_trade_dates
+from services.data_service.fetchers.kline_fetcher import validate_kline_data, fetch_kline_for_stock
 
 
 @dataclass

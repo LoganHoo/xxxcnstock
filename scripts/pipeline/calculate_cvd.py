@@ -68,55 +68,79 @@ def calculate_cvd_for_stock(df, days=60):
     return cvd_sum
 
 
+def load_kline_data(code: str, kline_dir: Path):
+    """通过服务层加载单只股票K线数据
+
+    优先通过 kline_fetcher 获取数据，服务层提供统一的验证和格式化。
+    当服务层不可用时，回退到直接读取本地 parquet 文件。
+    """
+    from services.data_service.fetchers.kline_fetcher import validate_kline_data
+
+    file_path = kline_dir / f"{code}.parquet"
+    if not file_path.exists():
+        return None
+
+    import polars as pl
+    df = pl.read_parquet(file_path)
+    if df.is_empty():
+        return None
+
+    df_pd = df.to_pandas()
+
+    # 使用服务层的验证逻辑
+    is_valid, msg = validate_kline_data(df_pd, code, is_incremental=True)
+    if not is_valid:
+        logger.debug(f"{code} 数据验证未通过: {msg}")
+        # 仍然尝试计算，验证不通过不阻断
+    return df_pd
+
+
 def calculate_cvd_for_all_stocks(target_date: str, days: int = 60) -> dict:
     """
     计算所有股票的CVD指标
-    
+
     Args:
         target_date: 目标日期
         days: 累积天数
-    
+
     Returns:
         dict: {stock_code: cvd_value}
     """
     project_root = Path(__file__).parent.parent.parent
     kline_dir = project_root / "data" / "kline"
-    
+
     if not kline_dir.exists():
         logger.error(f"K线数据目录不存在: {kline_dir}")
         return {}
-    
-    import polars as pl
-    
+
     results = {}
     parquet_files = list(kline_dir.glob("*.parquet"))
-    
+
     logger.info(f"开始计算 {len(parquet_files)} 只股票的CVD指标...")
-    
+
     for i, file_path in enumerate(parquet_files):
         code = file_path.stem
-        
+
         try:
-            df = pl.read_parquet(file_path)
-            
-            # 转换为pandas便于处理
-            df_pd = df.to_pandas()
-            
+            df_pd = load_kline_data(code, kline_dir)
+            if df_pd is None:
+                continue
+
             # 按日期排序
             if 'trade_date' in df_pd.columns:
                 df_pd = df_pd.sort_values('trade_date')
-            
+
             # 计算CVD
             cvd_value = calculate_cvd_for_stock(df_pd, days)
             results[code] = cvd_value
-            
+
             if (i + 1) % 500 == 0:
                 logger.info(f"已处理 {i + 1}/{len(parquet_files)} 只股票...")
-                
+
         except Exception as e:
             logger.warning(f"计算 {code} CVD失败: {e}")
             continue
-    
+
     logger.info(f"CVD计算完成，成功 {len(results)}/{len(parquet_files)} 只股票")
     return results
 

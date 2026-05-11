@@ -35,6 +35,8 @@ sys.path.insert(0, str(project_root))
 import polars as pl
 from core.trading_calendar import check_market_status, get_recent_trade_dates
 from core.data_version_manager import get_version_manager
+from services.data_service.quality.gx_validator import validate_kline_data as service_validate_kline
+from services.data_service.fetchers.kline_fetcher import check_data_quality as service_check_kline_quality
 
 
 class UnifiedDataAuditor:
@@ -79,6 +81,14 @@ class UnifiedDataAuditor:
 
         if not self.kline_dir.exists():
             return False, {'error': f'K线数据目录不存在: {self.kline_dir}'}
+
+        # 先通过服务层获取整体数据质量概况
+        try:
+            quality_overview = service_check_kline_quality(self.kline_dir)
+            self._log(f"服务层质量概况: 总计 {quality_overview['total']} 文件, "
+                       f"新鲜 {quality_overview['fresh']}, 过时 {quality_overview['stale']}")
+        except Exception as e:
+            self._log(f"服务层质量检查失败（不影响后续检查）: {e}", 'warning')
 
         parquet_files = list(self.kline_dir.glob("*.parquet"))
         total = len(parquet_files)
@@ -171,6 +181,15 @@ class UnifiedDataAuditor:
                 latest_date = data["trade_date"].max()
                 day_data = data.filter(pl.col("trade_date") == latest_date)
                 stock_count = len(day_data)
+
+                # 使用服务层验证最新日期数据质量
+                try:
+                    day_data_pd = day_data.to_pandas()
+                    quality_result = service_validate_kline(day_data_pd, suite_name=f"completeness_{latest_date}")
+                    if quality_result and not quality_result.success:
+                        issues.append(f"服务层质量验证未通过: 成功率 {quality_result.success_rate:.1%}")
+                except Exception as e:
+                    self._log(f"服务层质量验证异常（不影响主流程）: {e}", 'warning')
 
                 if stock_count < 4000:
                     issues.append(f"最新日期({latest_date})数据不足: {stock_count}只")

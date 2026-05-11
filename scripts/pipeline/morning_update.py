@@ -1,19 +1,16 @@
 """晨间数据更新 - 08:30执行"""
 import sys
-import subprocess
 import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from pathlib import Path
-from datetime import datetime
 from core.logger import get_logger
+from scripts.update_morning_data import MorningDataUpdater
 
 
 class MorningUpdater:
     """晨间更新器"""
 
     def __init__(self):
-        self.project_root = Path(__file__).parent.parent.parent
         self.logger = get_logger(__name__)
 
     def run(self) -> bool:
@@ -21,26 +18,15 @@ class MorningUpdater:
         self.logger.info("开始晨间数据更新...")
 
         try:
-            script_path = self.project_root / "scripts" / "update_morning_data.py"
-            if script_path.exists():
-                self.logger.info(f"调用更新脚本: {script_path}")
-                result = subprocess.run(
-                    [sys.executable, str(script_path)],
-                    capture_output=True,
-                    text=True,
-                    timeout=600
-                )
-                if result.returncode == 0:
-                    self.logger.info("晨间更新成功")
-                else:
-                    self.logger.warning(f"晨间更新失败: {result.stderr}")
-            else:
-                self.logger.warning(f"更新脚本不存在: {script_path}")
+            updater = MorningDataUpdater()
+            morning_data = updater.update_all()
+
+            summary = updater.generate_morning_summary(morning_data)
+            self.logger.info(summary)
+
+            self.logger.info("晨间更新成功")
             return True
 
-        except subprocess.TimeoutExpired:
-            self.logger.error(f"晨间更新超时: {script_path}")
-            return False
         except Exception as e:
             self.logger.error(f"晨间更新失败: {e}")
             return False

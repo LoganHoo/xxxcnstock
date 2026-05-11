@@ -28,6 +28,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 import pandas as pd
 from core.delisting_guard import get_delisting_guard
+from services.data_service.fetchers.stock_list_fetcher import fetch_stock_list
+from services.data_service.fetchers.kline_fetcher import check_data_quality
 
 
 def parse_args():
@@ -48,10 +50,31 @@ def parse_args():
     return parser.parse_args()
 
 
+def _load_stock_codes() -> set:
+    """通过服务层获取股票代码集合
+
+    优先使用 fetch_stock_list 服务，失败时回退到直接读取 parquet。
+    """
+    try:
+        stock_list = fetch_stock_list()
+        if stock_list:
+            return {s['code'] for s in stock_list}
+    except Exception as e:
+        logger.warning(f"服务层获取股票列表失败，回退到本地文件: {e}")
+
+    # 回退：直接读取本地 parquet
+    try:
+        stock_list_df = pd.read_parquet("data/stock_list.parquet")
+        return set(stock_list_df['code'].tolist())
+    except Exception as e:
+        logger.error(f"读取股票列表失败: {e}")
+        return set()
+
+
 def check_data_freshness(target_date: str, max_age_days: int = 3) -> Dict:
     """
     检查数据新鲜度
-    
+
     Returns:
         {
             'total': 总股票数,
@@ -69,21 +92,27 @@ def check_data_freshness(target_date: str, max_age_days: int = 3) -> Dict:
     logger.info("=" * 60)
     logger.info(f"目标日期: {target_date}")
     logger.info(f"最大数据年龄: {max_age_days} 天")
-    
-    # 获取股票列表
-    try:
-        stock_list_df = pd.read_parquet("data/stock_list.parquet")
-        all_codes = set(stock_list_df['code'].tolist())
-        logger.info(f"📋 股票列表: {len(all_codes)} 只")
-    except Exception as e:
-        logger.error(f"❌ 读取股票列表失败: {e}")
+
+    # 通过服务层获取股票列表
+    all_codes = _load_stock_codes()
+    if not all_codes:
+        logger.error("无法获取股票列表")
         return {}
+    logger.info(f"📋 股票列表: {len(all_codes)} 只")
     
     kline_dir = Path("data/kline")
     if not kline_dir.exists():
         logger.error(f"❌ K线目录不存在: {kline_dir}")
         return {}
-    
+
+    # 通过服务层获取数据质量概况
+    try:
+        quality_overview = check_data_quality(kline_dir)
+        logger.info(f"📊 服务层数据质量概况: 总计 {quality_overview['total']} 文件, "
+                     f"新鲜 {quality_overview['fresh']}, 过时 {quality_overview['stale']}")
+    except Exception as e:
+        logger.warning(f"服务层质量检查失败（不影响后续检查）: {e}")
+
     delisting_guard = get_delisting_guard()
     
     target = datetime.strptime(target_date, '%Y-%m-%d')

@@ -8,6 +8,7 @@ from pathlib import Path
 from datetime import datetime
 
 from core.data_version_manager import get_version_manager
+from services.data_service.quality.gx_validator import validate_kline_data as service_validate_kline
 
 
 class DataAuditor:
@@ -146,6 +147,16 @@ class DataAuditor:
             latest_date = data["trade_date"].max()
             day_data = data.filter(pl.col("trade_date") == latest_date)
             stock_count = len(day_data)
+
+            # 使用服务层数据质量验证
+            try:
+                day_data_pd = day_data.to_pandas()
+                quality_result = service_validate_kline(day_data_pd, suite_name=f"latest_{latest_date}")
+                if quality_result and not quality_result.success:
+                    issues.append(f"服务层质量验证未通过: 成功率 {quality_result.success_rate:.1%}")
+                    self.logger.warning(f"服务层质量验证: {quality_result.success_rate:.1%}")
+            except Exception as e:
+                self.logger.debug(f"服务层质量验证失败（不影响主流程）: {e}")
 
             self.logger.info(f"最新日期: {latest_date}, 采样数据量: {len(day_data)}只")
 
@@ -317,7 +328,7 @@ if __name__ == "__main__":
 数据版本已锁定，可进行后续分析任务。
 """
                 try:
-                    from scripts.email_sender import EmailSender
+                    from services.email_sender import EmailSender
                     sender = EmailSender()
                     sender.send_email(
                         to_emails=["287363@qq.com"],
