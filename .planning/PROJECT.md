@@ -1,130 +1,97 @@
-# XCNStock 量化交易平台 - GSD 项目
+# XCNStock 稳定化与重构
 
-## 项目概述
+## What This Is
 
-**项目名称**: XCNStock 量化交易平台  
-**项目类型**: A股量化选股分析系统  
-**技术栈**: Python + Polars + Kestra + MySQL + Redis  
-**创建日期**: 2026-04-25  
-**最后更新**: 2026-04-25
+A股量化选股分析平台，提供实时/历史行情采集、多因子选股、涨停分析、多渠道推送等功能。当前作为**生产服务**运行，但系统不稳定、代码混乱、响应需求慢。
 
-## 项目目标
+核心问题：调度器和业务脚本频繁报错，每天需要人工介入。代码重复多、配置散落、模块边界不清，导致改一处影响其他地方。
 
-构建高性能、可扩展的A股量化选股分析平台，支持：
-- 实时/历史行情数据采集
-- 多因子选股策略
-- 技术指标计算（Polars高性能实现）
-- 工作流编排（Kestra）
-- 双调度器架构（Kestra + APScheduler）
+## Core Value
 
-## 核心模块
+**调度器和流水线脚本必须稳定自动运行，不需要人盯。** 其他一切以此为前提。
 
-### 1. 数据采集层
-- **并行数据获取**: `core/parallel_fetcher.py`
-- **增量处理**: `core/incremental_processor.py`
-- **数据质量检查**: `core/data_quality_checker.py`
+## Requirements
 
-### 2. 指标计算层
-- **Polars优化器**: `core/polars_optimizer.py` - 高性能技术指标
-- **因子引擎**: `core/factor_engine.py`
-- **策略引擎**: `core/strategy_engine.py`
+### Validated
 
-### 3. 工作流编排层
-- **Kestra工作流**: `kestra/flows/`
-- **统一数据采集**: `xcnstock_data_collection_unified.yml`
-- **统一监控**: `xcnstock_monitoring_unified.yml`
+<!-- 现有代码已实现的能力 -->
 
-### 4. 缓存与存储层
-- **多级缓存**: `core/cache/`
-- **Parquet存储**: `data/kline/`
-- **分布式锁**: `core/distributed_lock.py`
+- ✓ A股日线行情数据采集（Baostock/Tushare/Tencent多数据源）— existing
+- ✓ K线数据Parquet存储和加载 — existing
+- ✓ 多因子计算引擎（技术面、量价、市场因子）— existing
+- ✓ 过滤器注册表模式（保守/标准/激进预设）— existing
+- ✓ 策略引擎（因子加权+过滤排序）— existing
+- ✓ 涨停板分析和次日预测 — existing
+- ✓ 多渠道通知（微信Server酱/钉钉/邮件/Kafka）— existing
+- ✓ FastAPI微服务架构（4服务+网关）— existing
+- ✓ 多级缓存（内存+Redis）— existing
+- ✓ APScheduler定时调度 — existing
+- ✓ Prometheus监控指标 — existing
+- ✓ 每日流水线：收盘数据采集→审计→因子计算→选股→报告推送 — existing
+- ✓ 晨间流水线：外盘更新→宏观分析→晨报推送→盘前准备 — existing
 
-## 当前状态
+### Active
 
-### 已完成工作
+<!-- 当前需要解决的问题 -->
 
-#### ✅ 数据流水线性能优化 (2026-04-25)
-- 并行数据获取引擎
-- 增量数据处理
-- Polars技术指标实现
-- 多级缓存系统
-- 分布式锁协调
-- 监控告警系统
+- [ ] 调度器稳定运行，不崩溃、不卡死
+- [ ] 所有定时任务按配置时间正确执行
+- [ ] 任务失败自动重试，重试失败有告警
+- [ ] 配置统一管理，消除硬编码的host/密码/路径
+- [ ] 核心模块职责清晰，减少跨层调用
+- [ ] 消除重复代码，公共逻辑提取到core/
+- [ ] 关键流水线脚本有日志和错误处理
+- [ ] 新增/修改选股策略不影响现有逻辑
 
-#### ✅ Kestra工作流合并 (2026-04-25)
-- 18个 → 11个工作流 (减少38.9%)
-- 统一数据采集工作流
-- 统一监控工作流
-- 迁移脚本和验证
+### Out of Scope
 
-### 待办事项
+- 重写为全新架构 — 当前系统有生产用户，不能推倒重来
+- 移动端/前端UI重构 — 当前聚焦后端稳定性
+- 实时行情WebSocket推送 — 非紧急需求
+- 用户认证系统 — 内部服务，暂不需要
+- CI/CD流水线完善 — 先稳定运行再说
 
-| 优先级 | 任务 | 计划日期 | 状态 |
-|-------|------|---------|------|
-| 中 | 删除废弃Kestra工作流文件 | 2025-06-25 | ⏳ |
-| 中 | 归档OpenSpec变更文档 | 2025-06-25 | ⏳ |
-| 低 | 添加更多技术指标 | 待定 | 📋 |
-| 低 | 性能基准测试报告 | 待定 | 📋 |
+## Context
 
-## 技术规范
+- **技术栈**: Python 3.11 + Polars + FastAPI + MySQL 8.0 + Redis 7 + APScheduler
+- **代码质量问题**: 62处硬编码凭据/IP、双配置系统(core/config.py vs unified_config.py)、API网关无认证、数据验证器缺陷、29处直连DB绕过连接池、30+文件sys.path操控
+- **调度架构**: 双调度器（APScheduler + 可选Kestra），通过config/scheduler.yaml配置cron任务
+- **业务特点**: A股市场规则变化（交易时间、板块分类）和需求方频繁调整选股策略
+- **部署方式**: Docker Compose多服务编排，生产环境Linux服务器
 
-### 代码规范
-- Python 3.11+
-- PEP8 代码风格
-- Type hints 类型注解
-- 单元测试覆盖率 >80%
+## Constraints
 
-### 数据规范
-- 历史数据: Parquet格式
-- 实时数据: API查询
-- 更新频率: 每日收盘后
-- 数据范围: 最近3年
+- **时间**: 本周内（2026-05-12起）完成系统稳定化
+- **业务连续性**: 不能中断现有生产服务，改动需要向后兼容
+- **技术栈**: 必须基于现有Python + FastAPI + MySQL + Redis，不引入新框架
+- **数据源**: 依赖外部API（Baostock/Tushare/AKShare），需处理限流和异常
+- **单机部署**: 当前单服务器运行所有服务，无分布式需求
 
-### 工作流规范
-- 盘中禁止采集当日数据
-- 强制收盘后采集（15:30后）
-- 退市股票过滤
-- 数据新鲜度检查（30天内）
+## Key Decisions
 
-## 项目结构
+| Decision | Rationale | Outcome |
+|----------|-----------|---------|
+| 先稳定后重构 | 生产服务不能停，先解决稳定性问题再优化代码 | — Pending |
+| 保留现有架构 | 4微服务+网关+调度器架构合理，问题在实现而非设计 | — Pending |
+| 配置统一到unified_config | 消除双配置系统，所有配置通过一个入口读取 | — Pending |
+| 插件式策略管理 | 因子/过滤器已用注册表模式，策略变动应通过配置而非改代码 | — Pending |
 
-```
-xcnstock/
-├── .planning/          # GSD项目管理
-├── core/               # 核心模块
-│   ├── cache/          # 缓存系统
-│   ├── indicators/     # 技术指标
-│   ├── storage/        # 存储工具
-│   └── ...
-├── kestra/flows/       # Kestra工作流
-├── scripts/pipeline/   # 流水线脚本
-├── config/             # 配置文件
-├── data/               # 数据目录
-├── api/                # API接口
-└── openspec/           # OpenSpec规范
-```
+## Evolution
 
-## 关键指标
+This document evolves at phase transitions and milestone boundaries.
 
-### 性能指标
-- 数据采集: 5000+股票 < 5分钟
-- 指标计算: 10,000条 < 2ms (Polars)
-- 缓存命中: >90%
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
 
-### 质量指标
-- 测试通过率: 100% (13/13)
-- 代码覆盖率: >80%
-- 工作流健康: ✅ 全部通过
+**After each milestone** (via `/gsd-complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
-## 团队与联系
-
-- **项目 Owner**: [待填写]
-- **技术负责人**: [待填写]
-- **运维负责人**: [待填写]
-
-## 相关文档
-
-- [CLAUDE.md](../CLAUDE.md) - 编码规范
-- [AGENTS.md](../AGENTS.md) - AI代理指南
-- [DEPLOYMENT.md](../DEPLOYMENT.md) - 部署文档
-- [WORKLOAD_ANALYSIS.md](../WORKLOAD_ANALYSIS.md) - 工作负载分析
+---
+*Last updated: 2026-05-12 after initialization*
