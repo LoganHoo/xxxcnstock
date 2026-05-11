@@ -72,6 +72,12 @@ class FunnelSelector:
                 df = pd.read_parquet(parquet_file)
                 if len(df) > 0:
                     latest = df.iloc[-1]
+                    date_col = 'trade_date' if 'trade_date' in df.columns else 'date'
+                    data_date = latest.get(date_col, None)
+                    if data_date and str(data_date) != 'NaT':
+                        data_date = pd.to_datetime(data_date)
+                    else:
+                        data_date = pd.NaT
                     all_stocks.append({
                         'code': parquet_file.stem,
                         'name': latest.get('name', ''),
@@ -79,13 +85,14 @@ class FunnelSelector:
                         'volume': latest.get('volume', 0),
                         'change_pct': latest.get('change_pct', 0),
                         'turnover_rate': latest.get('turnover_rate', 0),
+                        'data_date': data_date,
                     })
             except Exception as e:
                 logger.debug(f"加载 {parquet_file.name} 失败: {e}")
         return pd.DataFrame(all_stocks)
 
     def _layer1_basic_filter(self, stocks: pd.DataFrame) -> pd.DataFrame:
-        """第1层：基础过滤 - ST/退市/停牌/涨跌停"""
+        """第1层：基础过滤 - ST/退市/停牌/涨跌停/数据过期"""
         original = len(stocks)
         df = stocks.copy()
 
@@ -94,9 +101,11 @@ class FunnelSelector:
         df = df[df['change_pct'] > -9.9]
         df = df[df['change_pct'] < 9.9]
 
+        df = df[df['data_date'] >= df['data_date'].max() - pd.Timedelta(days=30)]
+
         filtered_count = original - len(df)
         if filtered_count > 0:
-            logger.info(f"第1层过滤: 剔除 {filtered_count} 只(ST/退市/停牌/涨跌停)")
+            logger.info(f"第1层过滤: 剔除 {filtered_count} 只(ST/退市/停牌/涨跌停/数据过期)")
 
         return self._apply_retention(df, "layer1")
 
@@ -104,10 +113,12 @@ class FunnelSelector:
         """第2层：基本面过滤 - 市值/PE/换手率"""
         df = stocks.copy()
 
-        if 'turnover_rate' in df.columns:
-            df = df[(df['turnover_rate'] >= 3) & (df['turnover_rate'] <= 15)]
+        if 'turnover_rate' in df.columns and df['turnover_rate'].notna().sum() > 0:
+            valid_tr = df[df['turnover_rate'].notna() & (df['turnover_rate'] > 0)]
+            if len(valid_tr) > 10:
+                df = valid_tr
 
-        logger.info(f"第2层基本面过滤: 换手率 3%-15%")
+        logger.info(f"第2层基本面过滤: 保留 {len(df)} 只(共 {len(stocks)} 只)")
 
         return self._apply_retention(df, "layer2")
 
@@ -135,15 +146,16 @@ class FunnelSelector:
                 ma10 = kline['close'].tail(10).mean()
                 ma20 = kline['close'].tail(20).mean()
 
-                if ma5 > ma10 > ma20:
-                    latest_vol = kline['volume'].iloc[-1]
-                    vol_20_avg = kline['volume'].tail(20).mean()
-                    volume_ratio = latest_vol / vol_20_avg if vol_20_avg > 0 else 1
+                latest_vol = kline['volume'].iloc[-1]
+                vol_20_avg = kline['volume'].tail(20).mean()
+                volume_ratio = latest_vol / vol_20_avg if vol_20_avg > 0 else 1
 
-                    if volume_ratio > 1.5:
-                        macd_signal = self._calc_macd(kline)
-                        if macd_signal > 0:
-                            passed_stocks.append(row)
+                macd_signal = self._calc_macd(kline)
+
+                if volume_ratio > 1.0 and macd_signal > -0.5:
+                    passed_stocks.append(row)
+                elif ma5 > ma10 > ma20:
+                    passed_stocks.append(row)
 
             except Exception as e:
                 logger.debug(f"技术面分析 {code} 失败: {e}")
@@ -152,7 +164,7 @@ class FunnelSelector:
         return self._apply_retention(result, "layer3")
 
     def _layer4_money_filter(self, stocks: pd.DataFrame, trade_date: str) -> pd.DataFrame:
-        """第4层：资金+板块过滤 - 主力净流入/板块涨停"""
+        """第4层：资金+板块过滤 - 成交量放大"""
         df = stocks.copy()
         passed_stocks = []
 
@@ -166,17 +178,15 @@ class FunnelSelector:
                 kline = pd.read_parquet(file_path)
                 date_col = 'trade_date' if 'trade_date' in kline.columns else 'date'
                 kline[date_col] = pd.to_datetime(kline[date_col]).dt.strftime('%Y-%m-%d')
-                kline = kline[kline[date_col] <= trade_date].tail(5)
+                kline = kline[kline[date_col] <= trade_date].tail(10)
 
                 if len(kline) < 5:
                     continue
 
-                close = kline['close'].iloc[-1]
-                volume = kline['volume'].iloc[-1]
-                turnover_rate = row.get('turnover_rate', 0)
+                vol_5_avg = kline['volume'].tail(5).mean()
+                vol_10_avg = kline['volume'].tail(10).mean()
 
-                money_flow = close * volume * turnover_rate / 100
-                if money_flow > 0:
+                if vol_5_avg > vol_10_avg * 0.8:
                     passed_stocks.append(row)
 
             except Exception as e:
@@ -209,10 +219,13 @@ class FunnelSelector:
                 is_breakout = self._check_breakout(kline)
                 is_callback = self._check_callback(kline)
 
+                row['has_limit_gene'] = has_limit_up
+                row['is_breakout'] = is_breakout
+                row['is_callback'] = is_callback
+
                 if has_limit_up or is_breakout or is_callback:
-                    row['has_limit_gene'] = has_limit_up
-                    row['is_breakout'] = is_breakout
-                    row['is_callback'] = is_callback
+                    passed_stocks.append(row)
+                elif len(passed_stocks) < 50:
                     passed_stocks.append(row)
 
             except Exception as e:
@@ -223,8 +236,10 @@ class FunnelSelector:
 
     def _check_limit_up_gene(self, kline: pd.DataFrame, days: int = 20) -> bool:
         """检查涨停基因：20日内有涨停记录"""
+        if 'change_pct' not in kline.columns:
+            return False
         recent = kline.tail(days)
-        return any(recent['change_pct'] >= 9.9)
+        return bool(any(recent['change_pct'] >= 9.9))
 
     def _check_breakout(self, kline: pd.DataFrame) -> bool:
         """检查突破形态：盘中突破20日高点"""
