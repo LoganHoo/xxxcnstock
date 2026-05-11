@@ -40,6 +40,15 @@ try:
 except ImportError:
     TECHNICAL_ANALYSIS = False
 
+# 导入涨停预判器和数据库服务
+try:
+    from services.limit_service.analyzers.pre_limit import PreLimitPredictor
+    from services.stock_selection_db_service import StockSelectionDBService, DailyPrediction, DailyTomorrowPrediction, DailyTodayRecommendation
+    HAS_PRELIMIT_AND_DB = True
+except ImportError as e:
+    HAS_PRELIMIT_AND_DB = False
+    logger.warning(f"PreLimitPredictor or DB service not available: {e}")
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -676,9 +685,258 @@ class AfternoonLimitUpSelector:
         signals = self.run_fund_resonance_strategy(limitup_df, trade_date)
         all_signals.extend(signals)
 
-        
+        signals = self.run_prediction_strategy(trade_date)
+        all_signals.extend(signals)
 
         return all_signals
+
+    def run_prediction_strategy(self, trade_date: str = None) -> List[Dict]:
+        """从股票池加载股票，预测次日涨停概率
+
+        数据流：
+        1. 从 daily_prediction 表读取今日股票池
+        2. 获取每只股票的K线数据
+        3. 使用 PreLimitPredictor 预测涨停概率
+        4. 结果写入 daily_tomorrow_prediction 表
+        5. 精选写入 daily_today_recommendation 表
+        """
+        if not HAS_PRELIMIT_AND_DB:
+            logger.warning("PreLimitPredictor or DB service not available, skipping prediction strategy")
+            return []
+
+        logger.info("=" * 60)
+        logger.info("运行涨停预测策略 - 从股票池预测次日涨停")
+        logger.info("=" * 60)
+
+        try:
+            db_service = StockSelectionDBService()
+            session = db_service.Session()
+
+            today_picks = session.query(DailyPrediction).filter(
+                DailyPrediction.prediction_date == trade_date
+            ).all()
+
+            if not today_picks:
+                logger.warning(f"今日({trade_date})股票池为空，跳过预测策略")
+                return []
+
+            logger.info(f"从 daily_prediction 表加载 {len(today_picks)} 只股票")
+
+            predictor = PreLimitPredictor()
+            signals = []
+            prediction_records = []
+            recommendation_records = []
+
+            for stock in today_picks:
+                code = stock.code
+                name = stock.name
+                
+                try:
+                    file_path = self.data_dir / f"{code}.parquet"
+                    if not file_path.exists():
+                        logger.debug(f"{code} K线文件不存在，跳过")
+                        continue
+                    
+                    kline = pd.read_parquet(file_path)
+                    date_col = 'trade_date' if 'trade_date' in kline.columns else 'date'
+                    kline[date_col] = pd.to_datetime(kline[date_col]).dt.strftime('%Y-%m-%d')
+                    kline = kline[kline[date_col] <= trade_date].tail(30)
+                    
+                    if len(kline) < 10:
+                        continue
+                    
+                    latest = kline.iloc[-1]
+                    prev = kline.iloc[-2] if len(kline) >= 2 else latest
+                    
+                    close = latest.get('close', 0)
+                    prev_close = prev.get('close', close)
+                    change_pct = ((close - prev_close) / prev_close * 100) if prev_close > 0 else 0
+                    
+                    volume_ratio = latest.get('volume_ratio', 1) if 'volume_ratio' in latest.index else 1
+                    turnover_rate = latest.get('turnover_ratio', 0) if 'turnover_ratio' in latest.index else 0
+                    
+                    volume_20_avg = kline['volume'].tail(20).mean() if len(kline) >= 20 else kline['volume'].mean()
+                    if volume_20_avg > 0:
+                        volume_ratio = latest['volume'] / volume_20_avg
+                    
+                    stock_data = {
+                        "change_pct": change_pct,
+                        "volume_ratio": volume_ratio,
+                        "turnover_rate": turnover_rate * 100,
+                        "seal_amount": 0,
+                        "seal_ratio": 0,
+                        "sector_change": 0,
+                        "sector_limit_count": 0
+                    }
+                    
+                    result = predictor.predict(stock_data)
+                    probability = result.get("probability", 0)
+                    factors = result.get("factors", {})
+
+                    prediction_records.append({
+                        'predict_date': trade_date,
+                        'code': code,
+                        'name': name,
+                        'limitup_probability': probability,
+                        'entry_price': close,
+                        'stoploss_price': close * 0.95,
+                        'take_profit_1': close * 1.10,
+                        'take_profit_2': close * 1.20,
+                        'price_momentum': factors.get('price_momentum', 0),
+                        'volume_energy': factors.get('volume_energy', 0),
+                        'seal_strength': factors.get('seal_strength', 0),
+                        'sector_effect': factors.get('sector_effect', 0),
+                    })
+
+                    if probability >= 60:
+                        signal = {
+                            'code': code,
+                            'name': name,
+                            'strategy': 'ai_prediction',
+                            'trade_date': trade_date,
+                            'entry_price': close,
+                            'stoploss_price': close * 0.95,
+                            'take_profit_1': close * 1.10,
+                            'take_profit_2': close * 1.20,
+                            'confidence': probability / 100,
+                            'reason': f'AI涨停预测: {probability:.1f}%',
+                            'indicators': {
+                                'limitup_probability': probability,
+                                'change_pct': change_pct,
+                                'volume_ratio': volume_ratio,
+                                'turnover_rate': turnover_rate * 100,
+                                'factors': factors
+                            }
+                        }
+                        signals.append(signal)
+                        recommendation_records.append({
+                            'recommend_date': trade_date,
+                            'code': code,
+                            'name': name,
+                            'strategy': 'ai_prediction',
+                            'confidence': probability,
+                            'entry_price': close,
+                            'stoploss_price': close * 0.95,
+                            'take_profit_1': close * 1.10,
+                            'take_profit_2': close * 1.20,
+                            'price_momentum': factors.get('price_momentum', 0),
+                            'volume_energy': factors.get('volume_energy', 0),
+                            'seal_strength': factors.get('seal_strength', 0),
+                            'sector_effect': factors.get('sector_effect', 0),
+                        })
+                        logger.info(f"✅ 涨停预测: {code} {name} - 概率 {probability:.1f}%")
+
+                except Exception as e:
+                    logger.debug(f"Error predicting {code}: {e}")
+                    continue
+
+            if prediction_records:
+                self._save_tomorrow_predictions(prediction_records, trade_date)
+            if recommendation_records:
+                self._save_today_recommendations(recommendation_records, trade_date)
+
+            session.close()
+            signals = sorted(signals, key=lambda x: x['confidence'], reverse=True)
+            logger.info(f"涨停预测策略选出 {len(signals)} 只股票 (概率>=60%)")
+            return signals[:3]
+
+        except Exception as e:
+            logger.error(f"预测策略执行失败: {e}")
+            return []
+
+    def _save_tomorrow_predictions(self, predictions: List[Dict], predict_date: str):
+        """保存涨停预测结果到 daily_tomorrow_prediction 表"""
+        try:
+            db_service = StockSelectionDBService()
+            session = db_service.Session()
+
+            for pred in predictions:
+                existing = session.query(DailyTomorrowPrediction).filter(
+                    DailyTomorrowPrediction.predict_date == predict_date,
+                    DailyTomorrowPrediction.code == pred['code']
+                ).first()
+
+                if existing:
+                    existing.limitup_probability = pred['limitup_probability']
+                    existing.entry_price = pred['entry_price']
+                    existing.stoploss_price = pred['stoploss_price']
+                    existing.take_profit_1 = pred['take_profit_1']
+                    existing.take_profit_2 = pred['take_profit_2']
+                    existing.price_momentum = pred['price_momentum']
+                    existing.volume_energy = pred['volume_energy']
+                    existing.seal_strength = pred['seal_strength']
+                    existing.sector_effect = pred['sector_effect']
+                    existing.updated_at = datetime.now()
+                else:
+                    record = DailyTomorrowPrediction(
+                        predict_date=predict_date,
+                        code=pred['code'],
+                        name=pred['name'],
+                        limitup_probability=pred['limitup_probability'],
+                        entry_price=pred['entry_price'],
+                        stoploss_price=pred['stoploss_price'],
+                        take_profit_1=pred['take_profit_1'],
+                        take_profit_2=pred['take_profit_2'],
+                        price_momentum=pred['price_momentum'],
+                        volume_energy=pred['volume_energy'],
+                        seal_strength=pred['seal_strength'],
+                        sector_effect=pred['sector_effect'],
+                    )
+                    session.add(record)
+
+            session.commit()
+            session.close()
+            logger.info(f"已保存 {len(predictions)} 条涨停预测到 daily_tomorrow_prediction 表")
+        except Exception as e:
+            logger.error(f"保存涨停预测失败: {e}")
+
+    def _save_today_recommendations(self, recommendations: List[Dict], recommend_date: str):
+        """保存精选推荐到 daily_today_recommendation 表"""
+        try:
+            db_service = StockSelectionDBService()
+            session = db_service.Session()
+
+            for rec in recommendations:
+                existing = session.query(DailyTodayRecommendation).filter(
+                    DailyTodayRecommendation.recommend_date == recommend_date,
+                    DailyTodayRecommendation.code == rec['code']
+                ).first()
+
+                if existing:
+                    existing.strategy = rec['strategy']
+                    existing.confidence = rec['confidence']
+                    existing.entry_price = rec['entry_price']
+                    existing.stoploss_price = rec['stoploss_price']
+                    existing.take_profit_1 = rec['take_profit_1']
+                    existing.take_profit_2 = rec['take_profit_2']
+                    existing.price_momentum = rec['price_momentum']
+                    existing.volume_energy = rec['volume_energy']
+                    existing.seal_strength = rec['seal_strength']
+                    existing.sector_effect = rec['sector_effect']
+                    existing.updated_at = datetime.now()
+                else:
+                    record = DailyTodayRecommendation(
+                        recommend_date=recommend_date,
+                        code=rec['code'],
+                        name=rec['name'],
+                        strategy=rec['strategy'],
+                        confidence=rec['confidence'],
+                        entry_price=rec['entry_price'],
+                        stoploss_price=rec['stoploss_price'],
+                        take_profit_1=rec['take_profit_1'],
+                        take_profit_2=rec['take_profit_2'],
+                        price_momentum=rec['price_momentum'],
+                        volume_energy=rec['volume_energy'],
+                        seal_strength=rec['seal_strength'],
+                        sector_effect=rec['sector_effect'],
+                    )
+                    session.add(record)
+
+            session.commit()
+            session.close()
+            logger.info(f"已保存 {len(recommendations)} 条精选推荐到 daily_today_recommendation 表")
+        except Exception as e:
+            logger.error(f"保存精选推荐失败: {e}")
 
     def save_selection(self, signals: List[Dict], trade_date: str) -> bool:
         """保存选股结果到文件和数据库"""

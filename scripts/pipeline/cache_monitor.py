@@ -27,6 +27,9 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 
 from core.logger import setup_logger
 
+# 服务层导入 - 使用数据质量监控进行缓存验证
+from services.data_service.quality import DataQualityMonitor, DataFreshnessMetric
+
 logger = setup_logger(
     name="cache_monitor",
     level="INFO",
@@ -80,11 +83,11 @@ def check_parquet_integrity(file_path: Path) -> Tuple[bool, str]:
 
 def clean_corrupted_cache(check_only: bool = False) -> Dict:
     """
-    清理损坏的缓存文件
-    
+    清理损坏的缓存文件 - 结合 DataQualityMonitor 服务层进行新鲜度检查
+
     Args:
         check_only: 仅检查不清理
-    
+
     Returns:
         清理报告
     """
@@ -97,19 +100,36 @@ def clean_corrupted_cache(check_only: bool = False) -> Dict:
         'files_corrupted': 0,
         'files_cleaned': [],
         'files_expired': [],
+        'data_freshness': [],
         'errors': []
     }
-    
+
     # 确保目录存在
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
     CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
-    
+
+    # 通过服务层检查数据新鲜度
+    try:
+        quality_monitor = DataQualityMonitor(data_dir=project_root / "data")
+        freshness_metrics = quality_monitor.check_data_freshness()
+        for metric in freshness_metrics:
+            report['data_freshness'].append({
+                'data_source': metric.data_source,
+                'latest_date': metric.latest_date,
+                'days_behind': metric.days_behind,
+                'status': metric.status,
+            })
+            if metric.status in ('stale', 'expired'):
+                logger.warning(f"数据新鲜度告警: {metric.data_source} 滞后 {metric.days_behind} 天 ({metric.status})")
+    except Exception as e:
+        logger.warning(f"数据质量监控检查异常: {e}")
+
     # 检查缓存文件
     logger.info(f"开始检查缓存目录: {CACHE_DIR}")
     for cache_file in CACHE_DIR.glob("*.parquet"):
         report['files_checked'] += 1
         is_valid, message = check_parquet_integrity(cache_file)
-        
+
         if not is_valid:
             report['files_corrupted'] += 1
             report['files_cleaned'].append({
@@ -117,18 +137,18 @@ def clean_corrupted_cache(check_only: bool = False) -> Dict:
                 'reason': message,
                 'size': cache_file.stat().st_size
             })
-            
+
             if not check_only:
                 try:
                     cache_file.unlink()
                     logger.warning(f"已删除损坏的缓存: {cache_file.name} ({message})")
                 except Exception as e:
                     report['errors'].append(f"删除失败 {cache_file.name}: {e}")
-    
+
     # 清理过期的checkpoint
     cutoff = datetime.now() - timedelta(days=DEFAULT_MAX_AGE_DAYS)
     logger.info(f"清理 {cutoff.strftime('%Y-%m-%d')} 之前的checkpoint")
-    
+
     for checkpoint in CHECKPOINT_DIR.glob("*.parquet"):
         mtime = datetime.fromtimestamp(checkpoint.stat().st_mtime)
         if mtime < cutoff:
@@ -136,19 +156,19 @@ def clean_corrupted_cache(check_only: bool = False) -> Dict:
                 'file': checkpoint.name,
                 'mtime': mtime.isoformat()
             })
-            
+
             if not check_only:
                 try:
                     checkpoint.unlink()
                     logger.info(f"已删除过期checkpoint: {checkpoint.name}")
                 except Exception as e:
                     report['errors'].append(f"删除失败 {checkpoint.name}: {e}")
-    
+
     # 保存报告
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
     with open(STATE_FILE, 'w', encoding='utf-8') as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
-    
+
     return report
 
 

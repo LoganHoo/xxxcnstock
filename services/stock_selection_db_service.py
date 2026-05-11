@@ -111,6 +111,125 @@ class DailyStockSelection(Base):
         return f"<DailyStockSelection({self.report_date} {self.code} {self.selection_type})>"
 
 
+class DailyPrediction(Base):
+    """股票池数据表 - 存储选股池中的股票"""
+    __tablename__ = 'daily_prediction'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    prediction_date = Column(Date, nullable=False, comment='预测日期')
+    code = Column(String(20), nullable=False, comment='股票代码')
+    name = Column(String(100), comment='股票名称')
+    
+    # 原始选股数据
+    selection_type = Column(String(20), comment='选股类型')
+    score = Column(Float, comment='综合评分')
+    v_ratio10 = Column(Float, comment='10日量比')
+    v_total = Column(Float, comment='总成交额')
+    cost_peak = Column(Float, comment='成本峰位')
+    limit_up_score = Column(Float, comment='涨停评分')
+    
+    # 价格数据
+    close_price = Column(Float, comment='收盘价')
+    volume = Column(Float, comment='成交量')
+    turnover_rate = Column(Float, comment='换手率')
+    
+    created_at = Column(DateTime, default=datetime.now)
+
+    __table_args__ = (
+        UniqueConstraint('prediction_date', 'code', name='uk_prediction_date_code'),
+        Index('idx_prediction_date', 'prediction_date'),
+        Index('idx_code', 'code'),
+    )
+
+    def __repr__(self):
+        return f"<DailyPrediction({self.prediction_date} {self.code} {self.name})>"
+
+
+class DailyTomorrowPrediction(Base):
+    """次日涨停预测表 - 存储涨停预测结果"""
+    __tablename__ = 'daily_tomorrow_prediction'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    predict_date = Column(Date, nullable=False, comment='预测日期（预测哪天的涨停）')
+    code = Column(String(20), nullable=False, comment='股票代码')
+    name = Column(String(100), comment='股票名称')
+    
+    # 涨停预测结果
+    limitup_probability = Column(Float, comment='涨停概率%')
+    entry_price = Column(Float, comment='建议买入价')
+    stoploss_price = Column(Float, comment='止损价')
+    take_profit_1 = Column(Float, comment='止盈1')
+    take_profit_2 = Column(Float, comment='止盈2')
+    
+    # 预测因子
+    price_momentum = Column(Float, comment='价格动能得分')
+    volume_energy = Column(Float, comment='成交量能得分')
+    seal_strength = Column(Float, comment='封单强度得分')
+    sector_effect = Column(Float, comment='板块效应得分')
+    
+    # 复盘数据
+    actual_limitup = Column(Integer, comment='是否实际涨停 0/1')
+    actual_high_price = Column(Float, comment='实际最高价')
+    actual_return = Column(Float, comment='实际收益率%')
+    
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    __table_args__ = (
+        UniqueConstraint('predict_date', 'code', name='uk_predict_date_code'),
+        Index('idx_predict_date', 'predict_date'),
+        Index('idx_code', 'code'),
+        Index('idx_probability', 'limitup_probability'),
+    )
+
+    def __repr__(self):
+        return f"<DailyTomorrowPrediction({self.predict_date} {self.code} prob={self.limitup_probability}%)>"
+
+
+class DailyTodayRecommendation(Base):
+    """精选股票推荐表 - 每日精选推荐股票"""
+    __tablename__ = 'daily_today_recommendation'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    recommend_date = Column(Date, nullable=False, comment='推荐日期')
+    code = Column(String(20), nullable=False, comment='股票代码')
+    name = Column(String(100), comment='股票名称')
+
+    # 推荐信息
+    strategy = Column(String(50), comment='策略来源: ai_prediction/limitup_callback/dragon_head等')
+    confidence = Column(Float, comment='置信度/概率%')
+    entry_price = Column(Float, comment='建议买入价')
+    stoploss_price = Column(Float, comment='止损价')
+    take_profit_1 = Column(Float, comment='止盈1')
+    take_profit_2 = Column(Float, comment='止盈2')
+
+    # 因子得分
+    price_momentum = Column(Float, comment='价格动能得分')
+    volume_energy = Column(Float, comment='成交量能得分')
+    seal_strength = Column(Float, comment='封单强度得分')
+    sector_effect = Column(Float, comment='板块效应得分')
+
+    # 复盘数据
+    actual_next_open = Column(Float, comment='次日开盘价')
+    actual_next_close = Column(Float, comment='次日收盘价')
+    actual_next_high = Column(Float, comment='次日最高价')
+    actual_return = Column(Float, comment='实际收益率%')
+    is_profitable = Column(Integer, comment='是否盈利 0/1')
+
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+
+    __table_args__ = (
+        UniqueConstraint('recommend_date', 'code', name='uk_recommend_date_code'),
+        Index('idx_recommend_date', 'recommend_date'),
+        Index('idx_code', 'code'),
+        Index('idx_confidence', 'confidence'),
+    )
+
+    def __repr__(self):
+        return f"<DailyTodayRecommendation({self.recommend_date} {self.code} {self.strategy})>"
+
+
 class SelectionPerformance(Base):
     """选股表现统计表"""
     __tablename__ = 'selection_performance'

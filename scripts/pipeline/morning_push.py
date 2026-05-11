@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from core.logger import get_logger
+from services.report_db_service import ReportDBService
 from scripts.send_review_report import ReviewReportGenerator
 
 

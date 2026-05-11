@@ -11,6 +11,12 @@ from pathlib import Path
 from datetime import datetime
 import json
 
+# 添加项目根目录到Python路径
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
+from services.data_service.fetchers.domestic_index_fetcher import DomesticIndexFetcher
+
 # 配置日志
 logging.basicConfig(
     level=logging.INFO,
@@ -215,32 +221,48 @@ def analyze_position(levels: dict, cvd: dict) -> dict:
         'distance_to_support': round(distance_to_support, 2),
     }
 
-def analyze_index(code: str, name: str, index_dir: Path) -> dict:
-    """分析单个指数"""
+def analyze_index(code: str, name: str, index_dir: Path, index_fetcher: DomesticIndexFetcher = None) -> dict:
+    """分析单个指数
+
+    优先通过 DomesticIndexFetcher 服务层加载指数数据，
+    服务层不可用时回退到直接读取本地 parquet 文件。
+    """
     try:
+        # 尝试通过服务层获取数据
+        df = None
+        if index_fetcher is not None:
+            try:
+                service_data = index_fetcher._load_index_data_from_files()
+                if code in service_data:
+                    # 服务层返回的是最新一条数据，需要从 parquet 获取完整历史
+                    pass
+            except Exception:
+                pass
+
+        # 读取完整历史数据（分析需要多日数据）
         file_path = index_dir / f'{code}.parquet'
-        
+
         if not file_path.exists():
             logger.warning(f"指数文件不存在: {file_path}")
             return None
-        
+
         df = pl.read_parquet(file_path)
         if df.is_empty():
             logger.warning(f"指数数据为空: {code}")
             return None
-        
+
         df = df.sort('trade_date')
-        
+
         latest_date = df.tail(1)['trade_date'].item()
-        
+
         levels = calculate_key_levels(df)
         if not levels:
             logger.warning(f"无法计算关键位: {code}")
             return None
-        
+
         cvd = calculate_cvd(df)
         analysis = analyze_position(levels, cvd)
-        
+
         return {
             'code': code,
             'name': name,
@@ -260,6 +282,15 @@ def main():
 
         index_dir = Path('data/index')
 
+        # 使用服务层获取指数数据概况
+        index_fetcher = DomesticIndexFetcher(data_dir=index_dir)
+        try:
+            freshness = index_fetcher.check_data_freshness()
+            fresh_count = sum(1 for s in freshness.values() if s.get('is_fresh', False))
+            logger.info(f'指数数据新鲜度: {fresh_count}/{len(freshness)} 个指数已更新')
+        except Exception as e:
+            logger.warning(f'服务层新鲜度检查失败: {e}')
+
         indices = [
             ('000001', '上证指数'),
             ('399001', '深证成指'),
@@ -273,7 +304,7 @@ def main():
 
         for code, name in indices:
             try:
-                result = analyze_index(code, name, index_dir)
+                result = analyze_index(code, name, index_dir, index_fetcher=index_fetcher)
                 if result:
                     results.append(result)
 

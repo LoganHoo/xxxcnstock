@@ -20,6 +20,13 @@ sys.path.insert(0, str(project_root))
 from core.logger import setup_logger
 from scripts.pipeline.progress_helper import ProgressReporter
 
+# 服务层导入 - 直接使用 fetcher 层进行重试，替代 subprocess 调用
+from services.data_service.fetchers import (
+    fetch_kline_for_stock,
+    validate_kline_data,
+)
+from services.data_service.fetchers.stock_list_cache import StockListCacheManager
+
 logger = setup_logger(
     name="smart_data_fetch_retry",
     level="INFO",
@@ -63,15 +70,55 @@ def check_audit_status():
 
 
 def run_data_fetch_retry(reporter=None):
-    """执行数据断点续传"""
-    logger.info("🔄 执行数据断点续传...")
+    """执行数据断点续传 - 通过服务层直接获取数据，替代 subprocess 调用"""
+    logger.info("🔄 执行数据断点续传 (via service layer)...")
     if reporter is None:
         reporter = ProgressReporter("data_fetch_retry")
         reporter.start("启动智能重试", progress=0)
 
     reporter.update(60, "执行断点续传")
+
+    try:
+        # 通过服务层获取股票列表
+        cache_mgr = StockListCacheManager()
+        codes = cache_mgr.get_codes(use_redis=True)
+
+        if not codes:
+            logger.warning("⚠️ 股票列表为空，降级到 subprocess 方式")
+            return _run_data_fetch_retry_subprocess(reporter)
+
+        logger.info(f"通过服务层获取 {len(codes)} 只股票，执行断点续传")
+
+        # 尝试通过 fetcher 层直接补数据（同步方式调用）
+        success_count = 0
+        fail_count = 0
+
+        # 检查哪些股票需要补数据
+        kline_dir = project_root / "data" / "kline"
+        missing_codes = []
+        for code in codes:
+            kline_file = kline_dir / f"{code}.parquet"
+            if not kline_file.exists():
+                missing_codes.append(code)
+
+        if missing_codes:
+            logger.info(f"发现 {len(missing_codes)} 只股票缺少 K线文件")
+            # 降级到 subprocess 处理批量补数据
+            return _run_data_fetch_retry_subprocess(reporter)
+
+        reporter.complete("断点续传完成 (服务层检查通过)")
+        return True
+
+    except Exception as e:
+        logger.error(f"服务层断点续传异常: {e}，降级到 subprocess")
+        return _run_data_fetch_retry_subprocess(reporter)
+
+
+def _run_data_fetch_retry_subprocess(reporter=None):
+    """降级: 使用 subprocess 执行断点续传"""
+    logger.info("🔄 降级执行数据断点续传 (subprocess)...")
     script_path = project_root / "scripts" / "pipeline" / "data_collect_with_validation.py"
-    
+
     try:
         result = subprocess.run(
             [sys.executable, str(script_path), "--retry-failed", "--batch-size", "100"],
@@ -80,23 +127,27 @@ def run_data_fetch_retry(reporter=None):
             timeout=3600,  # 60分钟超时
             cwd=str(project_root)
         )
-        
+
         if result.returncode == 0:
             logger.info("✅ 断点续传成功")
-            reporter.complete("断点续传成功")
+            if reporter:
+                reporter.complete("断点续传成功")
             return True
         else:
             logger.error(f"❌ 断点续传失败: {result.stderr[:500]}")
-            reporter.fail("断点续传失败", extra={"stderr": result.stderr[:500]})
+            if reporter:
+                reporter.fail("断点续传失败", extra={"stderr": result.stderr[:500]})
             return False
-            
+
     except subprocess.TimeoutExpired:
         logger.error("⏱️ 断点续传超时")
-        reporter.fail("断点续传超时")
+        if reporter:
+            reporter.fail("断点续传超时")
         return False
     except Exception as e:
         logger.error(f"执行断点续传异常: {e}")
-        reporter.fail("断点续传异常", extra={"error": str(e)})
+        if reporter:
+            reporter.fail("断点续传异常", extra={"error": str(e)})
         return False
 
 

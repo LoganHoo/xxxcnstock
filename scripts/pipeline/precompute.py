@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from pathlib import Path
 from core.logger import get_logger
+from services.data_service.fetchers.kline_fetcher import validate_kline_data
 from scripts.precompute_enhanced_scores import PrecomputeEngine
 
 

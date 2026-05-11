@@ -27,6 +27,9 @@ from core.logger import setup_logger
 from core.trading_calendar import check_market_status
 from core.data_version_manager import get_version_manager
 
+# 服务层导入 - 数据质量监控用于资源检查
+from services.data_service.quality import DataQualityMonitor, DataFreshnessMetric
+
 logger = setup_logger(
     name="fund_behavior_resource_guardian",
     level="INFO",
@@ -49,6 +52,7 @@ class ResourceGuardian:
         self.kline_dir = project_root / "data" / "kline"
         self.version_manager = get_version_manager()
         self.status_file = project_root / "logs" / "fund_behavior_resource_status.json"
+        self.quality_monitor = DataQualityMonitor(data_dir=project_root / "data")
         
     def is_trading_day(self) -> bool:
         """检查是否为交易日"""
@@ -141,12 +145,12 @@ class ResourceGuardian:
     
     def check_dependencies(self) -> Tuple[bool, List[str]]:
         """
-        检查所有依赖任务状态
+        检查所有依赖任务状态 + 数据质量验证
         """
         logger.info("=" * 60)
         logger.info("【09:22】检查依赖任务")
         logger.info("=" * 60)
-        
+
         required_tasks = [
             "morning_data",
             "collect_macro",
@@ -155,45 +159,54 @@ class ResourceGuardian:
             "collect_sentiment",
             "collect_news"
         ]
-        
+
         today = datetime.now().strftime('%Y%m%d')
         task_states_file = project_root / "logs" / "task_states.json"
-        
+
         failed_tasks = []
-        
+
         if not task_states_file.exists():
             logger.warning("⚠️ 无任务状态文件，假设依赖已完成")
-            return True, []
-        
-        try:
-            with open(task_states_file, 'r') as f:
-                states = json.load(f)
-            
-            for task in required_tasks:
-                key = f"{task}_{today}"
-                if key in states:
-                    status = states[key].get('status')
-                    if status == 'completed':
-                        logger.info(f"  ✅ {task}: 已完成")
-                    elif status == 'failed':
-                        logger.warning(f"  ⚠️ {task}: 失败")
-                        failed_tasks.append(task)
+        else:
+            try:
+                with open(task_states_file, 'r') as f:
+                    states = json.load(f)
+
+                for task in required_tasks:
+                    key = f"{task}_{today}"
+                    if key in states:
+                        status = states[key].get('status')
+                        if status == 'completed':
+                            logger.info(f"  ✅ {task}: 已完成")
+                        elif status == 'failed':
+                            logger.warning(f"  ⚠️ {task}: 失败")
+                            failed_tasks.append(task)
+                        else:
+                            logger.warning(f"  ⏳ {task}: 状态未知 ({status})")
                     else:
-                        logger.warning(f"  ⏳ {task}: 状态未知 ({status})")
+                        logger.warning(f"  ⚠️ {task}: 无状态记录")
+                        # 不视为失败，可能任务未配置
+            except Exception as e:
+                logger.error(f"❌ 读取任务状态失败: {e}")
+
+        # 通过服务层检查数据新鲜度
+        try:
+            freshness_metrics = self.quality_monitor.check_data_freshness()
+            for metric in freshness_metrics:
+                if metric.status == 'expired':
+                    logger.warning(f"  ⚠️ 数据过期: {metric.data_source} 滞后 {metric.days_behind} 天")
+                    failed_tasks.append(f"data_expired:{metric.data_source}")
                 else:
-                    logger.warning(f"  ⚠️ {task}: 无状态记录")
-                    # 不视为失败，可能任务未配置
-            
-            if failed_tasks:
-                logger.warning(f"⚠️ {len(failed_tasks)} 个依赖任务失败: {failed_tasks}")
-                return False, failed_tasks
-            else:
-                logger.info("✅ 所有依赖检查通过")
-                return True, []
-                
+                    logger.info(f"  ✅ 数据新鲜度: {metric.data_source} 滞后 {metric.days_behind} 天")
         except Exception as e:
-            logger.error(f"❌ 检查依赖失败: {e}")
-            return False, ["check_error"]
+            logger.warning(f"  ⚠️ 数据质量检查异常: {e}")
+
+        if failed_tasks:
+            logger.warning(f"⚠️ {len(failed_tasks)} 个依赖项失败: {failed_tasks}")
+            return False, failed_tasks
+        else:
+            logger.info("✅ 所有依赖检查通过")
+            return True, []
     
     def prepare_fast_track(self) -> bool:
         """

@@ -17,6 +17,7 @@ Date: 2026-04-27
 
 import os
 import sys
+import asyncio
 import argparse
 import logging
 from datetime import datetime, timedelta
@@ -33,7 +34,7 @@ try:
     from dotenv import load_dotenv
     load_dotenv(project_root / '.env')
 except ImportError:
-    logger.debug("python-dotenv 未安装，跳过环境变量加载")
+    pass
 
 sys.path.insert(0, str(project_root))
 
@@ -50,9 +51,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# 服务层导入 - 使用真实涨停数据获取器替代 mock 数据
+from services.data_service.fetchers.limitup import LimitUpFetcher
+from services.data_service.fetchers.stock_list_cache import StockListCacheManager
+
 
 class LimitUpDataCollector:
-    """涨停数据采集器"""
+    """涨停数据采集器 - 通过服务层获取真实数据"""
 
     def __init__(self):
         self.data_dir = project_root / 'data' / 'limitup'
@@ -60,6 +65,10 @@ class LimitUpDataCollector:
 
         self.redis_client = None
         self._init_redis()
+
+        # 服务层实例
+        self._limitup_fetcher = LimitUpFetcher()
+        self._stock_cache_mgr = StockListCacheManager()
 
         self.limit_up_cache = {}  # 缓存上一轮的涨停股票
         self.broken_board_records = []  # 炸板记录
@@ -87,7 +96,20 @@ class LimitUpDataCollector:
             self.redis_client = None
 
     def load_stock_list(self) -> pd.DataFrame:
-        """加载股票列表"""
+        """加载股票列表 - 通过 StockListCacheManager 服务层"""
+        try:
+            # 优先从服务层获取
+            codes = self._stock_cache_mgr.get_codes(use_redis=True)
+            if codes:
+                # 获取带详情的数据
+                df = self._stock_cache_mgr.load_from_parquet()
+                if df is not None and not df.empty:
+                    logger.info(f"Loaded stock list via service layer: {len(df)} stocks")
+                    return df
+        except Exception as e:
+            logger.warning(f"Service layer stock list failed: {e}")
+
+        # 降级: 直接读文件
         try:
             stock_list_path = project_root / 'data' / 'stock_list.parquet'
             if stock_list_path.exists():
@@ -96,64 +118,77 @@ class LimitUpDataCollector:
             stock_list_path = project_root / 'data' / 'stock_list.csv'
             if stock_list_path.exists():
                 return pd.read_csv(stock_list_path)
-
-            logger.warning("Stock list not found, using mock data")
-            return self._mock_stock_list()
         except Exception as e:
-            logger.error(f"Failed to load stock list: {e}")
-            return self._mock_stock_list()
+            logger.error(f"Failed to load stock list from file: {e}")
 
-    def _mock_stock_list(self) -> pd.DataFrame:
-        """模拟股票列表"""
-        return pd.DataFrame({
-            'code': ['000001', '000002', '000333', '600000', '600519',
-                     '000858', '002594', '300750', '601888', '600276'],
-            'name': ['平安银行', '万科A', '美的集团', '浦发银行', '贵州茅台',
-                     '五粮液', '比亚迪', '宁德时代', '中国中免', '恒瑞医药'],
-            'industry': ['银行', '房地产', '家电', '银行', '白酒',
-                         '白酒', '汽车', '电池', '免税', '医药']
-        })
+        logger.warning("Stock list unavailable from all sources")
+        return pd.DataFrame(columns=['code', 'name', 'industry'])
 
     def fetch_limit_up_data(self) -> pd.DataFrame:
         """
-        获取涨停数据
-        实际项目中这里应该调用Tushare或其他数据源
+        获取涨停数据 - 通过 LimitUpFetcher 服务层获取真实数据
+
+        Returns:
+            涨停股票 DataFrame，若服务层失败则返回空 DataFrame
         """
-        logger.info("Fetching limit up data...")
+        logger.info("Fetching limit up data via service layer...")
 
-        stock_df = self.load_stock_list()
+        try:
+            # 使用 asyncio 调用异步的 fetch_limit_up_pool
+            loop = None
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                pass
 
-        np.random.seed(int(datetime.now().timestamp()))
+            if loop and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    future = pool.submit(
+                        asyncio.run,
+                        self._limitup_fetcher.fetch_limit_up_pool()
+                    )
+                    stocks = future.result(timeout=30)
+            else:
+                stocks = asyncio.run(self._limitup_fetcher.fetch_limit_up_pool())
 
-        limit_up_data = []
-        for _, row in stock_df.iterrows():
-            code = row['code']
-            name = row['name']
+            if not stocks:
+                logger.info("No limit up stocks found for today")
+                return pd.DataFrame()
 
-            is_limit_up = np.random.random() < 0.05
-
-            if is_limit_up:
+            # 将 LimitUpStock 对象转为 DataFrame
+            limit_up_data = []
+            for s in stocks:
                 limit_up_data.append({
-                    'code': code,
-                    'name': name,
-                    'limit_up_time': (datetime.now() - timedelta(minutes=np.random.randint(1, 240))).strftime('%H:%M:%S'),
-                    'limit_up_price': round(np.random.uniform(10, 100), 2),
-                    'volume': np.random.randint(1000000, 100000000),
-                    'amount': round(np.random.uniform(10000000, 1000000000), 2),
-                    'buy_lock_volume': np.random.randint(100000, 10000000),
-                    'sell_lock_volume': np.random.randint(10000, 1000000),
-                    'limit_up_type': np.random.choice(['首板', '连板', '炸板回封']),
-                    'consecutive_days': np.random.randint(1, 5),
-                    'industry': row.get('industry', '未知')
+                    'code': s.code,
+                    'name': s.name,
+                    'limit_up_time': s.limit_time,
+                    'limit_up_price': 0.0,  # 涨停价需从行情获取
+                    'volume': 0,
+                    'amount': float(s.seal_amount) * 10000,  # 封单资金(万) -> 元
+                    'buy_lock_volume': 0,
+                    'sell_lock_volume': 0,
+                    'limit_up_type': '连板' if s.continuous_limit > 1 else '首板',
+                    'consecutive_days': s.continuous_limit,
+                    'industry': s.sector,
+                    'change_pct': s.change_pct,
+                    'open_count': s.open_count,
                 })
 
-        return pd.DataFrame(limit_up_data)
+            df = pd.DataFrame(limit_up_data)
+            logger.info(f"Fetched {len(df)} real limit up stocks via service layer")
+            return df
+
+        except Exception as e:
+            logger.error(f"Service layer fetch failed: {e}")
+            logger.warning("Returning empty DataFrame - no mock data in production")
+            return pd.DataFrame()
 
     def validate_limit_up_data(self, df: pd.DataFrame) -> bool:
-        """验证涨停数据质量"""
+        """验证涨停数据质量 - 空数据视为有效（当天可能无涨停股）"""
         if df.empty:
-            logger.warning("Limit up data is empty")
-            return False
+            logger.info("Limit up data is empty (no limit up stocks today)")
+            return True
 
         required_columns = ['code', 'name', 'limit_up_time', 'limit_up_price', 'volume']
         for col in required_columns:

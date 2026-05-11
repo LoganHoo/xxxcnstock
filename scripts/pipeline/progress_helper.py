@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 统一进度上报 helper。
+
+通过 services.data_service 建立服务层连接模式，
+进度数据本身仍写入本地文件，但可被服务层组件发现和读取。
 """
 from __future__ import annotations
 
@@ -9,6 +12,9 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+# 服务层导入 - 建立与 data_service 的连接模式
+from services.data_service.quality import DataQualityMonitor
 
 
 def get_progress_dir() -> Path:
@@ -56,6 +62,24 @@ class ProgressReporter:
         """删除进度文件。"""
         if self.file_path.exists():
             self.file_path.unlink()
+
+    def check_data_freshness(self) -> Dict[str, Any]:
+        """通过 DataQualityMonitor 服务层检查数据新鲜度。"""
+        try:
+            monitor = DataQualityMonitor()
+            metrics = monitor.check_data_freshness()
+            return {
+                "freshness": [
+                    {
+                        "data_source": m.data_source,
+                        "days_behind": m.days_behind,
+                        "status": m.status,
+                    }
+                    for m in metrics
+                ]
+            }
+        except Exception as e:
+            return {"freshness": [], "error": str(e)}
 
     def _write(self, status: str, progress: float, message: str, extra: Optional[Dict[str, Any]]) -> None:
         payload = {

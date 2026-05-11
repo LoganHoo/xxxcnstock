@@ -24,6 +24,9 @@ from typing import Dict, Optional
 from core.logger import setup_logger
 from core.trading_calendar import check_market_status
 
+# 服务层导入 - 通过 StockListCacheManager 验证股票列表数据
+from services.data_service.fetchers.stock_list_cache import StockListCacheManager
+
 logger = setup_logger("core_task_guardian", log_file="system/core_task_guardian.log")
 
 
@@ -119,6 +122,7 @@ class CoreTaskGuardian:
     def __init__(self):
         self.project_root = Path(__file__).parent.parent.parent
         self.circuit_breaker = CircuitBreaker(threshold=3, recovery_time=3600)
+        self.stock_cache_mgr = StockListCacheManager()
         
     def check_prerequisites(self) -> Dict:
         """
@@ -142,11 +146,16 @@ class CoreTaskGuardian:
             parquet_files = list(kline_dir.glob("*.parquet"))
             if len(parquet_files) < 4000:
                 issues.append(f"K线文件数量不足: {len(parquet_files)}")
-        
-        # 3. 检查股票列表
-        stock_list = self.project_root / "data" / "stock_list.parquet"
-        if not stock_list.exists():
-            issues.append("股票列表不存在")
+
+        # 3. 检查股票列表 - 通过服务层
+        try:
+            codes = self.stock_cache_mgr.get_codes(use_redis=True)
+            if not codes:
+                issues.append("股票列表为空 (通过 StockListCacheManager 获取)")
+            else:
+                logger.info(f"股票列表正常: {len(codes)} 只")
+        except Exception as e:
+            issues.append(f"股票列表服务异常: {e}")
         
         # 4. 检查熔断器状态
         if self.circuit_breaker.is_open:

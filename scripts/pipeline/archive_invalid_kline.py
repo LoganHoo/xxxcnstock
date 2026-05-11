@@ -30,6 +30,9 @@ import polars as pl
 import json
 from core.delisting_guard import get_delisting_guard
 
+# 服务层导入 - 使用 DelistingDetector 服务层进行退市检测
+from services.data_service.fetchers.delisting_detector import DelistingDetector, get_delisting_detector
+
 
 def parse_args():
     """解析命令行参数"""
@@ -126,6 +129,7 @@ def archive_invalid_kline(
         archive_path.mkdir(parents=True, exist_ok=True)
     
     delisting_guard = get_delisting_guard()
+    delisting_detector = get_delisting_detector()  # 服务层退市检测器
     target_date = datetime.now()
     
     # 获取股票列表
@@ -153,8 +157,9 @@ def archive_invalid_kline(
         if i % 500 == 0:
             logger.info(f"  进度: {i}/{len(parquet_files)}")
         
-        # 检查是否已退市
-        if delisting_guard.is_delisted_by_code(code):
+        # 检查是否已退市 - 同时使用 delisting_guard 和服务层 DelistingDetector
+        is_delisted = delisting_guard.is_delisted_by_code(code) or delisting_detector.is_blacklisted(code)
+        if is_delisted:
             delisted_files.append({
                 'code': code,
                 'file': kline_file,

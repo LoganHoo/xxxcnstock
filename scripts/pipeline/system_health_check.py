@@ -40,6 +40,10 @@ try:
 except ImportError:
     pass  # python-dotenv 是可选依赖，未安装时跳过
 
+# 服务层导入
+from services.db_pool import get_db_pool
+from services.data_service.fetchers.stock_list_cache import StockListCacheManager
+
 
 class HealthCheckResult:
     """健康检查结果类"""
@@ -511,52 +515,44 @@ class SystemHealthChecker:
             )
     
     def check_redis(self) -> HealthCheckResult:
-        """检查 Redis 连接"""
+        """检查 Redis 连接 - 通过 StockListCacheManager 服务层"""
         start = time.time()
         try:
-            import redis
-            redis_host = os.getenv('REDIS_HOST')
-            redis_port = int(os.getenv('REDIS_PORT', 6379))
-            redis_password = os.getenv('REDIS_PASSWORD')
-            redis_db = int(os.getenv('REDIS_DB', 0))
-            
-            if not redis_host:
+            cache_mgr = StockListCacheManager()
+            sync_info = cache_mgr.get_sync_info()
+
+            if cache_mgr._redis is not None:
+                info = cache_mgr._redis.info()
+                redis_host = os.getenv('REDIS_HOST', 'localhost')
+                redis_port = int(os.getenv('REDIS_PORT', 6379))
+
+                details = {
+                    "host": redis_host,
+                    "port": redis_port,
+                    "version": info.get("redis_version", "unknown"),
+                    "used_memory_human": info.get("used_memory_human", "unknown"),
+                    "connected_clients": info.get("connected_clients", 0),
+                    "stock_list_synced": cache_mgr.is_synced(),
+                }
+
+                return HealthCheckResult(
+                    "Redis", True,
+                    f"Redis 连接正常 ({redis_host}:{redis_port}, 版本: {details['version']})",
+                    (time.time() - start) * 1000, details, "program"
+                )
+            else:
+                redis_host = os.getenv('REDIS_HOST')
+                if not redis_host:
+                    return HealthCheckResult(
+                        "Redis", False,
+                        "REDIS_HOST 未设置",
+                        (time.time() - start) * 1000, {}, "program"
+                    )
                 return HealthCheckResult(
                     "Redis", False,
-                    "REDIS_HOST 未设置",
-                    (time.time() - start) * 1000, {}, "program"
+                    "Redis 连接失败: 服务层无法建立连接",
+                    (time.time() - start) * 1000, {"error": "connection refused"}, "program"
                 )
-            
-            client = redis.Redis(
-                host=redis_host,
-                port=redis_port,
-                password=redis_password,
-                db=redis_db,
-                socket_connect_timeout=self.timeout,
-                decode_responses=True
-            )
-            client.ping()
-            info = client.info()
-            
-            details = {
-                "host": redis_host,
-                "port": redis_port,
-                "version": info.get("redis_version", "unknown"),
-                "used_memory_human": info.get("used_memory_human", "unknown"),
-                "connected_clients": info.get("connected_clients", 0)
-            }
-            
-            return HealthCheckResult(
-                "Redis", True,
-                f"Redis 连接正常 ({redis_host}:{redis_port}, 版本: {details['version']})",
-                (time.time() - start) * 1000, details, "program"
-            )
-        except ImportError:
-            return HealthCheckResult(
-                "Redis", False,
-                "Redis 模块未安装 (pip install redis)",
-                (time.time() - start) * 1000, {}, "program"
-            )
         except Exception as e:
             return HealthCheckResult(
                 "Redis", False,
@@ -565,16 +561,15 @@ class SystemHealthChecker:
             )
     
     def check_mysql(self) -> HealthCheckResult:
-        """检查 MySQL 连接"""
+        """检查 MySQL 连接 - 通过 db_pool 服务层"""
         start = time.time()
         try:
-            import pymysql
             mysql_host = os.getenv('DB_HOST') or os.getenv('MYSQL_HOST')
             mysql_port = int(os.getenv('DB_PORT') or os.getenv('MYSQL_PORT', 3306))
             mysql_user = os.getenv('DB_USER') or os.getenv('MYSQL_USER')
             mysql_password = os.getenv('DB_PASSWORD') or os.getenv('MYSQL_PASSWORD')
             mysql_database = os.getenv('DB_NAME') or os.getenv('MYSQL_DATABASE')
-            
+
             if not all([mysql_host, mysql_user, mysql_password]):
                 missing = []
                 if not mysql_host: missing.append("DB_HOST")
@@ -585,39 +580,31 @@ class SystemHealthChecker:
                     f"MySQL 配置不完整: {', '.join(missing)} 未设置",
                     (time.time() - start) * 1000, {}, "program"
                 )
-            
-            conn = pymysql.connect(
-                host=mysql_host,
-                port=mysql_port,
-                user=mysql_user,
-                password=mysql_password,
-                database=mysql_database,
-                connect_timeout=self.timeout
+
+            conn_str = (
+                f"mysql+pymysql://{mysql_user}:{mysql_password}"
+                f"@{mysql_host}:{mysql_port}/{mysql_database}"
+                f"?connect_timeout={self.timeout}"
             )
-            
-            with conn.cursor() as cursor:
-                cursor.execute("SELECT VERSION()")
-                version = cursor.fetchone()[0]
-            
-            conn.close()
-            
+            pool = get_db_pool().get_pool("health_check", conn_str, pool_size=1, max_overflow=0)
+            session = pool['Session']()
+            try:
+                result = session.execute(__import__('sqlalchemy').text("SELECT VERSION()"))
+                version = result.scalar()
+            finally:
+                session.close()
+
             details = {
                 "host": mysql_host,
                 "port": mysql_port,
                 "database": mysql_database,
                 "version": version
             }
-            
+
             return HealthCheckResult(
                 "MySQL", True,
                 f"MySQL 连接正常 ({mysql_host}:{mysql_port}/{mysql_database}, 版本: {version})",
                 (time.time() - start) * 1000, details, "program"
-            )
-        except ImportError:
-            return HealthCheckResult(
-                "MySQL", False,
-                "PyMySQL 模块未安装 (pip install pymysql)",
-                (time.time() - start) * 1000, {}, "program"
             )
         except Exception as e:
             return HealthCheckResult(
@@ -699,7 +686,7 @@ class SystemHealthChecker:
     # ==================== 涨停系统专项检查 ====================
 
     def check_limitup_kline_data(self) -> HealthCheckResult:
-        """检查涨停K线数据"""
+        """检查涨停K线数据 - 通过 StockListCacheManager 服务层验证股票列表"""
         start = time.time()
 
         kline_dir = project_root / 'data' / 'kline'
@@ -723,11 +710,19 @@ class SystemHealthChecker:
         try:
             sample_file = parquet_files[0]
             df = pd.read_parquet(sample_file)
-            
+
             # 兼容不同列名 (trade_date 或 date)
             date_col = 'trade_date' if 'trade_date' in df.columns else 'date'
             latest_date = pd.to_datetime(df[date_col]).max()
             days_diff = (datetime.now() - latest_date).days
+
+            # 通过服务层检查股票列表新鲜度
+            try:
+                cache_mgr = StockListCacheManager()
+                freshness = cache_mgr.check_data_freshness()
+                stock_list_fresh = freshness.get('is_fresh', False)
+            except Exception:
+                stock_list_fresh = None
 
             if days_diff > 7:
                 return HealthCheckResult(
@@ -737,11 +732,17 @@ class SystemHealthChecker:
                     {"latest_date": latest_date.strftime('%Y-%m-%d'), "days_diff": days_diff}, "program"
                 )
 
+            details = {
+                "count": len(parquet_files),
+                "latest_date": latest_date.strftime('%Y-%m-%d'),
+            }
+            if stock_list_fresh is not None:
+                details["stock_list_fresh"] = stock_list_fresh
+
             return HealthCheckResult(
                 "涨停K线数据", True,
                 f"K线数据正常: {len(parquet_files)} 只股票, 最新数据 {days_diff} 天前",
-                (time.time() - start) * 1000,
-                {"count": len(parquet_files), "latest_date": latest_date.strftime('%Y-%m-%d')}, "program"
+                (time.time() - start) * 1000, details, "program"
             )
         except Exception as e:
             return HealthCheckResult(

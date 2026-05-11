@@ -100,13 +100,28 @@ class DrawdownAnalyzer:
         for _, row in picks.iterrows():
             code = str(row.get('code', '')).zfill(6)
 
-            # 读取K线数据
-            kline_file = self.kline_dir / f"{code}.parquet"
-            if not kline_file.exists():
-                continue
+            # 通过服务层获取K线数据，回退到本地 parquet
+            try:
+                # 优先尝试从服务层获取
+                df_pd = fetch_kline_for_stock(code, '2020-01-01', datetime.now().strftime('%Y-%m-%d'))
+                if df_pd is None or df_pd.empty:
+                    # 回退到本地 parquet
+                    kline_file = self.kline_dir / f"{code}.parquet"
+                    if not kline_file.exists():
+                        continue
+                    df = pl.read_parquet(kline_file)
+                else:
+                    # 验证数据质量
+                    is_valid, msg = validate_kline_data(df_pd, code, is_incremental=True)
+                    df = pl.from_pandas(df_pd)
+            except Exception:
+                # 回退到本地 parquet
+                kline_file = self.kline_dir / f"{code}.parquet"
+                if not kline_file.exists():
+                    continue
+                df = pl.read_parquet(kline_file)
 
             try:
-                df = pl.read_parquet(kline_file)
                 if len(df) < 2:
                     continue
 

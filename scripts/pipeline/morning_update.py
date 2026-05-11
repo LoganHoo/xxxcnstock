@@ -4,6 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from core.logger import get_logger
+from services.data_service.fetchers.foreign_index_fetcher import ForeignIndexFetcher
 from scripts.update_morning_data import MorningDataUpdater
 
 

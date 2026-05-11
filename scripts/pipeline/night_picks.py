@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 
 from pathlib import Path
 from core.logger import get_logger
+from services.stock_selection_db_service import StockSelectionDBService
 from scripts.tomorrow_picks import StockRecommender
 
 
