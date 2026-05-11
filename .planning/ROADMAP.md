@@ -53,7 +53,10 @@ Plans:
   2. After all retries exhausted, an alert notification is sent via configured channel (DingTalk/WeChat)
   3. Alert message includes task name, failure reason, and retry count
   4. Successful retry resets the failure counter without sending false alarms
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Retry loop with exponential backoff in engine callback, DingTalk alert notifier on persistent failure, retry_count in history DB
 
 ### Phase 3: Execution History
 **Goal**: Every task execution is recorded with status, timing, and error details, queryable for debugging
@@ -183,7 +186,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Scheduler Process Stability | 2/2 | ✓ Complete | 2026-05-12 |
-| 2. Task Failure Recovery | 0/? | Not started | - |
+| 2. Task Failure Recovery | 0/1 | Not started | - |
 | 3. Execution History | 0/? | Not started | - |
 | 4. Pipeline Dependency Chains | 0/? | Not started | - |
 | 5. Configuration Unification | 0/? | Not started | - |
