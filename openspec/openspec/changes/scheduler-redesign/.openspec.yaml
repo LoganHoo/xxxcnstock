@@ -1,0 +1,22 @@
+change:
+  id: scheduler-redesign
+  name: 计划任务调度系统重构
+  description: 将 macOS LaunchAgent 定时任务迁移到 Docker APScheduler，实现跨平台统一的计划任务调度
+  status: proposed
+  created_at: "2026-05-11"
+  updated_at: "2026-05-11"
+
+artifacts:
+  proposal:
+    path: proposal.md
+    status: ready
+  design:
+    path: design.md
+    status: pending
+    depends_on: [proposal]
+  tasks:
+    path: tasks.md
+    status: pending
+    depends_on: [design]
+
+specs: []

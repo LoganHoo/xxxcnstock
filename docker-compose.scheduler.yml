@@ -1,39 +1,27 @@
-version: '3.8'
-
 services:
   scheduler:
     build:
       context: .
       dockerfile: Dockerfile.scheduler
-    container_name: xxxcnstock-scheduler
-    restart: unless-stopped
+    container_name: xcnstock_scheduler
     volumes:
-      - ./config:/app/config:ro
-      - ./scripts:/app/scripts:ro
       - ./data:/app/data
       - ./logs:/app/logs
-      - ./core:/app/core:ro
     environment:
+      - REDIS_HOST=${REDIS_HOST:-49.233.10.199}
+      - REDIS_PORT=${REDIS_PORT:-6379}
       - TZ=Asia/Shanghai
-      - PYTHONUNBUFFERED=1
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"  # 健康检查端口
-    networks:
-      - xxxcnstock-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      - LOG_DIR=/app/logs
+    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python3", "-c", "import json, urllib.request; response = urllib.request.urlopen('http://localhost:8080/health'); data = json.load(response); exit(0 if data['status']=='healthy' else 1)"]
-      interval: 60s
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 10s
+    networks:
+      - xcnstock
 
 networks:
-  xxxcnstock-network:
-    driver: bridge
+  xcnstock:
+    external: true
