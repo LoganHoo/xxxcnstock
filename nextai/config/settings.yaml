@@ -1,0 +1,77 @@
+# 选股微服务统一配置文件
+# 用于 API 服务层配置
+
+service:
+  name: "xcnstock-picker-api"
+  version: "1.0.0"
+  environment: "development"  # development, production
+
+api:
+  host: "0.0.0.0"
+  port: 5000
+  debug: true
+  prefix: "/api/v1"
+
+cors:
+  enabled: true
+  origins:
+    - "http://localhost:3000"
+    - "http://localhost:8080"
+
+database:
+  host: "49.233.10.199"
+  port: 3306
+  user: "nextai"
+  password: "100200"
+  database: "xcnstock"
+  pool_size: 10
+  pool_recycle: 3600
+
+redis:
+  host: "49.233.10.199"
+  port: 6379
+  db: 0
+  password: null
+  decode_responses: true
+
+data:
+  kline_dir: "data/kline"
+  stock_list_path: "data/stock_list.parquet"
+  limitup_dir: "data/limitup"
+  max_data_age_days: 30
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/api.log"
+
+filters:
+  enabled:
+    - data_freshness
+    - delisting
+    - st_filter
+    - suspension
+    - min_volume
+    - min_amount
+  params:
+    max_data_age_days: 30
+    min_volume: 1000000
+    min_amount: 5000000
+    st_keywords: ["ST", "*ST"]
+    delisting_keywords: ["退市", "终止上市"]
+
+strategies:
+  default_flow: "balanced_factor"
+  available_flows:
+    - aggressive_signal
+    - conservative
+    - balanced_factor
+  confidence_threshold: 70
+
+scanner:
+  max_results: 100
+  signal_threshold: 0.5
+
+predictor:
+  model_path: "models/xgboost_v4.pkl"
+  feature_count: 30

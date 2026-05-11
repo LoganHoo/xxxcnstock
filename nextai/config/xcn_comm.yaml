@@ -1,0 +1,36 @@
+# tomorrow_picks.py 配置文件
+
+data_paths:
+  enhanced_scores_full: "data/enhanced_full_temp.parquet"
+  kline_dir: "data/kline"
+
+recommendation:
+  filters:
+    s_grade:
+      min_score: 75
+      description: "S级推荐 (75分以上)"
+    a_grade:
+      min_score: 60
+      max_score: 74
+      description: "A级推荐 (60-74分)"
+    bullish:
+      min_score: 50
+      description: "看涨信号"
+    macd_volume:
+      min_score: 50
+      description: "MACD放量共振"
+
+  output:
+    formats: ["text", "html", "json"]
+    output_dir: "output"
+    filename_prefix: "tomorrow_picks"
+    save_to_file: true
+    save_to_db: true
+
+  email:
+    enabled: false
+    subject_template: "【{date}】明日股票推荐"
+
+  data_validation:
+    min_records: 100
+    max_missing_rate: 0.3

@@ -1,0 +1,36 @@
+services:
+  xcnstock-picker-api:
+    build:
+      context: ..
+      dockerfile: nextai/Dockerfile
+    container_name: xcnstock-picker-api
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../config:/app/config:ro
+      - ../.env:/app/.env:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - PYTHONUNBUFFERED=1
+      - FLASK_APP=nextai.api.app
+      - FLASK_ENV=development
+    networks:
+      - xcnstock-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  xcnstock-network:
+    external: true

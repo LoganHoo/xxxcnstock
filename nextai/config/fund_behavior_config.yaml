@@ -1,0 +1,99 @@
+backtest:
+  end_date: '2023-12-31'
+  initial_capital: 1000000
+  start_date: '2023-01-01'
+  transaction_cost: 0.0003
+factors:
+  cost_peak:
+    category: market
+    description: 筹码分布最大密集峰位
+    enabled: true
+    params:
+      bins: 50
+      window: 20
+  key_levels:
+    category: market
+    description: 关键位价格监测(支撑/阻力)
+    enabled: true
+    params:
+      resistance_levels:
+      - 4200
+      - 4300
+      support_levels:
+      - 4067
+      - 4117
+      - 4140
+  limit_up_score:
+    category: market
+    description: 涨停家数 - 跌停家数 + 连板高度
+    enabled: true
+  ma5_bias:
+    category: technical
+    description: (当前价 - 5日均线) / 5日均线
+    enabled: true
+  market_health:
+    category: market
+    description: 大盘荣枯线(MA5/MA10趋势判断)
+    enabled: true
+    params:
+      ma10_threshold: 0.0
+      ma5_threshold: 0.0
+  open_auction_volume:
+    category: volume_price
+    description: 09:25集合竞价成交额(开盘金额)
+    enabled: true
+    params:
+      threshold: 800
+  pioneer_status:
+    category: market
+    description: 核心领涨个股实时涨跌幅
+    enabled: true
+    params:
+      pioneer_codes:
+      - '300255'
+  v_ratio10:
+    category: volume_price
+    description: 早盘09:30-10:00成交量与前一日同期比值
+    enabled: true
+  v_total:
+    category: market
+    description: 全市场实时总成交金额
+    enabled: true
+indicators:
+  10am_pivot:
+    price_threshold: 41.25
+    v_ratio10_threshold: 1.1
+  defense:
+    description: 防守信号 - 什么情况下绝对不能买
+    enabled: true
+    params:
+      open_auction_min: 500
+      support_break_threshold: -0.02
+      volume_shrink_threshold: 0.6
+  hedge:
+    resistance_levels:
+    - 4117
+    - 4140
+    support_level: 4067
+    v_total_threshold: 1800
+  market_sentiment:
+    thresholds:
+      cost_peak_support: 57.36481874228188
+      oscillating_v_total_max: 36864964.05787074
+      oscillating_v_total_min: 24576642.705247164
+      sentiment_temperature_overheat: 80
+      sentiment_temperature_strong: 50
+      strong_v_total: 29101377.234540015
+strategy:
+  four_step_exit:
+    time_points:
+    - 09:26
+    - '10:00'
+    - '14:56'
+  position:
+    cash: 0.1
+    short_term: 0.4
+    trend: 0.5
+  stock_selection:
+    short_term_stocks_limit: 10
+    trend_stocks_limit: 20
