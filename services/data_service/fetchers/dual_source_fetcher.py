@@ -128,29 +128,32 @@ class DualSourceFetcher:
     def __init__(
         self,
         kline_dir: Path = None,
+        data_dir: Path = None,
         redis_client=None,
         config: DualSourceConfig = None,
         enable_checkpoint: bool = True
     ):
         """
         初始化采集器
-        
+
         Args:
             kline_dir: K线数据目录
+            data_dir: 数据目录（包含stock_list.parquet等）
             redis_client: Redis客户端实例（可选）
             config: 配置实例（可选，为None则加载默认配置）
             enable_checkpoint: 是否启用断点续传
         """
         # 配置（不可变）
         self._config = config or get_default_config()
-        
+
         # 目录
         self.kline_dir = Path(kline_dir or Path(__file__).parent.parent.parent / "data" / "kline")
+        self.data_dir = Path(data_dir or self.kline_dir.parent)
         self.kline_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # 初始化组件（全部使用注入的配置）
         self.date_cache = IncrementalDateCache(redis_client, self._config)
-        self.stock_cache = StockListCacheManager(redis_client=redis_client)
+        self.stock_cache = StockListCacheManager(data_dir=str(self.data_dir), redis_client=redis_client)
         self.grouper = StockGrouper()
         
         # 断点续传
@@ -1272,19 +1275,20 @@ class DualSourceFetcher:
 def run_dual_source_fetch(
     codes: List[str] = None,
     kline_dir: str = None,
+    data_dir: str = None,
     days: int = None,
     filter_delisted: bool = True,
     resume: bool = True
 ) -> Dict:
     """
     同步入口：运行双源采集（自动管理资源）
-    
+
     ⚠️ 此函数会正确管理资源生命周期，无需手动 close()
-    
+
     使用方式：
         result = run_dual_source_fetch(codes=['000001', '000002'])
     """
-    fetcher = DualSourceFetcher(kline_dir=kline_dir)
+    fetcher = DualSourceFetcher(kline_dir=kline_dir, data_dir=data_dir)
     loop = asyncio.new_event_loop()
     
     try:

@@ -234,15 +234,23 @@ def _clamp(value, min_val, max_val):
 def get_default_config() -> DualSourceConfig:
     """
     获取默认配置实例（从项目 YAML 文件加载）
-    
+
     Returns:
         DualSourceConfig 实例
     """
     try:
-        from services.data_service.config.kline_config import get_kline_config
-        yaml_data = get_kline_config()
-        return DualSourceConfig.from_yaml(yaml_data)
+        from pathlib import Path
+        import yaml
+
+        project_root = Path(__file__).parent.parent.parent.parent
+        config_file = project_root / "config" / "datasource.yaml"
+
+        if config_file.exists():
+            with open(config_file, 'r', encoding='utf-8') as f:
+                yaml_data = yaml.safe_load(f)
+            return DualSourceConfig.from_yaml(yaml_data)
     except Exception as e:
         import logging
         logging.warning(f"无法从YAML加载配置，使用默认值: {e}")
-        return DualSourceConfig()
+
+    return DualSourceConfig()

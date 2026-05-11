@@ -536,7 +536,7 @@ class TencentProvider(DataProvider):
     
     @retry_on_network_error(max_retries=3, delay=0.5, backoff=2.0)
     async def fetch_kline(self, code: str, start_date: str, end_date: str, frequency: str = 'd') -> pd.DataFrame:
-        """获取K线"""
+        """获取K线 - 使用腾讯财经历史K线API"""
         try:
             import requests
             import json
@@ -544,17 +544,11 @@ class TencentProvider(DataProvider):
             import time
             import os
 
-            # 临时清除代理环境变量，避免 SOCKS 依赖问题
             old_env = {k: os.environ.pop(k, None) for k in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY']}
 
             symbol = f"sh{code}" if code.startswith('6') else f"sz{code}"
             url = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get'
 
-            # 根据frequency参数调整
-            freq_map = {'d': 'day', 'w': 'week', 'm': 'month'}
-            period = freq_map.get(frequency, 'day')
-
-            # 使用与原脚本相同的参数格式
             params = {
                 '_var': f'kline_dayqfq_{symbol}',
                 'param': f'{symbol},day,,,500,qfq',
@@ -566,7 +560,6 @@ class TencentProvider(DataProvider):
                 'Referer': 'https://gu.qq.com/'
             }
 
-            # 显式禁用代理，避免 SOCKS 依赖问题
             response = requests.get(url, params=params, headers=headers, timeout=30, proxies={})
             text = response.text
             match = re.match(rf'kline_dayqfq_\w+=(.*)', text)
@@ -574,29 +567,30 @@ class TencentProvider(DataProvider):
             if match:
                 data = json.loads(match.group(1))
                 if data.get('code') == 0:
-                    # 使用 qfqday 字段（与原脚本一致）
                     klines = data['data'][symbol].get('qfqday', [])
                     records = []
                     for k in klines:
-                        records.append({
-                            'code': code,
-                            'date': k[0],
-                            'open': float(k[1]),
-                            'close': float(k[2]),
-                            'high': float(k[3]),
-                            'low': float(k[4]),
-                            'volume': int(float(k[5]))
-                        })
-                    df = pd.DataFrame(records)
-                    if not df.empty:
-                        logger.debug(f"Tencent获取 {code} 成功: {len(df)} 条")
-                    return df
+                        try:
+                            records.append({
+                                'code': code,
+                                'date': k[0],
+                                'open': float(k[1]),
+                                'close': float(k[2]),
+                                'high': float(k[3]),
+                                'low': float(k[4]),
+                                'volume': int(float(k[5]))
+                            })
+                        except (ValueError, IndexError):
+                            continue
+                    if records:
+                        df = pd.DataFrame(records)
+                        logger.debug(f"Tencent获取 {code} 成功: {len(df)}条")
+                        return df
             return pd.DataFrame()
         except Exception as e:
             logger.error(f"Tencent获取K线失败 {code}: {e}")
             return pd.DataFrame()
         finally:
-            # 恢复环境变量
             for k, v in old_env.items():
                 if v is not None:
                     os.environ[k] = v

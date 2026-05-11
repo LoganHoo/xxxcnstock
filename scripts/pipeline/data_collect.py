@@ -134,103 +134,36 @@ def _collect_legacy(target_date: str) -> bool:
 
 def _collect_parallel(target_date: str, max_concurrent: int, batch_size: int,
                       incremental: bool, use_cache: bool) -> bool:
-    """并行采集模式"""
-    import asyncio
-    from core.parallel_fetcher import ParallelDataFetcher, ParallelFetcherConfig, FetchTask
-    from core.incremental_processor import IncrementalDetector
-    from core.cache.multi_level_cache import MultiLevelCache
+    """并行采集模式 - 使用双源采集器（Baostock + 腾讯财经）"""
+    import sys
     from pathlib import Path
+    from datetime import datetime, timedelta
 
     project_root = Path(__file__).parent.parent.parent
-    kline_dir = project_root / "data" / "kline"
+    sys.path.insert(0, str(project_root))
+    kline_dir = str(project_root / "data" / "kline")
+    data_dir = str(project_root / "data")
 
-    # 初始化组件
-    config = ParallelFetcherConfig(
-        max_concurrent=max_concurrent,
-        batch_size=batch_size,
-        calls_per_minute=480,
-        request_timeout=30,
-        pool_size=100
+    logger.info(f"🚀 使用双源采集器: Baostock + 腾讯财经")
+
+    from services.data_service.fetchers.dual_source_fetcher import run_dual_source_fetch
+
+    result = run_dual_source_fetch(
+        codes=None,
+        kline_dir=kline_dir,
+        data_dir=data_dir,
+        days=100,
+        filter_delisted=True,
+        resume=True
     )
 
-    fetcher = ParallelDataFetcher(config)
+    stats = {
+        'total': result.get('total', 0),
+        'success': result.get('success', 0),
+        'failed': result.get('failed', 0),
+        'skipped': result.get('skipped', 0)
+    }
 
-    # 初始化缓存（如果启用）
-    cache = None
-    if use_cache:
-        try:
-            cache = MultiLevelCache(
-                l1_maxsize=1000,
-                l1_ttl=3600,
-                redis_host=os.getenv('REDIS_HOST', 'localhost'),
-                redis_port=int(os.getenv('REDIS_PORT', 6379)),
-                l2_ttl=86400
-            )
-        except Exception as e:
-            logger.warning(f"缓存初始化失败，继续无缓存模式: {e}")
-
-    async def run_parallel_collection():
-        await fetcher.open()
-        try:
-            # 获取股票列表
-            stock_list = await _get_stock_list()
-            logger.info(f"📋 获取到 {len(stock_list)} 只股票")
-
-            # 增量检测（如果启用）
-            if incremental:
-                detector = IncrementalDetector(kline_dir)
-                stocks_to_fetch = []
-                for code in stock_list:
-                    result = detector.check_stock(code, target_date, target_date)
-                    if result.needs_update:
-                        stocks_to_fetch.append(code)
-                logger.info(f"📦 增量检测: 需要更新 {len(stocks_to_fetch)}/{len(stock_list)} 只股票")
-            else:
-                stocks_to_fetch = stock_list
-
-            if not stocks_to_fetch:
-                logger.info("✅ 所有股票数据已是最新，无需采集")
-                return {'total': 0, 'success': 0, 'failed': 0, 'skipped': len(stock_list)}
-
-            # 构建采集任务
-            tasks = []
-            for code in stocks_to_fetch:
-                # 检查缓存
-                cache_key = f"kline:{code}:{target_date}"
-                if cache and cache.get(cache_key):
-                    continue
-
-                tasks.append(FetchTask(
-                    identifier=code,
-                    url=f"http://api.example.com/kline/{code}",  # 实际URL根据数据源调整
-                    params={'date': target_date, 'code': code}
-                ))
-
-            # 执行并行采集
-            results = await fetcher.fetch_many(tasks)
-
-            # 处理结果
-            success_count = sum(1 for r in results if r.success)
-            failed_count = len(results) - success_count
-            skipped_count = len(stock_list) - len(stocks_to_fetch)
-
-            # 保存到缓存
-            if cache:
-                for result in results:
-                    if result.success:
-                        cache_key = f"kline:{result.identifier}:{target_date}"
-                        cache.set(cache_key, result.data, level='both')
-
-            return {
-                'total': len(stock_list),
-                'success': success_count,
-                'failed': failed_count,
-                'skipped': skipped_count
-            }
-        finally:
-            await fetcher.close()
-
-    stats = asyncio.run(run_parallel_collection())
     return _check_success_rate(stats, target_date)
 
 
