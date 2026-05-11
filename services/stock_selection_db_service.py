@@ -119,20 +119,29 @@ class DailyPrediction(Base):
     prediction_date = Column(Date, nullable=False, comment='预测日期')
     code = Column(String(20), nullable=False, comment='股票代码')
     name = Column(String(100), comment='股票名称')
-    
-    # 原始选股数据
+
     selection_type = Column(String(20), comment='选股类型')
     score = Column(Float, comment='综合评分')
-    v_ratio10 = Column(Float, comment='10日量比')
-    v_total = Column(Float, comment='总成交额')
-    cost_peak = Column(Float, comment='成本峰位')
-    limit_up_score = Column(Float, comment='涨停评分')
-    
-    # 价格数据
+
+    funnel_score = Column(Float, comment='漏斗综合评分')
+    layer1_score = Column(Float, comment='基础过滤评分')
+    layer2_score = Column(Float, comment='基本面评分')
+    layer3_score = Column(Float, comment='技术面评分')
+    layer4_score = Column(Float, comment='资金面评分')
+    layer5_score = Column(Float, comment='形态评分')
+    ai_score = Column(Float, comment='AI综合评分')
+
+    entry_price = Column(Float, comment='建议买入价')
+    stoploss_price = Column(Float, comment='止损价')
+    take_profit_1 = Column(Float, comment='止盈1')
+    take_profit_2 = Column(Float, comment='止盈2')
+    support_price = Column(Float, comment='关键支撑位')
+    resistance_price = Column(Float, comment='关键压力位')
+
     close_price = Column(Float, comment='收盘价')
     volume = Column(Float, comment='成交量')
     turnover_rate = Column(Float, comment='换手率')
-    
+
     created_at = Column(DateTime, default=datetime.now)
 
     __table_args__ = (
