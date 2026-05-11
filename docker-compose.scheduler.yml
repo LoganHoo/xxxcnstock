@@ -10,9 +10,9 @@ services:
       - ./data:/app/data
       - ./logs:/app/logs
     environment:
-      - REDIS_HOST=${REDIS_HOST:-49.233.10.199}
-      - REDIS_PORT=${REDIS_PORT:-6379}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-100200}
+      - REDIS_HOST=49.233.10.199
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=100200
       - TZ=Asia/Shanghai
       - LOG_DIR=/app/logs
     restart: unless-stopped

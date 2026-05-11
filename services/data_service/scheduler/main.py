@@ -43,9 +43,10 @@ def main():
 
     redis_host = os.environ.get("REDIS_HOST", redis_config.get("host", "localhost"))
     redis_port = int(os.environ.get("REDIS_PORT", redis_config.get("port", 6379)))
+    redis_password = os.environ.get("REDIS_PASSWORD", redis_config.get("password", None))
 
     try:
-        redis_client = redis.Redis(host=redis_host, port=redis_port, db=0, socket_timeout=5)
+        redis_client = redis.Redis(host=redis_host, port=redis_port, password=redis_password, db=0, socket_timeout=5)
         redis_client.ping()
         logger.info(f"Redis 连接成功: {redis_host}:{redis_port}")
     except Exception as e:
