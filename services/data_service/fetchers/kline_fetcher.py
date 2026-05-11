@@ -225,6 +225,8 @@ async def fetch_single(code: str, fetcher, kline_path: Path, days: int,
                 new_date_col = _get_date_col(df_new)
                 if new_date_col != date_col:
                     df_new = df_new.rename(columns={new_date_col: date_col})
+                df_existing[date_col] = df_existing[date_col].astype(str)
+                df_new[date_col] = df_new[date_col].astype(str)
                 df_combined = pd.concat([df_existing, df_new], ignore_index=True)
                 df_combined = df_combined.drop_duplicates(subset=[date_col], keep='last')
                 df_combined = df_combined.sort_values(date_col).reset_index(drop=True)

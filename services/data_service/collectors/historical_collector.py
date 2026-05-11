@@ -156,36 +156,31 @@ class HistoricalCollector:
         if not target_date:
             return codes
 
-        codes_to_update = []
         target = datetime.strptime(target_date, "%Y-%m-%d").date()
 
-        for code in codes:
-            kline_file = self.kline_dir / f"{code}.parquet"
+        try:
+            import duckdb
+            conn = duckdb.connect(database=':memory:')
+            glob_pattern = str(self.kline_dir / '*.parquet')
 
-            if not kline_file.exists():
-                codes_to_update.append(code)
-                continue
+            result = conn.execute(f"""
+                SELECT code, MAX(date) as latest_date
+                FROM read_parquet('{glob_pattern}')
+                GROUP BY code
+            """).df()
 
-            try:
-                import pyarrow.parquet as pq
-                table = pq.read_table(kline_file)
-                date_col = None
-                if 'trade_date' in table.schema.names:
-                    date_col = 'trade_date'
-                elif 'date' in table.schema.names:
-                    date_col = 'date'
-                if date_col:
-                    dates = table.column(date_col).to_pylist()
-                    valid_dates = [d for d in dates if d is not None and str(d).strip()]
-                    if valid_dates:
-                        last_date_str = str(max(valid_dates))[:10]
-                        last = datetime.strptime(last_date_str, "%Y-%m-%d").date()
-                        if last < target:
-                            codes_to_update.append(code)
-            except Exception as e:
-                logger.warning(f"检查 {code} 失败: {e}")
-                codes_to_update.append(code)
+            if not result.empty:
+                result['latest_date'] = result['latest_date'].astype(str).str[:10]
+                result['latest'] = pd.to_datetime(result['latest_date'], format='%Y-%m-%d', errors='coerce').dt.date
+                result = result[result['latest'] < target]
+                codes_to_update = result['code'].tolist()
+            else:
+                codes_to_update = codes
+        except Exception as e:
+            logger.warning(f"DuckDB检查失败，回退到全量更新: {e}")
+            codes_to_update = codes
 
+        logger.info(f"DuckDB检查完成: {len(codes_to_update)}/{len(codes)} 只需要更新")
         return codes_to_update
 
     async def collect_kline(
