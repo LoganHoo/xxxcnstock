@@ -1,7 +1,7 @@
 {
   "version": "3.0",
   "task_id": "20260511_080635",
-  "timestamp": "2026-05-11T21:41:55.532919",
+  "timestamp": "2026-05-12T00:39:46.624326",
   "total": 5381,
   "completed": [
     "000001",
@@ -4947,9 +4947,7 @@
     "300851",
     "300852"
   ],
-  "failed": [
-    "000003"
-  ],
+  "failed": [],
   "skipped": [
     "301218",
     "301004",
@@ -10003,7 +10001,13 @@
     "000909",
     "002642",
     "002683",
-    "000603"
+    "000603",
+    "000638",
+    "300069",
+    "002731",
+    "300029",
+    "002808",
+    "002898"
   ],
   "delisted": [
     "300360",
@@ -12434,8 +12438,13 @@
       "error": ""
     },
     "000003": {
-      "success": false,
-      "error": "test error"
+      "code": "000003",
+      "success": true,
+      "rows": 500,
+      "source": "baostock→tencent",
+      "status": "",
+      "error": "",
+      "fallback_source": "tencent"
     },
     "000048": {
       "success": true,
@@ -13368,12 +13377,8 @@
       "status": "skipped_fresh"
     },
     "000638": {
-      "code": "000638",
       "success": true,
-      "rows": 2754,
-      "source": "baostock",
-      "status": "baostock_full",
-      "error": ""
+      "status": "skipped_fresh"
     },
     "000639": {
       "success": true,
@@ -18178,13 +18183,8 @@
       "status": "skipped_fresh"
     },
     "002731": {
-      "code": "002731",
       "success": true,
-      "rows": 500,
-      "source": "baostock→tencent",
-      "status": "",
-      "error": "",
-      "fallback_source": "tencent"
+      "status": "skipped_fresh"
     },
     "002732": {
       "success": true,
@@ -18497,13 +18497,8 @@
       "status": "skipped_fresh"
     },
     "002808": {
-      "code": "002808",
       "success": true,
-      "rows": 500,
-      "source": "baostock→tencent",
-      "status": "",
-      "error": "",
-      "fallback_source": "tencent"
+      "status": "skipped_fresh"
     },
     "002809": {
       "success": true,
@@ -18834,13 +18829,8 @@
       "status": "skipped_fresh"
     },
     "002898": {
-      "code": "002898",
       "success": true,
-      "rows": 500,
-      "source": "baostock→tencent",
-      "status": "",
-      "error": "",
-      "fallback_source": "tencent"
+      "status": "skipped_fresh"
     },
     "002899": {
       "success": true,
@@ -19501,13 +19491,8 @@
       "fallback_source": "tencent"
     },
     "300029": {
-      "code": "300029",
       "success": true,
-      "rows": 500,
-      "source": "baostock→tencent",
-      "status": "",
-      "error": "",
-      "fallback_source": "tencent"
+      "status": "skipped_fresh"
     },
     "300030": {
       "success": true,
@@ -19672,13 +19657,8 @@
       "status": "skipped_fresh"
     },
     "300069": {
-      "code": "300069",
       "success": true,
-      "rows": 500,
-      "source": "baostock→tencent",
-      "status": "",
-      "error": "",
-      "fallback_source": "tencent"
+      "status": "skipped_fresh"
     },
     "300070": {
       "success": true,
@@ -35366,8 +35346,8 @@
   },
   "stats": {
     "success_count": 4942,
-    "failed_count": 1,
-    "skipped_count": 5053,
+    "failed_count": 0,
+    "skipped_count": 5059,
     "delisted_count": 480,
     "total_rows": 3484768
   }

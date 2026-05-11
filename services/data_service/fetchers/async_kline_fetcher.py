@@ -18,7 +18,6 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import pandas as pd
-import polars as pl
 
 from .unified_fetcher import get_unified_fetcher
 from core.logger import setup_logger
@@ -134,7 +133,7 @@ class AsyncKlineFetcher:
                 output_file = kline_dir / f"{code}.parquet"
                 if is_incremental and output_file.exists():
                     try:
-                        df_existing = pl.read_parquet(output_file).to_pandas()
+                        df_existing = pd.read_parquet(output_file)
                         df_combined = pd.concat([df_existing, df_new], ignore_index=True)
                         date_col = 'trade_date' if 'trade_date' in df_combined.columns else 'date'
                         df_combined[date_col] = df_combined[date_col].astype(str)
@@ -198,7 +197,7 @@ class AsyncKlineFetcher:
 
         if output_file.exists():
             try:
-                df_existing = pl.read_parquet(output_file).to_pandas()
+                df_existing = pd.read_parquet(output_file)
                 # 兼容两种列名
                 date_col = None
                 if 'trade_date' in df_existing.columns:
@@ -263,10 +262,9 @@ class AsyncKlineFetcher:
             # 确保目录存在
             output_file.parent.mkdir(parents=True, exist_ok=True)
             
-            # 转换为Polars并保存
-            df_pl = pl.from_pandas(df)
-            df_pl.write_parquet(output_file)
-            
+            # 保存为Parquet
+            df.to_parquet(output_file, index=False)
+
             return True
         except Exception as e:
             logger.error(f"保存数据失败: {e}")

@@ -26,7 +26,6 @@ logger = logging.getLogger("check_data_freshness")
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-import polars as pl
 import pandas as pd
 from core.delisting_guard import get_delisting_guard
 
@@ -73,8 +72,8 @@ def check_data_freshness(target_date: str, max_age_days: int = 3) -> Dict:
     
     # 获取股票列表
     try:
-        stock_list_df = pl.read_parquet("data/stock_list.parquet")
-        all_codes = set(stock_list_df['code'].to_list())
+        stock_list_df = pd.read_parquet("data/stock_list.parquet")
+        all_codes = set(stock_list_df['code'].tolist())
         logger.info(f"📋 股票列表: {len(all_codes)} 只")
     except Exception as e:
         logger.error(f"❌ 读取股票列表失败: {e}")
@@ -108,19 +107,25 @@ def check_data_freshness(target_date: str, max_age_days: int = 3) -> Dict:
             logger.info(f"  进度: {i}/{len(parquet_files)}")
         
         try:
-            df = pl.read_parquet(kline_file)
+            df = pd.read_parquet(kline_file)
             
-            # 获取最新日期
+            # 获取最新日期 - pandas datetime 处理
+            date_col = None
             if 'date' in df.columns:
-                latest_str = str(df['date'].max())
+                date_col = df['date']
             elif 'trade_date' in df.columns:
-                latest_str = str(df['trade_date'].max())
-            else:
+                date_col = df['trade_date']
+            
+            if date_col is None:
                 logger.warning(f"⚠️ {code}: 未找到日期列")
                 error_files.append((code, "未找到日期列"))
                 continue
             
-            latest = datetime.strptime(latest_str, '%Y-%m-%d')
+            # pandas dt 处理
+            latest_dt = pd.to_datetime(date_col).max()
+            latest_date = latest_dt.date() if hasattr(latest_dt, 'date') else latest_dt
+            latest_str = str(latest_date)
+            latest = datetime.combine(latest_date, datetime.min.time())
             days_diff = (target - latest).days
             
             # 检查是否已退市

@@ -174,8 +174,8 @@ class DataCollectionController:
                 continue
 
             try:
-                import polars as pl
-                df = pl.read_parquet(kline_file)
+                import pandas as pd
+                df = pd.read_parquet(kline_file)
                 # 兼容两种列名: trade_date 和 date
                 date_col = None
                 if 'trade_date' in df.columns:
@@ -184,9 +184,11 @@ class DataCollectionController:
                     date_col = 'date'
 
                 if date_col:
-                    last_date = df[date_col].max()
-                    last = datetime.strptime(str(last_date), "%Y-%m-%d").date()
-
+                    last_date = pd.to_datetime(df[date_col], errors='coerce').max()
+                    if pd.isna(last_date):
+                        codes_to_update.append(code)
+                        continue
+                    last = last_date.date() if hasattr(last_date, 'date') else last_date
                     if last < target:
                         codes_to_update.append(code)
             except Exception as e:

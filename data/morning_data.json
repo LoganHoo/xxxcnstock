@@ -1,32 +1,32 @@
 {
-  "timestamp": "2026-04-18T17:23:41.855724",
-  "date": "2026-04-17",
+  "timestamp": "2026-05-12T01:31:13.063159",
+  "date": "2026-05-12",
   "us_index": {
-    "name": "\u7f8e\u80a1\u6307\u6570",
+    "name": "美股指数",
     "data": {},
     "status": "failed",
-    "error": "\u6240\u6709API\u5747\u5931\u8d25"
+    "error": "No module named 'requests'"
   },
   "asia_index": {
-    "name": "\u4e9a\u6d32\u80a1\u6307",
+    "name": "亚洲股指",
     "data": {},
     "status": "failed",
-    "error": "\u6240\u6709API\u5747\u5931\u8d25"
+    "error": "No module named 'requests'"
   },
   "us_futures": {
-    "name": "\u7f8e\u80a1\u671f\u8d27",
+    "name": "美股期货",
     "data": {},
     "status": "failed",
-    "error": "\u6240\u6709API\u5747\u5931\u8d25"
+    "error": "No module named 'requests'"
   },
   "ah_premium": {
-    "name": "AH\u6ea2\u4ef7",
-    "status": "pending",
+    "name": "AH溢价",
+    "status": "failed",
     "data": {}
   },
   "tracking": {
-    "name": "\u63a8\u8350\u8ddf\u8e2a",
+    "name": "推荐跟踪",
     "status": "skipped",
-    "note": "\u8ddf\u8e2a\u811a\u672c\u4e0d\u5b58\u5728"
+    "note": "跟踪脚本不存在"
   }
 }

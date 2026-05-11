@@ -4,7 +4,7 @@
 龙虎榜数据采集脚本
 
 采集每日龙虎榜数据，用于分析主力资金动向和游资行为。
-数据来源：Tushare Pro top_list 接口
+数据来源：微服务 DragonTigerFetcher (AKShare)
 
 采集字段：
 - 上榜股票列表
@@ -31,6 +31,10 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from core.market_guardian import enforce_market_closed
+from services.data_service.fetchers.market_behavior import (
+    DragonTigerFetcher,
+    fetch_dragon_tiger,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,7 +55,7 @@ class DragonTigerCollector:
 
     def __init__(self, config_path: str = None):
         self.config = self._load_config(config_path)
-        self.pro = None
+        self.fetcher = None
         self.data_dir = Path(self.config.get('data', {}).get('dragon_tiger_dir', 'data/dragon_tiger'))
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -72,24 +76,13 @@ class DragonTigerCollector:
             }
 
     def connect(self) -> bool:
-        """连接Tushare Pro"""
+        """初始化数据获取器"""
         try:
-            import tushare as ts
-            token = os.environ.get(
-                self.config.get('tushare', {}).get('token_env', 'TUSHARE_TOKEN')
-            )
-            if not token:
-                logger.error("TUSHARE_TOKEN not set")
-                return False
-            ts.set_token(token)
-            self.pro = ts.pro_api()
-            logger.info("Connected to Tushare Pro")
+            self.fetcher = DragonTigerFetcher()
+            logger.info("DragonTigerFetcher initialized")
             return True
-        except ImportError:
-            logger.error("Tushare not installed. Install with: pip install tushare")
-            return False
         except Exception as e:
-            logger.error(f"Failed to connect to Tushare: {e}")
+            logger.error(f"Failed to initialize DragonTigerFetcher: {e}")
             return False
 
     def fetch_top_list(self, trade_date: str) -> pd.DataFrame:
@@ -102,32 +95,18 @@ class DragonTigerCollector:
         Returns:
             DataFrame with top list data
         """
-        if not self.pro:
+        if not self.fetcher:
             if not self.connect():
                 return pd.DataFrame()
 
         try:
             date_str = trade_date.replace('-', '')
 
-            df = self.pro.top_list(trade_date=date_str)
+            df = fetch_dragon_tiger(trade_date=date_str)
 
             if df is None or df.empty:
                 logger.warning(f"No top list data for {trade_date}")
                 return pd.DataFrame()
-
-            df = df.rename(columns={
-                'ts_code': 'code',
-                'name': 'name',
-                'close': 'close_price',
-                'pct_change': 'price_change_pct',
-                'turnover_rate': 'turnover_ratio',
-                'amount': 'trade_amount',
-                'l_buy': 'buy_amount',
-                'l_sell': 'sell_amount',
-                'net_amount': 'net_buy_amount',
-                'buy_amount': 'total_buy_amount',
-                'sell_amount': 'total_sell_amount'
-            })
 
             df['trade_date'] = trade_date
 
@@ -148,33 +127,20 @@ class DragonTigerCollector:
         Returns:
             DataFrame with institution trading details
         """
-        if not self.pro:
+        if not self.fetcher:
             if not self.connect():
                 return pd.DataFrame()
 
         try:
             date_str = trade_date.replace('-', '')
 
-            df = self.pro.top_inst(trade_date=date_str)
+            df = self.fetcher.fetch_institution_trading(date_str, date_str)
 
             if df is None or df.empty:
                 logger.warning(f"No institution data for {trade_date}")
                 return pd.DataFrame()
 
-            df = df.rename(columns={
-                'ts_code': 'code',
-                'exalter': 'broker_name',
-                'buy': 'buy_amount',
-                'sell': 'sell_amount',
-                'net_buy': 'net_buy_amount',
-                'side': 'trade_side'
-            })
-
             df['trade_date'] = trade_date
-
-            df['is_institution'] = df['broker_name'].str.contains(
-                '机构专用', na=False
-            )
 
             logger.info(f"Fetched {len(df)} institution records for {trade_date}")
             return df

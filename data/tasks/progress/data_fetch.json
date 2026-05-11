@@ -1,0 +1,9 @@
+{
+  "task_name": "data_fetch",
+  "status": "running",
+  "progress": 40,
+  "message": "开始主采集，输出目录 data/kline",
+  "updated_at": "2026-05-12T01:39:15.589525",
+  "started_at": "2026-05-12T01:39:15.579279",
+  "extra": {}
+}

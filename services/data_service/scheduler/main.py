@@ -5,7 +5,7 @@ import logging
 import signal
 from pathlib import Path
 
-project_root = Path(__file__).parent.parent.parent
+project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 from core.logger import setup_logger
@@ -89,8 +89,8 @@ def main():
 
     scheduler_service.start()
 
-    logger.info("调度服务已启动，API 监听 0.0.0.0:5000")
-    api.run(host="0.0.0.0", port=5000)
+    logger.info("调度服务已启动，API 监听 0.0.0.0:5001")
+    api.run(host="0.0.0.0", port=5001)
 
 
 if __name__ == "__main__":

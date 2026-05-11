@@ -181,16 +181,10 @@ class FundamentalFetcher:
         Returns:
             DataFrame
         """
-        import polars as pl
         import pandas as pd
-        
+
         try:
-            # 尝试用pandas读取（更稳定）
-            try:
-                df_stocks = pd.read_parquet(stock_list_path)
-            except Exception:
-                # polars备用
-                df_stocks = pl.read_parquet(stock_list_path).to_pandas()
+            df_stocks = pd.read_parquet(stock_list_path)
             
             # 过滤有效A股代码
             stock_list = []

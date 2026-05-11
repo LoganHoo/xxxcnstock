@@ -8,42 +8,368 @@ scheduler:
 
 # 任务列表
 tasks:
-  # 数据采集任务（需要分布式锁）
+  # ========== 核心流水线 ==========
+
+  # 09:05 - 盘前系统环境检查
+  - name: "system_health_check"
+    description: "【0.系统检查-盘前】检查磁盘空间、网络连接、API可用性等前置条件"
+    script: "scripts/pipeline/system_health_check.py"
+    schedule: "5 9 * * 1-5"
+    enabled: true
+    timeout: 240
+    requires_lock: false
+
+  # 15:55 - 盘后系统环境检查
+  - name: "system_health_check_post"
+    description: "【0.系统检查-盘后】检查磁盘空间、网络连接、API可用性等前置条件"
+    script: "scripts/pipeline/system_health_check.py"
+    schedule: "55 15 * * 1-5"
+    enabled: true
+    timeout: 240
+    requires_lock: false
+
+  # 16:00 - 基础数据采集（收盘后）
+  - name: "data_fetch"
+    description: "【1.数据采集】采集A股所有行情数据（日线）- 微服务主备架构"
+    script: "scripts/pipeline/data_collect_with_validation.py"
+    schedule: "0 16 * * 1-5"
+    enabled: true
+    timeout: 3600
+    requires_lock: true
+    lock_key: "data_fetch"
+
+  # 16:08 - 涨停数据采集
+  - name: "limitup_data_collect"
+    description: "【涨停系统-1.涨停数据】采集每日涨停股票列表和连板数据"
+    script: "scripts/pipeline/limitup_data_collect.py"
+    schedule: "8 16 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: true
+    lock_key: "limitup_data"
+
+  # 16:18 - 资金流向数据采集
+  - name: "fund_flow_collect"
+    description: "【涨停系统-2.资金流向】采集个股资金流向数据（主力/散户资金流向）"
+    script: "scripts/pipeline/fund_flow_collect.py"
+    schedule: "18 16 * * 1-5"
+    enabled: true
+    timeout: 900
+    requires_lock: true
+    lock_key: "fund_flow"
+
+  # 17:00 - 智能数据审计
+  - name: "data_audit_unified"
+    description: "【2.2.智能数据审计】验证数据新鲜度、完整性、质量（带熔断机制）"
+    script: "scripts/pipeline/smart_data_audit.py"
+    schedule: "0 17 * * 1-5"
+    enabled: true
+    timeout: 1800
+    requires_lock: true
+    lock_key: "data_audit"
+
+  # 17:30 - 每日K线数据采集
   - name: "daily_data_collection"
     description: "每日K线数据采集"
     script: "scripts/pipeline/data_collect.py"
-    schedule: "30 17 * * 1-5"  # 工作日 17:30
+    schedule: "30 17 * * 1-5"
     enabled: true
-    timeout: 7200  # 2小时
+    timeout: 7200
     requires_lock: true
     lock_key: "data_collection"
 
-  # 数据质量检查（需要分布式锁）
+  # 17:35 - 龙虎榜数据采集
+  - name: "dragon_tiger_fetch"
+    description: "【2.1.龙虎榜采集】延迟发布的龙虎榜数据"
+    script: "scripts/pipeline/fetch_dragon_tiger.py"
+    schedule: "35 17 * * 1-5"
+    enabled: true
+    timeout: 1800
+    requires_lock: true
+    lock_key: "dragon_tiger"
+
+  # 17:40 - CVD指标计算
+  - name: "calculate_cvd"
+    description: "【2.5.CVD计算】计算60日累积成交量差指标"
+    script: "scripts/pipeline/calculate_cvd.py"
+    schedule: "40 17 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: true
+    lock_key: "calculate_cvd"
+
+  # 17:45 - 龙虎榜数据采集（新版）
+  - name: "dragon_tiger_collect"
+    description: "【涨停系统-3.龙虎榜】采集龙虎榜数据和机构交易明细"
+    script: "scripts/pipeline/dragon_tiger_collect.py"
+    schedule: "45 17 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: true
+    lock_key: "dragon_tiger"
+
+  # 17:50 - 当日复盘分析
+  - name: "market_review"
+    description: "【3.复盘分析】采集和更新大盘数据，计算涨跌停家数、板块强度、CVD资金净流入"
+    script: "scripts/pipeline/daily_review.py"
+    schedule: "50 17 * * 1-5"
+    enabled: true
+    timeout: 900
+    requires_lock: true
+    lock_key: "market_review"
+
+  # 18:00 - 盘后涨停板选股
+  - name: "afternoon_limit_up"
+    description: "【涨停系统-4.盘后选股】整合所有策略进行盘后选股"
+    script: "scripts/pipeline/afternoon_limit_up.py"
+    schedule: "0 18 * * 1-5"
+    enabled: true
+    timeout: 900
+    requires_lock: true
+    lock_key: "afternoon_limit_up"
+
+  # 18:00 - 数据质量检查
   - name: "data_quality_check"
     description: "数据质量检查"
-    script: "scripts/pipeline/data_quality_check.py"
-    schedule: "0 18 * * 1-5"  # 工作日 18:00
+    script: "scripts/pipeline/data_audit.py"
+    schedule: "0 18 * * 1-5"
     enabled: true
-    timeout: 1800  # 30分钟
+    timeout: 1800
     requires_lock: true
     lock_key: "data_collection"
 
-  # 系统监控（不需要锁）
-  - name: "system_monitor"
-    description: "系统健康检查"
-    script: "scripts/monitor/system_check.py"
-    schedule: "*/15 * * * *"  # 每15分钟
+  # 18:10 - 选股复盘
+  - name: "picks_review"
+    description: "【3.5.选股复盘】验证昨日推荐股票表现"
+    script: "scripts/pipeline/stock_pick.py"
+    schedule: "10 18 * * 1-5"
     enabled: true
-    timeout: 300  # 5分钟
+    timeout: 600
     requires_lock: false
 
-  # 数据新鲜度检查（不需要锁）
+  # 18:15 - 涨停板策略每日复盘
+  - name: "limitup_daily_review"
+    description: "【涨停系统-5.每日复盘】跟踪昨日选股信号表现"
+    script: "scripts/pipeline/daily_review.py"
+    schedule: "15 18 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: false
+
+  # 18:20 - 回撤分析
+  - name: "drawdown_analysis"
+    description: "【3.8.回撤分析】分析昨日选股回撤情况，识别因子失效和系统性风险"
+    script: "scripts/pipeline/drawdown_analyzer.py"
+    schedule: "20 18 * * 1-5"
+    enabled: true
+    timeout: 300
+    requires_lock: false
+
+  # 18:25 - 每日选股复盘
+  - name: "daily_selection_review"
+    description: "【3.6.每日选股复盘】更新昨日选股次日表现，批量更新历史多周期表现"
+    script: "scripts/pipeline/daily_stock_selection_review.py"
+    schedule: "25 18 * * 1-5"
+    enabled: true
+    timeout: 1800
+    requires_lock: false
+
+  # 18:30 - 推送完整复盘报告
+  - name: "review_report"
+    description: "【4.完整复盘】大盘关键位和预测、热点热门、个股分析"
+    script: "scripts/pipeline/send_review_report.py"
+    schedule: "30 18 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: false
+
+  # 19:00 - 推送精简复盘快报
+  - name: "review_brief"
+    description: "【4b.复盘快报】包含今日热点，资金流向、DQ质检摘要"
+    script: "scripts/pipeline/morning_push.py"
+    schedule: "0 19 * * 1-5"
+    enabled: true
+    timeout: 300
+    requires_lock: false
+
+  # 20:00 - 预计算技术指标
+  - name: "precompute"
+    description: "【5.预计算】计算技术指标评分"
+    script: "scripts/pipeline/precompute.py"
+    schedule: "0 20 * * 1-5"
+    enabled: true
+    timeout: 1200
+    requires_lock: false
+
+  # 20:35 - 晚间综合预测
+  - name: "night_analysis"
+    description: "【6.晚间分析】结合消息面的选股推荐"
+    script: "scripts/pipeline/night_picks.py"
+    schedule: "35 20 * * 1-5"
+    enabled: true
+    timeout: 900
+    requires_lock: false
+
+  # ========== 晨间流水线 ==========
+
+  # 08:30 - 更新晨间数据
+  - name: "morning_data"
+    description: "【7.晨间更新】更新隔夜外盘数据"
+    script: "scripts/pipeline/morning_update.py"
+    schedule: "30 8 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: false
+
+  # 08:32 - 采集宏观数据
+  - name: "collect_macro"
+    description: "【7.1宏观数据】采集美元指数、美债、人民币等宏观指标"
+    script: "scripts/pipeline/collect_macro_data.py"
+    schedule: "32 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:34 - 采集石油美元数据
+  - name: "collect_oil_dollar"
+    description: "【7.2石油美元】采集原油价格及石油美元动态"
+    script: "scripts/pipeline/collect_oil_dollar.py"
+    schedule: "34 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:36 - 采集大宗商品数据
+  - name: "collect_commodities"
+    description: "【7.3大宗商品】采集黄金、铜、碳酸锂等大宗商品价格"
+    script: "scripts/pipeline/collect_commodities.py"
+    schedule: "36 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:38 - 采集情绪数据
+  - name: "collect_sentiment"
+    description: "【7.4情绪数据】采集炸板率、恐慌贪婪指数等情绪指标"
+    script: "scripts/pipeline/collect_sentiment.py"
+    schedule: "38 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:40 - 采集新闻数据
+  - name: "collect_news"
+    description: "【7.5新闻数据】采集国内外重要财经新闻"
+    script: "scripts/pipeline/collect_news.py"
+    schedule: "40 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:42 - 大盘关键位与CVD分析
+  - name: "market_analysis"
+    description: "【7.6大盘分析】计算大盘关键位和CVD指标"
+    script: "scripts/pipeline/market_analysis.py"
+    schedule: "42 8 * * 1-5"
+    enabled: true
+    timeout: 120
+    requires_lock: false
+
+  # 08:45 - 推送晨前哨报
+  - name: "morning_report"
+    description: "【8.晨前哨报】外盘+大盘+宏观+石油+大宗+情绪+事件+AI建议"
+    script: "scripts/pipeline/send_morning_shao.py"
+    schedule: "45 8 * * 1-5"
+    enabled: true
+    timeout: 300
+    requires_lock: false
+
+  # ========== 09:26 核心任务 ==========
+
+  # 09:15 - 数据准备
+  - name: "fund_behavior_resource_prepare"
+    description: "【核心-资源保障】09:26任务数据准备"
+    script: "scripts/pipeline/fund_behavior_resource_guardian.py"
+    args: ["--phase", "prepare"]
+    schedule: "15 9 * * 1-5"
+    enabled: true
+    timeout: 420
+    requires_lock: true
+    lock_key: "fund_behavior"
+
+  # 09:22 - 资源验证
+  - name: "fund_behavior_resource_validate"
+    description: "【核心-资源保障】09:26任务资源验证"
+    script: "scripts/pipeline/fund_behavior_resource_guardian.py"
+    args: ["--phase", "validate"]
+    schedule: "22 9 * * 1-5"
+    enabled: true
+    timeout: 180
+    requires_lock: true
+    lock_key: "fund_behavior"
+
+  # 09:24 - 前置检查
+  - name: "fund_behavior_guardian_check"
+    description: "【核心-前置检查】9:26核心任务前置条件检查"
+    script: "scripts/pipeline/core_task_guardian.py"
+    args: ["check"]
+    schedule: "24 9 * * 1-5"
+    enabled: true
+    timeout: 90
+    requires_lock: true
+    lock_key: "fund_behavior"
+
+  # 09:26 - 核心任务执行
+  - name: "fund_behavior_report"
+    description: "【9.量化决策-核心】资金行为学策略执行与报告推送"
+    script: "scripts/pipeline/core_task_guardian.py"
+    args: ["full"]
+    schedule: "26 9 * * 1-5"
+    enabled: true
+    timeout: 600
+    requires_lock: true
+    lock_key: "fund_behavior"
+
+  # ========== 周末任务 ==========
+
+  # 每周六 10:00 - 批量更新历史多周期表现
+  - name: "weekly_multi_period_update"
+    description: "【周末任务】批量更新过去90天的多周期表现数据"
+    script: "scripts/pipeline/daily_stock_selection_review.py"
+    args: ["--update-multi-period", "--days-back", "90"]
+    schedule: "0 10 * * 6"
+    enabled: true
+    timeout: 3600
+    requires_lock: true
+    lock_key: "weekly_update"
+
+  # 每周日 20:00 - 涨停板策略周冠军报告
+  - name: "weekly_champion_report"
+    description: "【涨停系统-6.周冠军报告】每周生成策略对比报告"
+    script: "scripts/pipeline/weekly_champion_report.py"
+    schedule: "0 20 * * 0"
+    enabled: true
+    timeout: 600
+    requires_lock: false
+
+  # ========== 系统维护 ==========
+
+  # 系统监控（每15分钟）
+  - name: "system_monitor"
+    description: "系统健康检查"
+    script: "scripts/pipeline/system_health_check.py"
+    schedule: "*/15 * * * *"
+    enabled: true
+    timeout: 300
+    requires_lock: false
+
+  # 数据新鲜度检查（每2小时）
   - name: "data_freshness_check"
     description: "检查数据新鲜度"
-    script: "scripts/monitor/check_freshness.py"
-    schedule: "0 */2 * * *"  # 每2小时
+    script: "scripts/pipeline/check_data_freshness.py"
+    schedule: "0 */2 * * *"
     enabled: true
-    timeout: 600  # 10分钟
+    timeout: 600
     requires_lock: false
 
 # 分布式锁配置
@@ -51,17 +377,14 @@ lock:
   redis:
     host: "${REDIS_HOST:-localhost}"
     port: ${REDIS_PORT:-6379}
+    password: "${REDIS_PASSWORD:-}"
     db: 0
     socket_timeout: 5
-  # 锁默认过期时间（秒）
   default_ttl: 7200
-  # 是否自动续期
   auto_renew: true
 
 # 监控配置
 monitoring:
   enabled: true
-  # Prometheus 指标端口
   metrics_port: 9090
-  # 任务执行历史保留数量
   max_history: 1000

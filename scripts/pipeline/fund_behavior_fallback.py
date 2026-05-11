@@ -74,10 +74,12 @@ def generate_fallback_report():
 def send_fallback_notification(report: dict):
     """发送兜底通知"""
     try:
-        from services.notification_sender import send_notification
-        
+        import asyncio
+        from services.notify_service.signal_hub import SignalHub
+        from core.models import NotificationMessage, SignalLevel
+
         title = f"🟡 资金行为学策略 - 兜底报告 ({report['date']})"
-        
+
         content = f"""
 ⚠️ 核心任务执行异常，已生成兜底报告
 
@@ -88,12 +90,19 @@ def send_fallback_notification(report: dict):
 """
         for rec in report['recommendations']:
             content += f"  {rec['content']}\n"
-        
+
         content += "\n技术团队已收到告警并处理中..."
-        
-        send_notification(title, content)
+
+        hub = SignalHub()
+        msg = NotificationMessage(
+            title=title,
+            content=content,
+            level=SignalLevel.B,
+            channels=["wechat", "dingtalk"]
+        )
+        asyncio.run(hub.send_signal(msg))
         logger.info("兜底通知已发送")
-        
+
     except Exception as e:
         logger.error(f"发送兜底通知失败: {e}")
 
