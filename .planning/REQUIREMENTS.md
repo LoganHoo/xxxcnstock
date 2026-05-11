@@ -72,7 +72,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHED-01 | Phase 1 | Pending |
+| SCHED-01 | Phase 1 | Complete |
 | SCHED-02 | Phase 2 | Pending |
 | SCHED-03 | Phase 3 | Pending |
 | SCHED-04 | Phase 4 | Pending |

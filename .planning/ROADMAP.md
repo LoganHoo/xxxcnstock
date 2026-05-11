@@ -12,7 +12,7 @@ This roadmap stabilizes the XCNStock scheduling and pipeline system so it runs w
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Scheduler Process Stability** - APScheduler keeps running without crashes or hangs
+- [x] **Phase 1: Scheduler Process Stability** - APScheduler keeps running without crashes or hangs ✓ 2026-05-12
 - [ ] **Phase 2: Task Failure Recovery** - Failed tasks auto-retry with exponential backoff and alert on exhaustion
 - [ ] **Phase 3: Execution History** - Task execution records persisted and queryable
 - [ ] **Phase 4: Pipeline Dependency Chains** - Pipeline tasks execute in correct dependency order
@@ -182,7 +182,7 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Scheduler Process Stability | 0/2 | Planning complete | - |
+| 1. Scheduler Process Stability | 2/2 | ✓ Complete | 2026-05-12 |
 | 2. Task Failure Recovery | 0/? | Not started | - |
 | 3. Execution History | 0/? | Not started | - |
 | 4. Pipeline Dependency Chains | 0/? | Not started | - |
