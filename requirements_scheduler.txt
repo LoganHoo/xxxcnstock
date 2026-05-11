@@ -2,3 +2,11 @@ apscheduler==3.10.4
 redis==5.0.1
 flask==3.0.0
 pyyaml==6.0.1
+loguru==0.7.2
+pydantic==2.5.0
+pydantic-settings==2.1.0
+psutil==5.9.6
+pymysql==1.1.0
+polars==1.19.0
+pandas==2.2.0
+pyarrow==18.1.0

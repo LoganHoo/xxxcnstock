@@ -1,10 +1,13 @@
 """任务执行器"""
-import asyncio
+import time
+import json
 import logging
 import subprocess
 import signal
-from typing import Dict, Optional, Callable
-from dataclasses import dataclass
+import os
+from typing import Dict, Optional, Callable, List
+from dataclasses import dataclass, asdict
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -19,20 +22,66 @@ class TaskResult:
     duration: float
 
 
+class ExecutionHistory:
+    """执行历史记录"""
+    
+    def __init__(self, history_dir: str = "/app/logs/scheduler"):
+        self.history_dir = history_dir
+        os.makedirs(history_dir, exist_ok=True)
+        self.history_file = os.path.join(history_dir, "execution_history.json")
+    
+    def add(self, task_name: str, result: TaskResult):
+        """添加执行记录"""
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "task_name": task_name,
+            "success": result.success,
+            "returncode": result.returncode,
+            "duration": result.duration,
+            "stderr": result.stderr[:1000] if result.stderr else ""
+        }
+        
+        history = self.load()
+        history.insert(0, entry)
+        history = history[:1000]
+        
+        with open(self.history_file, 'w') as f:
+            json.dump(history, f, ensure_ascii=False, indent=2)
+    
+    def load(self) -> List[Dict]:
+        """加载执行历史"""
+        if not os.path.exists(self.history_file):
+            return []
+        try:
+            with open(self.history_file, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return []
+    
+    def get_recent(self, limit: int = 50) -> List[Dict]:
+        """获取最近执行记录"""
+        return self.load()[:limit]
+
+
 class TaskExecutor:
     """统一任务执行器，支持分布式锁和超时控制"""
 
-    def __init__(self, redis_client=None, default_timeout: int = 3600):
+    def __init__(self, redis_client=None, default_timeout: int = 3600, history_dir: str = None):
         """
         初始化任务执行器
 
         Args:
             redis_client: Redis 客户端实例（用于分布式锁）
             default_timeout: 默认超时时间(秒)
+            history_dir: 执行历史保存目录
         """
+        import os
         self.redis = redis_client
         self.default_timeout = default_timeout
         self._running_tasks: Dict[str, subprocess.Popen] = {}
+        default_history = os.environ.get("LOG_DIR", "/app/logs")
+        history_path = history_dir or os.path.join(default_history, "scheduler")
+        self.history = ExecutionHistory(history_path)
 
     def execute(self, script_path: str, timeout: Optional[int] = None,
                 cwd: Optional[str] = None, env: Optional[Dict] = None) -> TaskResult:
@@ -49,7 +98,7 @@ class TaskExecutor:
             TaskResult 执行结果
         """
         timeout = timeout or self.default_timeout
-        start_time = asyncio.get_event_loop().time()
+        start_time = time.time()
 
         try:
             result = subprocess.run(
@@ -59,7 +108,7 @@ class TaskExecutor:
                 cwd=cwd,
                 env=env
             )
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.time() - start_time
 
             return TaskResult(
                 success=result.returncode == 0,
@@ -69,7 +118,7 @@ class TaskExecutor:
                 duration=duration
             )
         except subprocess.TimeoutExpired:
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.time() - start_time
             logger.error(f"任务执行超时 {script_path}: {timeout}s")
             return TaskResult(
                 success=False,
@@ -79,7 +128,7 @@ class TaskExecutor:
                 duration=duration
             )
         except Exception as e:
-            duration = asyncio.get_event_loop().time() - start_time
+            duration = time.time() - start_time
             logger.error(f"任务执行失败 {script_path}: {e}")
             return TaskResult(
                 success=False,
@@ -89,7 +138,7 @@ class TaskExecutor:
                 duration=duration
             )
 
-    async def execute_with_lock(self, task_name: str, script_path: str,
+    def execute_with_lock(self, task_name: str, script_path: str,
                                  lock_timeout: int = 7200, task_timeout: Optional[int] = None,
                                  lock_manager=None) -> TaskResult:
         """
@@ -105,11 +154,13 @@ class TaskExecutor:
         Returns:
             TaskResult 执行结果
         """
-        from .redis_lock import RedisLockManager
+        from services.data_service.scheduler.locks.redis_lock import RedisLockManager
         lm = lock_manager or (RedisLockManager(self.redis) if self.redis else None)
 
         if not lm:
-            return self.execute(script_path, task_timeout)
+            result = self.execute(script_path, task_timeout)
+            self.history.add(task_name, result)
+            return result
 
         lock_key = f"scheduler:{task_name}"
         if not lm.acquire(lock_key, timeout=lock_timeout, blocking=False):
@@ -118,6 +169,7 @@ class TaskExecutor:
 
         try:
             result = self.execute(script_path, task_timeout)
+            self.history.add(task_name, result)
             return result
         finally:
             lm.release(lock_key)
