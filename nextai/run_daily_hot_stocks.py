@@ -26,7 +26,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / 'workflows'))
-from key_levels_client import KeyLevelsClient
+from nextai.key_levels_client import KeyLevelsClient
 
 
 def import_duckdb():

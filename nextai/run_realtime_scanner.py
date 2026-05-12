@@ -39,7 +39,7 @@ from core.logger import get_logger
 
 logger = get_logger("realtime_scanner")
 
-from key_levels_client import KeyLevelsClient
+from nextai.key_levels_client import KeyLevelsClient
 
 
 DATA_DIR = PROJECT_ROOT / 'data'
