@@ -1397,7 +1397,7 @@ def is_market_open() -> bool:
 
 def run_continuous_scan(args):
     try:
-        from apscheduler.schedulers.blocking import BlockingScheduler
+        from apscheduler.schedulers.background import BackgroundScheduler
     except ImportError:
         logger.error("需要安装 apscheduler: pip install apscheduler")
         return
@@ -1504,11 +1504,11 @@ def run_continuous_scan(args):
     print(f"   异常邮件: {'已配置' if os.environ.get('SMTP_HOST') else '未配置'}")
     print("   按 Ctrl+C 停止扫描\n")
 
-    scheduler = BlockingScheduler()
+    scheduler = BackgroundScheduler()
 
     job_scan()
 
-    scheduler.add_job(job_scan, 'interval', minutes=args.interval, id='scan_job')
+    scheduler.add_job(job_scan, 'interval', minutes=args.interval, id='scan_job', misfire_grace_time=60)
     scheduler.start()
 
 
