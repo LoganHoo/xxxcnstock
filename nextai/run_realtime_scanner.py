@@ -232,30 +232,39 @@ def load_realtime_quotes() -> pd.DataFrame:
 def load_realtime_quotes_auto(name_map: Dict) -> pd.DataFrame:
     """自动切换数据源: akshare -> tencent -> baostock"""
     logger.info("正在自动选择数据源...")
+    old_env = disable_proxy()
 
     try:
-        import akshare as ak
-        old_env = disable_proxy()
         try:
+            import akshare as ak
             df = ak.stock_zh_a_spot_em()
             if df is not None and not df.empty and len(df) > 1000:
-                restore_proxy(old_env)
                 logger.info(f"akshare成功获取 {len(df)} 只股票")
                 return df
+            logger.warning(f"akshare数据不足: {0 if df is None else len(df)} 只")
+        except ImportError:
+            logger.warning("akshare未安装")
         except Exception as e:
             logger.warning(f"akshare失败: {e}")
-            restore_proxy(old_env)
-    except ImportError:
-        logger.warning("akshare未安装")
 
-    logger.info("切换到腾讯财经...")
-    df = load_realtime_quotes_tencent(name_map)
-    if df is not None and not df.empty and len(df) > 1000:
-        logger.info(f"腾讯财经成功获取 {len(df)} 只股票")
-        return df
+        logger.info("切换到腾讯财经...")
+        df = load_realtime_quotes_tencent(name_map)
+        if df is not None and not df.empty and len(df) > 1000:
+            logger.info(f"腾讯财经成功获取 {len(df)} 只股票")
+            return df
+        logger.warning(f"腾讯财经数据不足: {0 if df is None else len(df)} 只")
 
-    logger.info("切换到baostock...")
-    return load_realtime_quotes_baostock(name_map)
+        logger.info("切换到baostock...")
+        df = load_realtime_quotes_baostock(name_map)
+        if df is not None and not df.empty and len(df) > 100:
+            logger.info(f"Baostock成功获取 {len(df)} 只股票")
+            return df
+        logger.warning(f"Baostock数据不足: {0 if df is None else len(df)} 只")
+
+        logger.error("所有数据源均失败")
+        return pd.DataFrame()
+    finally:
+        restore_proxy(old_env)
 
 
 def load_realtime_quotes_baostock(name_map: Dict) -> pd.DataFrame:
@@ -264,13 +273,11 @@ def load_realtime_quotes_baostock(name_map: Dict) -> pd.DataFrame:
     import pandas as pd
 
     logger.info("正在通过Baostock获取实时行情...")
-    old_env = disable_proxy()
 
     try:
         lg = bs.login()
         if lg.error_code != '0':
             logger.error(f"Baostock登录失败: {lg.error_msg}")
-            restore_proxy(old_env)
             return pd.DataFrame()
 
         all_data = []
@@ -296,7 +303,6 @@ def load_realtime_quotes_baostock(name_map: Dict) -> pd.DataFrame:
                 all_data.append(rs.get_row_data())
 
         bs.logout()
-        restore_proxy(old_env)
 
         if not all_data:
             return pd.DataFrame()
@@ -313,7 +319,6 @@ def load_realtime_quotes_baostock(name_map: Dict) -> pd.DataFrame:
 
     except Exception as e:
         logger.error(f"Baostock获取实时行情失败: {e}")
-        restore_proxy(old_env)
         return pd.DataFrame()
 
 
@@ -325,8 +330,6 @@ def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
     import time
 
     logger.info("正在通过腾讯财经获取实时行情...")
-
-    old_env = disable_proxy()
 
     try:
         all_data = []
@@ -424,8 +427,6 @@ def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
     except Exception as e:
         logger.error(f"腾讯财经获取实时行情失败: {e}")
         return pd.DataFrame()
-    finally:
-        restore_proxy(old_env)
 
 
 def load_limit_pool() -> pd.DataFrame:
