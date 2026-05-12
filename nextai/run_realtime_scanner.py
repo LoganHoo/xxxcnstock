@@ -113,6 +113,7 @@ class ScanResult:
     reversal: List[SignalStock] = field(default_factory=list)
     strong_turnover: List[SignalStock] = field(default_factory=list)
     strong_signal: List[SignalStock] = field(default_factory=list)
+    quality_non_limit: List[SignalStock] = field(default_factory=list)
 
 
 def get_board_type(code: str) -> str:
@@ -831,6 +832,88 @@ def scan_strong_signal(quotes: pd.DataFrame, name_map: Dict) -> List[SignalStock
     return results[:30]
 
 
+def scan_quality_non_limit(quotes: pd.DataFrame, name_map: Dict, limit_up_codes: set) -> List[SignalStock]:
+    """从未涨停的股票中筛选优质股票"""
+    results = []
+    df = quotes.copy()
+
+    df = df[~df['code'].isin(limit_up_codes)]
+    df = df[df['price'] > 0]
+    df = df[df['change_pct'] > 0]
+    df = df[df['turnover_rate'] >= 3]
+    df = df[df['amplitude'] > 3]
+    df = df.sort_values('turnover_rate', ascending=False)
+
+    for _, row in df.head(200).iterrows():
+        code = str(row['code'])
+        if code not in name_map:
+            continue
+
+        kline = load_hist_kline(code, 60)
+        if kline is None or len(kline) < 20:
+            continue
+
+        closes = kline['close'].tolist()
+        if len(closes) < 20:
+            continue
+
+        ma5 = sum(closes[-5:]) / 5
+        ma10 = sum(closes[-10:]) / 10
+        ma20 = sum(closes[-20:]) / 20
+        ma60 = sum(closes[-60:]) / 60 if len(closes) >= 60 else ma20
+
+        current_price = row['price']
+
+        ma_bullish = ma5 > ma10 > ma20
+        price_above_ma20 = current_price > ma20
+        not_too_far_from_ma = (current_price - ma20) / ma20 < 0.15
+
+        volume_today = float(row.get('volume', 0) or 0)
+        avg_vol_5 = sum(vol for vol in kline['volume'].tolist()[-6:-1]) / 5 if len(kline) >= 6 else volume_today
+        vol_ratio = volume_today / avg_vol_5 if avg_vol_5 > 0 else 0
+
+        kl = enrich_with_key_levels(code, current_price)
+        kl_score = kl.get('key_level_score', 50.0)
+        is_near_support = kl.get('is_near_support', False)
+
+        score = 0.0
+        if ma_bullish:
+            score += 25
+        if price_above_ma20:
+            score += 15
+        if not_too_far_from_ma:
+            score += 10
+        if vol_ratio > 1.5:
+            score += 20
+        if is_near_support:
+            score += 15
+        score += (kl_score - 50) * 0.3
+        score += min(row['change_pct'], 10) * 2
+
+        signal = SignalStock(
+            code=code,
+            name=str(row['name']),
+            price=float(row['price']),
+            change_pct=float(row['change_pct']),
+            volume=int(row['volume']),
+            amount=float(row['amount']),
+            turnover_rate=float(row.get('turnover_rate', 0) or 0),
+            high=float(row['high']),
+            low=float(row['low']),
+            open=float(row['open']),
+            pre_close=float(row['pre_close']),
+            signal_type='优质非涨停',
+            signal_score=score,
+            reason=f"MA多头{'✅' if ma_bullish else '❌'} 量比{vol_ratio:.1f} 换手{row.get('turnover_rate', 0):.1f}%",
+            amplitude=float(row.get('amplitude', 0) or 0),
+            volume_ratio=vol_ratio,
+        )
+        results.append(signal)
+
+    results.sort(key=lambda x: x.signal_score, reverse=True)
+    return results[:20]
+
+
 def print_results(result: ScanResult):
     now = datetime.now()
     is_trading = time(9, 30) <= now.time() <= time(15, 0)
@@ -908,6 +991,16 @@ def print_results(result: ScanResult):
         for s in non_limit_signals[:5]:
             print(f"  {s.code:<8} {s.name:<10} {s.change_pct:>6.2f}% {s.volume_ratio:>7.1f} {s.turnover_rate:>9.1f}% {s.signal_score:>9.1f}")
         print(f"{'='*100}")
+
+    if result.quality_non_limit:
+        print(f"\n{'='*100}")
+        print(f"  💎 优质非涨停 (均线多头+换手活跃+关键位支撑)")
+        print(f"  {'代码':<8} {'名称':<10} {'涨幅':<8} {'换手率':<10} {'MA多头':<10} {'量比':<8} {'评分':<8}")
+        print(f"  {'-'*75}")
+        for s in result.quality_non_limit[:10]:
+            reason_parts = s.reason.split()
+            ma_status = reason_parts[0] if reason_parts else ''
+            print(f"  {s.code:<8} {s.name:<10} {s.change_pct:>6.2f}% {s.turnover_rate:>9.1f}% {ma_status:<10} {s.volume_ratio:>7.1f} {s.signal_score:>7.1f}")
 
     print(f"{'='*100}")
 
@@ -1155,6 +1248,7 @@ def parse_args():
     parser.add_argument('--reversal', action='store_true', help='仅扫描低位反转')
     parser.add_argument('--turnover', action='store_true', help='仅扫描高换手')
     parser.add_argument('--strong', action='store_true', help='仅扫描强势信号(量比>2.5 振幅>6.5%% 涨幅>2.44%% 均线多头)')
+    parser.add_argument('--quality', action='store_true', help='仅扫描优质非涨停股')
     parser.add_argument('--top', type=int, default=30, help='每类显示数量')
     parser.add_argument('--no-hist', action='store_true', help='跳过历史K线检查(加速)')
     parser.add_argument('--source', type=str, default='auto', choices=['auto', 'akshare', 'tencent', 'baostock'], help='数据源: auto(自动切换) akshare tencent baostock')
@@ -1229,13 +1323,20 @@ def run_single_scan(args):
     if args.strong or all_scan:
         result.strong_signal = scan_strong_signal(quotes, name_map)
 
+    if args.quality or all_scan:
+        limit_up_codes = {s.code for s in result.limit_ups}
+        if not args.no_hist:
+            result.quality_non_limit = scan_quality_non_limit(quotes, name_map, limit_up_codes)
+        else:
+            logger.info("跳过历史K线检查(使用--no-hist)")
+
     print_results(result)
 
     total_signals = (
         len(result.limit_ups) + len(result.fast_rise) +
         len(result.volume_price_up) + len(result.breakout_high) +
         len(result.reversal) + len(result.strong_turnover) +
-        len(result.strong_signal)
+        len(result.strong_signal) + len(result.quality_non_limit)
     )
     logger.info(f"扫描完成: 共发现 {total_signals} 个信号")
 
@@ -1366,6 +1467,12 @@ def run_continuous_scan(args):
                 result.strong_turnover = scan_strong_turnover(quotes)
             if args.strong or all_scan:
                 result.strong_signal = scan_strong_signal(quotes, name_map)
+            if args.quality or all_scan:
+                limit_up_codes = {s.code for s in result.limit_ups}
+                if not args.no_hist:
+                    result.quality_non_limit = scan_quality_non_limit(quotes, name_map, limit_up_codes)
+                else:
+                    logger.info("跳过历史K线检查(使用--no-hist)")
 
             print_results(result)
 
@@ -1373,7 +1480,7 @@ def run_continuous_scan(args):
                 len(result.limit_ups) + len(result.fast_rise) +
                 len(result.volume_price_up) + len(result.breakout_high) +
                 len(result.reversal) + len(result.strong_turnover) +
-                len(result.strong_signal)
+                len(result.strong_signal) + len(result.quality_non_limit)
             )
             logger.info(f"第 {scan_count[0]} 次扫描完成: 共发现 {total_signals} 个信号")
 
