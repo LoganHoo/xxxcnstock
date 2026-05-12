@@ -16,7 +16,7 @@ from pathlib import Path
 import json
 
 import pandas as pd
-import polars as pl
+
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -509,7 +509,7 @@ def validate_kline_data(file_path: Path) -> ValidationSuiteResult:
     logger.info(f"验证K线数据: {file_path}")
     
     try:
-        df = pl.read_parquet(file_path).to_pandas()
+        df = pd.read_parquet(file_path)
     except Exception as e:
         logger.error(f"读取文件失败: {e}")
         return ValidationSuiteResult(
