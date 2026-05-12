@@ -56,6 +56,26 @@ BOARD_LIMIT = {
 }
 
 
+def disable_proxy():
+    """禁用代理，确保网络环境干净"""
+    import os
+    proxy_keys = ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY', 'no_proxy', 'NO_PROXY']
+    old_env = {}
+    for k in proxy_keys:
+        v = os.environ.pop(k, None)
+        if v is not None:
+            old_env[k] = v
+    return old_env
+
+
+def restore_proxy(old_env):
+    """恢复代理设置"""
+    import os
+    for k, v in old_env.items():
+        if v is not None:
+            os.environ[k] = v
+
+
 @dataclass
 class SignalStock:
     """信号股票"""
@@ -146,8 +166,7 @@ def load_stock_list() -> Tuple[Dict[str, str], Dict[str, str], set]:
 
 
 def load_realtime_quotes() -> pd.DataFrame:
-    import os
-    old_env = {k: os.environ.pop(k, None) for k in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY']}
+    old_env = disable_proxy()
 
     try:
         import akshare as ak
@@ -203,9 +222,95 @@ def load_realtime_quotes() -> pd.DataFrame:
         logger.error(f"获取实时行情失败: {e}")
         return pd.DataFrame()
     finally:
-        for k, v in old_env.items():
-            if v is not None:
-                os.environ[k] = v
+        restore_proxy(old_env)
+
+
+def load_realtime_quotes_auto(name_map: Dict) -> pd.DataFrame:
+    """自动切换数据源: akshare -> tencent -> baostock"""
+    logger.info("正在自动选择数据源...")
+
+    try:
+        import akshare as ak
+        old_env = disable_proxy()
+        try:
+            df = ak.stock_zh_a_spot_em()
+            if df is not None and not df.empty and len(df) > 1000:
+                restore_proxy(old_env)
+                logger.info(f"akshare成功获取 {len(df)} 只股票")
+                return df
+        except Exception as e:
+            logger.warning(f"akshare失败: {e}")
+            restore_proxy(old_env)
+    except ImportError:
+        logger.warning("akshare未安装")
+
+    logger.info("切换到腾讯财经...")
+    df = load_realtime_quotes_tencent(name_map)
+    if df is not None and not df.empty and len(df) > 1000:
+        logger.info(f"腾讯财经成功获取 {len(df)} 只股票")
+        return df
+
+    logger.info("切换到baostock...")
+    return load_realtime_quotes_baostock(name_map)
+
+
+def load_realtime_quotes_baostock(name_map: Dict) -> pd.DataFrame:
+    """Baostock实时行情接口"""
+    import baostock as bs
+    import pandas as pd
+
+    logger.info("正在通过Baostock获取实时行情...")
+    old_env = disable_proxy()
+
+    try:
+        lg = bs.login()
+        if lg.error_code != '0':
+            logger.error(f"Baostock登录失败: {lg.error_msg}")
+            restore_proxy(old_env)
+            return pd.DataFrame()
+
+        all_data = []
+        codes_list = list(name_map.keys())
+
+        for code in codes_list:
+            bs_code = code
+            if code.startswith('6'):
+                bs_code = f"sh.{code}"
+            else:
+                bs_code = f"sz.{code}"
+
+            rs = bs.query_history_k_data_plus(
+                bs_code,
+                "date,code,open,high,low,close,volume,amount,turnover",
+                start_date=pd.Timestamp.now().strftime('%Y-%m-%d'),
+                end_date=pd.Timestamp.now().strftime('%Y-%m-%d'),
+                frequency="d",
+                adjustflag="3"
+            )
+
+            while rs.error_code == '0' and rs.next():
+                all_data.append(rs.get_row_data())
+
+        bs.logout()
+        restore_proxy(old_env)
+
+        if not all_data:
+            return pd.DataFrame()
+
+        df = pd.DataFrame(all_data, columns=['date', 'code', 'open', 'high', 'low', 'close', 'volume', 'amount', 'turnover'])
+        df['code'] = df['code'].str.replace(r'sh\.|sz\.', '', regex=True)
+        df = df.rename(columns={'close': 'price', 'turnover': 'turnover_rate'})
+        df['price'] = pd.to_numeric(df['price'], errors='coerce')
+        df['change_pct'] = 0.0
+        df['volume'] = pd.to_numeric(df['volume'], errors='coerce')
+
+        logger.info(f"Baostock成功获取 {len(df)} 只股票")
+        return df
+
+    except Exception as e:
+        logger.error(f"Baostock获取实时行情失败: {e}")
+        restore_proxy(old_env)
+        return pd.DataFrame()
 
 
 def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
@@ -217,7 +322,7 @@ def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
 
     logger.info("正在通过腾讯财经获取实时行情...")
 
-    old_env = {k: os.environ.pop(k, None) for k in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY']}
+    old_env = disable_proxy()
 
     try:
         all_data = []
@@ -316,9 +421,7 @@ def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
         logger.error(f"腾讯财经获取实时行情失败: {e}")
         return pd.DataFrame()
     finally:
-        for k, v in old_env.items():
-            if v is not None:
-                os.environ[k] = v
+        restore_proxy(old_env)
 
 
 def load_limit_pool() -> pd.DataFrame:
@@ -1051,7 +1154,7 @@ def parse_args():
     parser.add_argument('--strong', action='store_true', help='仅扫描强势信号(量比>2.5 振幅>6.5%% 涨幅>2.44%% 均线多头)')
     parser.add_argument('--top', type=int, default=30, help='每类显示数量')
     parser.add_argument('--no-hist', action='store_true', help='跳过历史K线检查(加速)')
-    parser.add_argument('--source', type=str, default='akshare', choices=['akshare', 'tencent'], help='数据源: akshare(默认) 或 tencent(腾讯财经)')
+    parser.add_argument('--source', type=str, default='auto', choices=['auto', 'akshare', 'tencent', 'baostock'], help='数据源: auto(自动切换) akshare tencent baostock')
     parser.add_argument('--interval', type=int, default=3, help='扫描间隔(分钟)，默认3分钟')
     parser.add_argument('--single', action='store_true', help='仅运行一次，不持续监控')
     return parser.parse_args()
@@ -1076,8 +1179,12 @@ def run_single_scan(args):
 
     if args.source == 'tencent':
         quotes = load_realtime_quotes_tencent(name_map)
-    else:
+    elif args.source == 'akshare':
         quotes = load_realtime_quotes()
+    elif args.source == 'baostock':
+        quotes = load_realtime_quotes_baostock(name_map)
+    else:
+        quotes = load_realtime_quotes_auto(name_map)
 
     if quotes.empty:
         logger.error("无法获取实时行情，退出")
@@ -1217,8 +1324,12 @@ def run_continuous_scan(args):
 
             if args.source == 'tencent':
                 quotes = load_realtime_quotes_tencent(name_map)
-            else:
+            elif args.source == 'akshare':
                 quotes = load_realtime_quotes()
+            elif args.source == 'baostock':
+                quotes = load_realtime_quotes_baostock(name_map)
+            else:
+                quotes = load_realtime_quotes_auto(name_map)
 
             if quotes.empty:
                 logger.warning("无法获取实时行情，跳过本次扫描")
