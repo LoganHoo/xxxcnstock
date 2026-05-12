@@ -120,22 +120,22 @@ def load_stock_list() -> Tuple[Dict[str, str], Dict[str, str], set]:
         logger.warning("stock_list.parquet 不存在")
         return name_map, industry_map, valid_codes
 
-    sl = pl.read_parquet(STOCK_LIST)
-    for row in sl.iter_rows(named=True):
+    sl = pd.read_parquet(STOCK_LIST)
+    for _, row in sl.iterrows():
         code = str(row.get('code', row.get('ts_code', ''))).strip()
         name = str(row.get('name', '')).strip()
         industry = str(row.get('industry', '')).strip()
-        if code and name:
+        if code:
             clean_code = code.replace('.SZ', '').replace('.SH', '').replace('.BJ', '')
             if len(clean_code) == 6 and clean_code.isdigit():
-                name_map[clean_code] = name
+                name_map[clean_code] = name if name else clean_code
                 industry_map[clean_code] = industry if industry and industry != 'None' else ''
                 valid_codes.add(clean_code)
 
     industry_file = DATA_DIR / 'fundamental' / 'industry_baostock.parquet'
     if industry_file.exists():
-        ind_df = pl.read_parquet(industry_file)
-        for row in ind_df.iter_rows(named=True):
+        ind_df = pd.read_parquet(industry_file)
+        for _, row in ind_df.iterrows():
             c = str(row.get('code', '')).strip()
             ind = str(row.get('industry', '')).strip()
             if c and ind and c in name_map and not industry_map.get(c):
