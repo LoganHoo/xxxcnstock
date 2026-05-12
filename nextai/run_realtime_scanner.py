@@ -154,12 +154,15 @@ def load_stock_list() -> Tuple[Dict[str, str], Dict[str, str], set]:
 
     industry_file = DATA_DIR / 'fundamental' / 'industry_baostock.parquet'
     if industry_file.exists():
-        ind_df = pd.read_parquet(industry_file)
-        for _, row in ind_df.iterrows():
-            c = str(row.get('code', '')).strip()
-            ind = str(row.get('industry', '')).strip()
-            if c and ind and c in name_map and not industry_map.get(c):
-                industry_map[c] = ind
+        try:
+            ind_df = pd.read_parquet(str(industry_file))
+            for _, row in ind_df.iterrows():
+                c = str(row.get('code', '')).strip()
+                ind = str(row.get('industry', '')).strip()
+                if c and ind and c in name_map and not industry_map.get(c):
+                    industry_map[c] = ind
+        except Exception as e:
+            logger.debug(f"加载行业数据失败: {e}")
 
     logger.info(f"股票列表: {len(valid_codes)} 只有效A股")
     return name_map, industry_map, valid_codes
@@ -475,17 +478,17 @@ def load_limit_pool() -> pd.DataFrame:
         return pd.DataFrame()
 
 
-def load_hist_kline(code: str, days: int = 60) -> Optional[pl.DataFrame]:
+def load_hist_kline(code: str, days: int = 60) -> Optional[pd.DataFrame]:
     kline_file = KLINE_DIR / f"{code}.parquet"
     if not kline_file.exists():
         return None
 
     try:
-        df = pl.read_parquet(kline_file)
+        df = pd.read_parquet(str(kline_file))
         if 'trade_date' in df.columns:
-            df = df.sort('trade_date').tail(days)
+            df = df.sort_values('trade_date').tail(days)
         elif 'date' in df.columns:
-            df = df.rename({'date': 'trade_date'}).sort('trade_date').tail(days)
+            df = df.rename(columns={'date': 'trade_date'}).sort_values('trade_date').tail(days)
         return df
     except Exception as e:
         logger.debug(f"读取K线失败 {code}: {e}")
@@ -754,7 +757,7 @@ def enrich_with_key_levels(code: str, current_price: float) -> dict:
 
         result = client.calculate_from_data(
             symbol=code,
-            kline_data=kline.to_pandas(),
+            kline_data=kline,
             current_price=current_price
         )
         return result
