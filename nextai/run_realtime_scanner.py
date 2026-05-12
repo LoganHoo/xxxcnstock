@@ -146,6 +146,9 @@ def load_stock_list() -> Tuple[Dict[str, str], Dict[str, str], set]:
 
 
 def load_realtime_quotes() -> pd.DataFrame:
+    import os
+    old_env = {k: os.environ.pop(k, None) for k in ['http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY', 'all_proxy', 'ALL_PROXY']}
+
     try:
         import akshare as ak
         logger.info("正在获取实时行情...")
@@ -199,6 +202,10 @@ def load_realtime_quotes() -> pd.DataFrame:
     except Exception as e:
         logger.error(f"获取实时行情失败: {e}")
         return pd.DataFrame()
+    finally:
+        for k, v in old_env.items():
+            if v is not None:
+                os.environ[k] = v
 
 
 def load_realtime_quotes_tencent(name_map: Dict) -> pd.DataFrame:
