@@ -232,8 +232,8 @@ class BaostockProvider(DataProvider):
                     continue
                 if code.startswith('399') and exchange == 'sz':
                     continue
-                # ETF基金：51/52/56/58/59 开头（上海）, 15/16/18 开头（深圳）
-                if code.startswith(('51', '52', '56', '58', '59')) and exchange == 'sh':
+                # ETF基金：51/52/53/55/56/58/59 开头（上海）, 15/16/18 开头（深圳）
+                if code.startswith(('51', '52', '53', '55', '56', '58', '59')) and exchange == 'sh':
                     continue
                 if code.startswith(('15', '16', '18')) and exchange == 'sz':
                     continue
