@@ -289,11 +289,12 @@ class RealStockSelectionWorkflow:
             if stock_list_file.exists():
                 stock_list = pd.read_parquet(stock_list_file)
                 
-                # 检查列名 (可能是 'code_name' 而不是 'name')
+                # 检查列名
+                trade_status_col = 'trade_status' if 'trade_status' in stock_list.columns else 'tradeStatus'
                 name_col = 'code_name' if 'code_name' in stock_list.columns else 'name'
                 
                 # 合并股票信息
-                merge_cols = ['code', 'tradeStatus']
+                merge_cols = ['code', trade_status_col]
                 if name_col in stock_list.columns:
                     merge_cols.append(name_col)
                 
@@ -303,10 +304,10 @@ class RealStockSelectionWorkflow:
                     how='left'
                 )
                 
-                # 1. 过滤停牌/退市股票 (tradeStatus='0')
-                if 'tradeStatus' in stock_pool.columns:
-                    # tradeStatus可能是字符串类型
-                    trade_status_str = stock_pool['tradeStatus'].astype(str)
+                # 1. 过滤停牌/退市股票 (trade_status='0')
+                if trade_status_col in stock_pool.columns:
+                    # trade_status可能是字符串类型
+                    trade_status_str = stock_pool[trade_status_col].astype(str)
                     active_mask = trade_status_str == '1'
                     suspended = (~active_mask).sum()
                     stock_pool = stock_pool[active_mask]
@@ -346,12 +347,13 @@ class RealStockSelectionWorkflow:
             if stock_list.empty:
                 return False, "股票列表为空"
             
-            # 检查tradeStatus字段
-            if 'tradeStatus' not in stock_list.columns:
-                return False, "股票列表缺少tradeStatus字段"
+            # 检查trade_status字段
+            trade_status_col = 'trade_status' if 'trade_status' in stock_list.columns else 'tradeStatus'
+            if trade_status_col not in stock_list.columns:
+                return False, f"股票列表缺少{trade_status_col}字段"
             
             # 统计正常交易股票
-            trade_status_str = stock_list['tradeStatus'].astype(str)
+            trade_status_str = stock_list[trade_status_col].astype(str)
             active_count = (trade_status_str == '1').sum()
             suspended_count = (trade_status_str == '0').sum()
             
