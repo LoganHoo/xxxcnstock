@@ -152,12 +152,13 @@ def check_stock_list_quality():
         else:
             print("✅ 无空值")
         
-        # 检查tradeStatus
-        if 'tradeStatus' in df.columns:
-            status_counts = df['tradeStatus'].value_counts()
+        # 检查trade_status
+        trade_status_col = 'trade_status' if 'trade_status' in df.columns else 'tradeStatus'
+        if trade_status_col in df.columns:
+            status_counts = df[trade_status_col].value_counts()
             print(f"\n📊 交易状态分布:")
             for row in status_counts.iter_rows(named=True):
-                status = row['tradeStatus']
+                status = row[trade_status_col]
                 count = row['count']
                 status_desc = '正常交易' if status == '1' else '停牌/退市'
                 print(f"   {status} ({status_desc}): {count} 只")
